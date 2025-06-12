@@ -88,15 +88,16 @@ const generateCacheKey = (queryParams) => {
 const findProducts = async (queryParams) => {
   const cacheKey = generateCacheKey(queryParams);
   let cachedProducts = await getCachedProducts(cacheKey);
+  console.log("cachedProducts",cachedProducts);
   if (!cachedProducts) {
     cachedProducts = await fetchProductsFromDB(queryParams);
+    console.log("db",cachedProducts);
     await cacheProducts(cacheKey, cachedProducts);
   }
   return cachedProducts;
 };
 
 const enhanceProductImages = (input) => {
-  console.log("input", input);
   if (!input) return input;
 
   const processProduct = (product) => {

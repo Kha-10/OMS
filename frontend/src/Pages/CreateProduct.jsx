@@ -289,7 +289,7 @@ export default function CreateProduct() {
       if (deletedImages.length > 0) {
         data.deletedImages = deletedImages; // Send deleted images for removal
       }
-
+      console.log(data);
       let res;
       if (id) {
         res = await axios.patch(`/api/products/${id}`, data);
@@ -958,26 +958,52 @@ export default function CreateProduct() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`options.${index}.required`}
-                      render={({ field }) => (
-                        <FormItem className="space-x-2">
-                          <div className="flex items-center gap-2">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                              />
-                            </FormControl>
-                            <FormLabel className=" font-normal">
-                              Required
-                            </FormLabel>
-                          </div>
-                        </FormItem>
+                    <div className="flex items-center gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`options.${index}.required`}
+                        render={({ field }) => (
+                          <FormItem className="space-x-2">
+                            <div className="flex items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                                />
+                              </FormControl>
+                              <FormLabel className=" font-normal">
+                                Required
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      {!["Text", "Number"].includes(
+                        form.watch(`options.${index}.type`)
+                      ) && (
+                        <FormField
+                          control={form.control}
+                          name={`options.${index}.settings.enableQuantity`}
+                          render={({ field }) => (
+                            <FormItem className="space-x-2">
+                              <div className="flex items-center gap-2">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                                  />
+                                </FormControl>
+                                <FormLabel className=" font-normal">
+                                  Enable quantity
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    />
+                    </div>
                     {!["Text", "Number"].includes(
                       form.watch(`options.${index}.type`)
                     ) && (
@@ -986,7 +1012,7 @@ export default function CreateProduct() {
 
                         <div className="space-y-4">
                           {form
-                            .watch(`options.${index}.choices`)
+                            .watch(`options.${index}.settings.choices`)
                             ?.map((_, choiceIndex) => (
                               <div key={choiceIndex} className="space-y-2">
                                 <div className="flex items-center justify-between">
@@ -999,13 +1025,13 @@ export default function CreateProduct() {
                                     size="sm"
                                     onClick={() => {
                                       const choices = form.getValues(
-                                        `options.${index}.choices`
+                                        `options.${index}.settings.choices`
                                       );
                                       const newChoices = choices.filter(
                                         (_, i) => i !== choiceIndex
                                       );
                                       form.setValue(
-                                        `options.${index}.choices`,
+                                        `options.${index}.settings.choices`,
                                         newChoices
                                       );
                                     }}
@@ -1020,7 +1046,7 @@ export default function CreateProduct() {
                                 <div className="flex gap-2">
                                   <FormField
                                     control={form.control}
-                                    name={`options.${index}.choices.${choiceIndex}.name`}
+                                    name={`options.${index}.settings.choices.${choiceIndex}.name`}
                                     render={({ field }) => (
                                       <FormItem className="flex-1">
                                         <FormControl>
@@ -1036,7 +1062,7 @@ export default function CreateProduct() {
                                   />
                                   <FormField
                                     control={form.control}
-                                    name={`options.${index}.choices.${choiceIndex}.amount`}
+                                    name={`options.${index}.settings.choices.${choiceIndex}.amount`}
                                     defaultValue={0}
                                     render={({ field }) => (
                                       <FormItem className="w-32">
@@ -1072,8 +1098,10 @@ export default function CreateProduct() {
                           className="w-full"
                           onClick={() => {
                             const choices =
-                              form.getValues(`options.${index}.choices`) || [];
-                            form.setValue(`options.${index}.choices`, [
+                              form.getValues(
+                                `options.${index}.settings.choices`
+                              ) || [];
+                            form.setValue(`options.${index}.settings.choices`, [
                               ...choices,
                               { name: "", amount: 0 },
                             ]);
@@ -1089,7 +1117,7 @@ export default function CreateProduct() {
                       <div className="space-y-4">
                         <FormField
                           control={form.control}
-                          name={`options.${index}.validation.type`}
+                          name={`options.${index}.settings.inputType`}
                           render={({ field }) => (
                             <FormItem>
                               <Select
@@ -1105,13 +1133,13 @@ export default function CreateProduct() {
                                   <SelectItem value="not_applicable">
                                     Not applicable
                                   </SelectItem>
-                                  <SelectItem value="at_least">
+                                  <SelectItem value="min">
                                     Select at least
                                   </SelectItem>
-                                  <SelectItem value="at_most">
+                                  <SelectItem value="max">
                                     Select at most
                                   </SelectItem>
-                                  <SelectItem value="between">
+                                  <SelectItem value="minmax">
                                     Select between
                                   </SelectItem>
                                 </SelectContent>
@@ -1120,24 +1148,24 @@ export default function CreateProduct() {
                             </FormItem>
                           )}
                         />
-                        {form.watch(`options.${index}.validation.type`) ===
-                          "at_least" && (
+                        {form.watch(`options.${index}.settings.inputType`) ===
+                          "min" && (
                           <FormField
                             control={form.control}
-                            name={`options.${index}.validation.atLeastMin`}
+                            name={`options.${index}.settings.min`}
                             defaultValue={0}
                             shouldUnregister={true}
                             rules={{
                               validate: (value) => {
                                 const type = form.getValues(
-                                  `options.${index}.validation.type`
+                                  `options.${index}.settings.inputType`
                                 );
                                 const choicesLength = form.getValues(
-                                  `options.${index}.choices.length`
+                                  `options.${index}.settings.choices.length`
                                 );
 
                                 if (
-                                  type === "at_least" &&
+                                  type === "min" &&
                                   value > choicesLength
                                 ) {
                                   return "Min must be less than or equal to number of choices";
@@ -1170,24 +1198,24 @@ export default function CreateProduct() {
                           />
                         )}
 
-                        {form.watch(`options.${index}.validation.type`) ===
-                          "at_most" && (
+                        {form.watch(`options.${index}.settings.inputType`) ===
+                          "max" && (
                           <FormField
                             control={form.control}
-                            name={`options.${index}.validation.atLeastMax`}
+                            name={`options.${index}.settings.max`}
                             defaultValue={0}
                             shouldUnregister={true}
                             rules={{
                               validate: (value) => {
                                 const type = form.getValues(
-                                  `options.${index}.validation.type`
+                                  `options.${index}.settings.inputType`
                                 );
                                 const choicesLength = form.getValues(
-                                  `options.${index}.choices.length`
+                                  `options.${index}.settings.choices.length`
                                 );
 
                                 if (
-                                  type === "at_most" &&
+                                  type === "max" &&
                                   value > choicesLength
                                 ) {
                                   return "Max must be greater than or equal to number of choices";
@@ -1220,26 +1248,26 @@ export default function CreateProduct() {
                           />
                         )}
 
-                        {form.watch(`options.${index}.validation.type`) ===
-                          "between" && (
+                        {form.watch(`options.${index}.settings.inputType`) ===
+                          "minmax" && (
                           <div className="flex gap-4">
                             <FormField
                               control={form.control}
-                              name={`options.${index}.validation.betweenMin`}
+                              name={`options.${index}.settings.min`}
                               defaultValue={0}
                               shouldUnregister={true}
                               rules={{
                                 validate: (value) => {
                                   const type = form.getValues(
-                                    `options.${index}.validation.type`
+                                    `options.${index}.settings.inputType`
                                   );
                                   console.log(type);
                                   const choicesLength = form.getValues(
-                                    `options.${index}.choices.length`
+                                    `options.${index}.settings.choices.length`
                                   );
 
                                   if (
-                                    type === "between" &&
+                                    type === "minmax" &&
                                     value > choicesLength
                                   ) {
                                     return "Min must be less than or equal to number of choices";
@@ -1272,21 +1300,21 @@ export default function CreateProduct() {
                             />
                             <FormField
                               control={form.control}
-                              name={`options.${index}.validation.betweenMax`}
+                              name={`options.${index}.settings.max`}
                               defaultValue={0}
                               shouldUnregister={true}
                               rules={{
                                 validate: (value) => {
                                   const type = form.getValues(
-                                    `options.${index}.validation.type`
+                                    `options.${index}.settings.inputType`
                                   );
                                   console.log(type);
                                   const choicesLength = form.getValues(
-                                    `options.${index}.choices.length`
+                                    `options.${index}.settings.choices.length`
                                   );
 
                                   if (
-                                    type === "between" &&
+                                    type === "minmax" &&
                                     value > choicesLength
                                   ) {
                                     return "Max must be greater than or equal to number of choices";
@@ -1344,9 +1372,6 @@ export default function CreateProduct() {
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add option
-                </Button>
-                <Button type="button" variant="outline" className="w-full">
-                  Change option sequence
                 </Button>
               </div>
             </CardContent>

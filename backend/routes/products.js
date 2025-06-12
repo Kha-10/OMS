@@ -29,6 +29,12 @@ router.post(
 router.get("/:id", ProductsController.show);
 
 router.delete(
+  "/bulk",
+  // RoleMiddleware(["admin", "superadmin"]),
+  ProductsController.bulkDestroy
+);
+
+router.delete(
   "/:id",
   // RoleMiddleware(["admin", "superadmin"]),
   ProductsController.destroy

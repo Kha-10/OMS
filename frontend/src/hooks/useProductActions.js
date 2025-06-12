@@ -6,8 +6,16 @@ const duplicateProducts = async (id) => {
   return res.data;
 };
 
-const deleteProducts = async (id) => {
+const deleteSingleProduct = async (id) => {
   const res = await axios.delete(`/api/products/${id}`);
+  return res.data;
+};
+
+const bulkDeleteProducts = async (orderIds) => {
+  console.log("gg", orderIds);
+  const res = await axios.delete("/api/products/bulk", {
+    data: { ids: orderIds },
+  });
   return res.data;
 };
 
@@ -37,19 +45,52 @@ const useProductActions = (onSelectProducts) => {
     },
   });
 
+  // const deleteMutation = useMutation({
+  //   mutationFn: async (selectedProducts) => {
+  //     const responses = await Promise.all(
+  //       selectedProducts.map((id) => deleteProducts(id))
+  //     );
+  //     return responses;
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries(["products"]);
+  //     onSelectProducts([]);
+  //   },
+  //   onError: (error) => {
+  //     console.error("Deleting products failed:", error);
+  //   },
+  // });
+
   const deleteMutation = useMutation({
     mutationFn: async (selectedProducts) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) => deleteProducts(id))
-      );
-      return responses;
+      if (selectedProducts.length === 0) {
+        throw new Error("No products selected");
+      }
+
+      if (selectedProducts.length === 1) {
+        console.log("Deleting single product:", selectedProducts[0]);
+        return await deleteSingleProduct(selectedProducts[0]);
+      } else {
+        console.log("Deleting multiple products:", selectedProducts);
+        return await bulkDeleteProducts(selectedProducts);
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
-      onSelectProducts([]);
+    onSuccess: (result, variables, context) => {
+      console.log("Delete operation successful:", result);
+
+      if (Array.isArray(variables?.selectedProducts)) {
+        const count = variables.selectedProducts.length;
+        successToast(`Successfully deleted ${count} products`);
+        onSelectOrders([]);
+        queryClient.invalidateQueries(["products"]);
+      } else {
+        onSingleDeleteSuccess?.();
+        successToast("Product deleted successfully");
+      }
     },
     onError: (error) => {
       console.error("Deleting products failed:", error);
+      errorToast(error.response.data.message);
     },
   });
 

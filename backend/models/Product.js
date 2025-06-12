@@ -2,58 +2,82 @@ const mongoose = require("mongoose");
 
 const schema = mongoose.Schema;
 
-const validationSchema = new schema({
-  type: {
-    type: String,
-    enum: ["not_applicable", "at_most", "at_least", "between"],
+// const validationSchema = new schema({
+//   type: {
+//     type: String,
+//     enum: ["not_applicable", "at_most", "at_least", "between"],
+//   },
+//   atLeastMin: {
+//     type: Number,
+//     default: undefined,
+//   },
+//   atLeastMax: {
+//     type: Number,
+//     default: undefined,
+//   },
+//   betweenMax: {
+//     type: Number,
+//     default: undefined,
+//   },
+//   betweenMin: {
+//     type: Number,
+//     default: undefined,
+//   },
+// });
+const InventorySchema = new mongoose.Schema(
+  {
+    quantity: { type: Number, required: true },
   },
-  atLeastMin: {
-    type: Number,
-    default: undefined,
-  },
-  atLeastMax: {
-    type: Number,
-    default: undefined,
-  },
-  betweenMax: {
-    type: Number,
-    default: undefined,
-  },
-  betweenMin: {
-    type: Number,
-    default: undefined,
-  },
-});
+  { _id: true }
+);
 
-const optionSchema = new schema({
-  name: {
-    type: String,
-    required: true,
+const FlexibleOptionItemSchema = new schema(
+  {
+    name: String,
+    amount: { type: Number, default: 0 },
   },
-  type: {
-    type: String,
-    enum: ["Checkbox", "Selection", "Number", "Text"],
-    required: true,
-  },
-  required: {
-    type: Boolean,
-    default: false,
-  },
-  value: {
-    type: String,
-    default: "",
-  },
-  choices: [
-    {
-      name: { type: String },
-      amount: { type: Number },
+  { _id: false }
+);
+
+const optionSchema = new schema(
+  {
+    name: {
+      type: String,
+      required: true,
     },
-  ],
-  validation: {
-    type: validationSchema,
-    default: () => ({}),
+    type: {
+      type: String,
+      enum: ["Checkbox", "Selection", "Number", "Text"],
+      required: true,
+    },
+    required: {
+      type: Boolean,
+      default: false,
+    },
+    value: {
+      type: String,
+      default: "",
+    },
+    // choices: [
+    //   {
+    //     name: { type: String },
+    //     amount: { type: Number },
+    //   },
+    // ],
+    // validation: {
+    //   type: validationSchema,
+    //   default: () => ({}),
+    // },
+    settings: {
+      min: Number,
+      max: Number,
+      inputType: String,
+      enableQuantity: Boolean,
+      choices: [FlexibleOptionItemSchema],
+    },
   },
-});
+  { _id: false }
+);
 
 const variantSchema = new schema({
   name: {
@@ -92,19 +116,8 @@ const productSchema = new schema(
     variants: [variantSchema],
     options: [optionSchema],
     trackQuantityEnabled: { type: Boolean, default: false },
-    inventory: {
-      type: {
-        quantity: { type: Number, default: 0 },
-      },
-      default: {},
-    },
+    inventory: InventorySchema,
     dailyCapacity: { type: Boolean, default: false },
-    dailyCapacityInventory: {
-      type: {
-        quantity: { type: Number, default: 0 },
-      },
-      default: {},
-    },
     cartMaximumEnabled: { type: Boolean, default: false },
     cartMaximum: { type: Number, default: 0 },
     cartMinimumEnabled: { type: Boolean, default: false },

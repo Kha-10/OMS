@@ -3,8 +3,8 @@ const Category = require("../models/Category");
 const Order = require("../models/Order");
 const mongoose = require("mongoose");
 const productService = require("../services/productService");
-const handler = require("../helpers/handler");
 const clearProductCache = require("../helpers/clearProductCache");
+const { bulkDestroy } = require("./OrdersController");
 
 const ProductsController = {
   index: async (req, res) => {
@@ -30,9 +30,11 @@ const ProductsController = {
           hasPreviousPage: page > 1,
         },
       };
+
       return res.json(response);
     } catch (error) {
-      return handler.handleError(res, error);
+      console.error("Error creating Product:", error);
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
 
@@ -40,13 +42,11 @@ const ProductsController = {
     try {
       const productData = req.body;
 
-      // Check if product exists
       const existingProduct = await productService.findByName(productData.name);
       if (existingProduct) {
         return res.status(409).json({ msg: "Product already exists" });
       }
-      console.log("productData", productData);
-      // Validate and convert category IDs
+
       const categoryIds = productService.validateCategoryIds(
         productData.categories
       );
@@ -91,14 +91,57 @@ const ProductsController = {
     }
   },
   destroy: async (req, res) => {
-    const productId = req.params.id;
-
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ msg: "Invalid ID" });
-    }
-
     try {
-      const deletedProduct = await productService.removeProduct(productId);
+      const productId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({ msg: "Invalid ID" });
+      }
+
+      const deletedProduct = await Product.findByIdAndDelete(productId);
+      if (!deletedProduct) {
+        return res.status(404).json({ msg: "Product not found" });
+      }
+
+      await Category.updateMany(
+        { products: productId },
+        { $pull: { products: productId } }
+      );
+
+      await Order.updateMany(
+        { "items.productId": productId },
+        {
+          $set: {
+            "items.$[elem].productId": null,
+            "items.$[elem]._id": null,
+          },
+        },
+        {
+          arrayFilters: [{ "elem.productId": productId }],
+        }
+      );
+
+      await clearProductCache();
+
+      return res.json(deletedProduct);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      return res.status(500).json({ msg: "internet server error" });
+    }
+  },
+  bulkDestroy: async (req, res) => {
+    try {
+      const { ids } = req.body;
+      const invalidIds = ids.filter(
+        (id) => !mongoose.Types.ObjectId.isValid(id)
+      );
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          msg: "Some IDs are invalid",
+          invalidIds,
+        });
+      }
+      const deletedProduct = await productService.removeProduct(ids);
       if (!deletedProduct) {
         return res.status(404).json({ msg: "Product not found" });
       }
@@ -145,7 +188,7 @@ const ProductsController = {
       }
 
       await productService.updateCategories(
-        existingProduct, 
+        existingProduct,
         newCategoryIds,
         id
       );
