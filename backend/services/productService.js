@@ -144,41 +144,6 @@ const findProductById = async (id) => {
   return await Product.findById(id).populate("categories");
 };
 
-// Delete
-// const removeProduct = async (productId) => {
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
-
-//   try {
-//     const product = await Product.findById(productId).session(session);
-//     if (!product) {
-//       await session.abortTransaction();
-//       session.endSession();
-//       return null;
-//     }
-
-//     // Delete product
-//     await Product.findByIdAndDelete(productId).session(session);
-
-//     // Remove images from AWS if present
-//     if (product.photo?.length > 0) {
-//       await awsRemove(product.photo);
-//       await invalidateCloudFrontCache(product.photo);
-//     }
-
-//     await session.commitTransaction();
-//     session.endSession();
-
-//     // Clear cache
-//     await clearProductCache();
-
-//     return product;
-//   } catch (error) {
-//     await session.abortTransaction();
-//     session.endSession();
-//     throw error;
-//   }
-// };
 const deleteProducts = async (ids) => {
   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
   if (invalidIds.length > 0) {
@@ -338,47 +303,109 @@ const updateCategories = async (existingProduct, newCategoryIds, id) => {
 };
 
 // Duplicate
-const duplicateProduct = async (id) => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error("Invalid id");
+// const duplicateProduct = async (ids) => {
+//   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+//   if (invalidIds.length > 0) {
+//     return { duplicatedCount: 0, invalidIds };
+//   }
+
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const originalProducts = await Product.find({ _id: { $in: ids } }).session(
+//       session
+//     );
+//     if (originalProducts.length === 0) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return { duplicatedCount: 0, invalidIds: [] };
+//     }
+
+//     let duplicatedImages;
+//     if (originalProducts.photo && originalProducts.photo.length > 0) {
+//       duplicatedImages = await duplicateImages(originalProducts.photo);
+//     }
+
+//     const productData = originalProducts.toObject();
+//     delete productData._id;
+//     delete productData.createdAt;
+//     delete productData.updatedAt;
+
+//     productData.photo = duplicatedImages;
+//     productData.name = `${productData.name} (Copy)`;
+
+//     const [newProduct] = await Product.create([productData], { session });
+
+//     await session.commitTransaction();
+//     session.endSession();
+//     await clearProductCache();
+//     return newProduct;
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     throw error;
+//   }
+// };
+const duplicateProduct = async (ids) => {
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+  if (validIds.length === 0) {
+    return { duplicatedCount: 0, invalidIds };
   }
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    let originalProduct = await Product.findById(id).session(session);
-    if (!originalProduct) {
+    const originalProducts = await Product.find({ _id: { $in: validIds } }).session(session);
+    if (originalProducts.length === 0) {
       await session.abortTransaction();
-      session.endSession();
-      throw new Error("originalProduct not found");
+      return { duplicatedCount: 0, invalidIds };
     }
 
-    let duplicatedImages;
-    if (originalProduct.photo && originalProduct.photo.length > 0) {
-      duplicatedImages = await duplicateImages(originalProduct.photo);
+    const duplicatedProducts = [];
+
+    for (const original of originalProducts) {
+      const originalData = original.toObject();
+
+      // Optional: duplicate photo array if needed
+      let duplicatedImages = [];
+      if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
+        duplicatedImages = await duplicateImages(originalData.photo);
+      }
+
+      const duplicated = {
+        ...originalData,
+        _id: undefined, // allow Mongo to generate new ID
+        createdAt: undefined,
+        updatedAt: undefined,
+        name: `${originalData.name} (Copy)`,
+        photo: duplicatedImages,
+      };
+
+      duplicatedProducts.push(duplicated);
     }
 
-    const productData = originalProduct.toObject();
-    delete productData._id;
-    delete productData.createdAt;
-    delete productData.updatedAt;
-
-    productData.photo = duplicatedImages;
-    productData.name = `${productData.name} (Copy)`;
-
-    const [newProduct] = await Product.create([productData], { session });
+    const newProducts = await Product.insertMany(duplicatedProducts, { session });
 
     await session.commitTransaction();
-    session.endSession();
     await clearProductCache();
-    return newProduct;
+
+    return {
+      duplicatedCount: newProducts.length,
+      invalidIds,
+      newProducts,
+    };
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
     throw error;
+  } finally {
+    session.endSession();
   }
 };
+
 
 module.exports = {
   findProducts,

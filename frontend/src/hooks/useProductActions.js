@@ -2,8 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { successToast, errorToast } from "@/helper/showToast";
 
-const duplicateProducts = async (id) => {
-  const res = await axios.post(`/api/products/${id}/duplicate`);
+const duplicateProducts = async (productIds) => {
+  const res = await axios.post(`/api/products/duplicate`, {
+    ids: productIds,
+  });
   return res.data;
 };
 
@@ -12,10 +14,9 @@ const deleteSingleProduct = async (id) => {
   return res.data;
 };
 
-const bulkDeleteProducts = async (orderIds) => {
-  console.log("gg", orderIds);
+const bulkDeleteProducts = async (productIds) => {
   const res = await axios.delete("/api/products/bulk", {
-    data: { ids: orderIds },
+    data: { ids: productIds },
   });
   return res.data;
 };
@@ -31,37 +32,39 @@ const useProductActions = (onSelectProducts) => {
   const queryClient = useQueryClient();
 
   const duplicateMutation = useMutation({
+    // mutationFn: async (selectedProducts) => {
+    //   const responses = await Promise.all(
+    //     selectedProducts.map((id) => duplicateProducts(id))
+    //   );
+    //   return responses;
+    // },
     mutationFn: async (selectedProducts) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) => duplicateProducts(id))
-      );
-      return responses;
+      if (selectedProducts.length === 0) {
+        throw new Error("No products selected");
+      }
+
+      console.log("Duplicating multiple products:", selectedProducts);
+      return await duplicateProducts(selectedProducts);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
-      onSelectProducts([]);
+    onSuccess: (result, variables, context) => {
+      console.log("Duplicate operation successful:", result);
+
+      if (Array.isArray(variables?.selectedProducts)) {
+        const count = variables.selectedProducts.length;
+        successToast(`Successfully Duplicated ${count} products`);
+        onSelectOrders([]);
+        queryClient.invalidateQueries(["products"]);
+      } else {
+        successToast("Product Duplicated successfully");
+        queryClient.invalidateQueries(["products"]);
+        onSelectProducts([]);
+      }
     },
     onError: (error) => {
       console.error("Duplicating products failed:", error);
+      errorToast(error.response.data.message);
     },
   });
-
-  // const deleteMutation = useMutation({
-  //   mutationFn: async (selectedProducts) => {
-  //     const responses = await Promise.all(
-  //       selectedProducts.map((id) => deleteProducts(id))
-  //     );
-  //     return responses;
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries(["products"]);
-  //     onSelectProducts([]);
-  //   },
-  //   onError: (error) => {
-  //     console.error("Deleting products failed:", error);
-  //   },
-  // });
-
   const deleteMutation = useMutation({
     mutationFn: async (selectedProducts) => {
       if (selectedProducts.length === 0) {

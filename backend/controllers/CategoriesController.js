@@ -27,7 +27,7 @@ const CategoriesController = {
         },
       };
 
-      return res.json(response)
+      return res.json(response);
     } catch (error) {
       return handler.handleError(res, error);
     }
@@ -181,36 +181,74 @@ const CategoriesController = {
       });
     }
   },
+  // updateSequence: async (req, res) => {
+  //   try {
+  //     const categories = req.body;
+  //     const validCategories = categories.filter((c) => c._id);
+
+  //     const category = await Promise.all(
+  //       validCategories.map((c, index) =>
+  //         Category.findByIdAndUpdate(
+  //           c._id,
+  //           { orderIndex: index },
+  //           { new: true }
+  //         )
+  //       )
+  //     );
+
+  //     if (!category) {
+  //       return handler.handleError(res, {
+  //         status: 404,
+  //         message: "category not found",
+  //       });
+  //     }
+
+  //     await clearProductCache();
+
+  //     return res.json(category);
+  //   } catch (error) {
+  //     return handler.handleError(res, {
+  //       status: 500,
+  //       message: "Internet Server Error",
+  //     });
+  //   }
+  // },
   updateSequence: async (req, res) => {
     try {
       const categories = req.body;
-      const validCategories = categories.filter((c) => c._id);
 
-      const category = await Promise.all(
-        validCategories.map((c, index) =>
-          Category.findByIdAndUpdate(
-            c._id,
-            { orderIndex: index },
-            { new: true }
-          )
-        )
-      );
-
-      if (!category) {
+      if (!Array.isArray(categories) || categories.length === 0) {
         return handler.handleError(res, {
-          status: 404,
-          message: "category not found",
+          status: 400,
+          message: "Invalid or empty category list.",
         });
       }
 
+      const validCategories = categories.filter((c) => c._id);
+      if (validCategories.length === 0) {
+        return handler.handleError(res, {
+          status: 400,
+          message: "No valid category IDs found.",
+        });
+      }
+
+      const bulkOps = validCategories.map((c, index) => ({
+        updateOne: {
+          filter: { _id: c._id },
+          update: { $set: { orderIndex: index } },
+        },
+      }));
+
+      const result = await Category.bulkWrite(bulkOps);
+
       await clearProductCache();
 
-      return res.json(category);
-    } catch (error) {
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
+      return res.json({
+        modifiedCount: result.modifiedCount,
+        message: "Category sequence updated successfully",
       });
+    } catch (error) {
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
 };

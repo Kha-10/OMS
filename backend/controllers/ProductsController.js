@@ -41,7 +41,6 @@ const ProductsController = {
   store: async (req, res) => {
     try {
       const productData = req.body;
-      console.log("productData",productData);
 
       const existingProduct = await productService.findByName(productData.name);
       if (existingProduct) {
@@ -186,12 +185,10 @@ const ProductsController = {
     }
   },
   duplicate: async (req, res) => {
-    const productId = req.params.id;
-
+    const { ids } = req.body;
+    console.log("ids", ids);
     try {
-      const duplicatedProduct = await productService.duplicateProduct(
-        productId
-      );
+      const duplicatedProduct = await productService.duplicateProduct(ids);
       await clearProductCache();
       return res.json(duplicatedProduct);
     } catch (error) {

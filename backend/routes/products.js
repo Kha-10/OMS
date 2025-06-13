@@ -3,7 +3,7 @@ const ProductsController = require("../controllers/ProductsController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
-const validatePhotoUpload = require ("../middlewares/validatePhotoUpload")
+const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
@@ -12,6 +12,16 @@ const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.get("", ProductsController.index);
+
+router.post(
+  "/duplicate",
+  body("ids")
+    .isArray({ min: 1 })
+    .withMessage("Product IDs must be a non-empty array"),
+  // RoleMiddleware(["tenant", "superadmin"]),
+  handleErrorMessage,
+  ProductsController.duplicate
+);
 
 router.post(
   "",
@@ -48,10 +58,7 @@ router.patch(
 
 router.post(
   "/:id/upload",
-  [
-    upload.array("photo"),
-    validatePhotoUpload
-  ],
+  [upload.array("photo"), validatePhotoUpload],
   // RoleMiddleware(["admin", "superadmin"]),
   handleErrorMessage,
   ProductsController.upload

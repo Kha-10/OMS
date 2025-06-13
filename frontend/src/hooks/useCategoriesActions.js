@@ -19,6 +19,7 @@ const updateProductVisibility = async (id, visibility) => {
 };
 
 const updateSequenceProducts = async (updatedCategories) => {
+  console.log(updatedCategories);
   const res = await axios.patch(`/api/categories`, updatedCategories);
   return res.data;
 };

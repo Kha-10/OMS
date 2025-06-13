@@ -3,11 +3,6 @@ const CategoriesController = require("../controllers/CategoriesController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
-const validatePhotoUpload = require ("../middlewares/validatePhotoUpload")
-const multer = require("multer");
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
 const router = express.Router();
 
@@ -32,6 +27,18 @@ router.delete(
   "/:id",
   // RoleMiddleware(["admin", "superadmin"]),
   CategoriesController.destroy
+);
+
+router.patch(
+  "/",
+  [
+    body("name").notEmpty(),
+    body("categories")
+      .isArray({ min: 1 })
+      .withMessage("Category must be a non-empty array"),
+  ],
+  // RoleMiddleware(["admin", "superadmin"]),
+  CategoriesController.updateSequence
 );
 
 router.patch(
