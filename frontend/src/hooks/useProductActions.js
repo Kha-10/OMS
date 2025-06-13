@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { successToast, errorToast } from "@/helper/showToast";
 
 const duplicateProducts = async (id) => {
   const res = await axios.post(`/api/products/${id}/duplicate`);
@@ -84,8 +85,9 @@ const useProductActions = (onSelectProducts) => {
         onSelectOrders([]);
         queryClient.invalidateQueries(["products"]);
       } else {
-        onSingleDeleteSuccess?.();
         successToast("Product deleted successfully");
+        queryClient.invalidateQueries(["products"]);
+        onSelectProducts([]);
       }
     },
     onError: (error) => {

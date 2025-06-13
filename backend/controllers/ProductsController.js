@@ -41,6 +41,7 @@ const ProductsController = {
   store: async (req, res) => {
     try {
       const productData = req.body;
+      console.log("productData",productData);
 
       const existingProduct = await productService.findByName(productData.name);
       if (existingProduct) {
@@ -92,84 +93,48 @@ const ProductsController = {
   },
   destroy: async (req, res) => {
     try {
-      const productId = req.params.id;
+      const { id } = req.params;
 
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
-        return res.status(400).json({ msg: "Invalid ID" });
+      const result = await productService.deleteProducts([id]);
+
+      if (result.invalidIds.length > 0) {
+        return res.status(400).json({ msg: "Invalid product ID" });
       }
 
-      const deletedProduct = await Product.findByIdAndDelete(productId);
-      if (!deletedProduct) {
+      if (result.deletedCount === 0) {
         return res.status(404).json({ msg: "Product not found" });
       }
 
-      await Category.updateMany(
-        { products: productId },
-        { $pull: { products: productId } }
-      );
-
-      await Order.updateMany(
-        { "items.productId": productId },
-        {
-          $set: {
-            "items.$[elem].productId": null,
-            "items.$[elem]._id": null,
-          },
-        },
-        {
-          arrayFilters: [{ "elem.productId": productId }],
-        }
-      );
-
-      await clearProductCache();
-
-      return res.json(deletedProduct);
+      return res.json({ msg: "Product deleted successfully" });
     } catch (error) {
-      console.error("Error deleting product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error in destroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
-      const invalidIds = ids.filter(
-        (id) => !mongoose.Types.ObjectId.isValid(id)
-      );
-      if (invalidIds.length > 0) {
+
+      const result = await productService.deleteProducts(ids);
+
+      if (result.invalidIds.length > 0) {
         return res.status(400).json({
           msg: "Some IDs are invalid",
-          invalidIds,
+          invalidIds: result.invalidIds,
         });
       }
-      const deletedProduct = await productService.removeProduct(ids);
-      if (!deletedProduct) {
-        return res.status(404).json({ msg: "Product not found" });
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ msg: "No products found" });
       }
 
-      await Category.updateMany(
-        { products: productId },
-        { $pull: { products: productId } }
-      );
-
-      await Order.updateMany(
-        { "items.productId": productId },
-        {
-          $set: {
-            "items.$[elem].productId": null,
-            "items.$[elem]._id": null,
-          },
-        },
-        {
-          arrayFilters: [{ "elem.productId": productId }],
-        }
-      );
-
-      await clearProductCache();
-
-      return res.json(deletedProduct);
+      return res.json({
+        msg: "Products deleted successfully",
+        deletedCount: result.deletedCount,
+      });
     } catch (error) {
-      console.error("Error deleting product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error in bulkDestroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   update: async (req, res) => {

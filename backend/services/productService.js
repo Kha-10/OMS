@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const redisClient = require("../config/redisClient");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
+const Order = require("../models/Order");
 const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
 const {
   awsRemove,
@@ -88,10 +89,10 @@ const generateCacheKey = (queryParams) => {
 const findProducts = async (queryParams) => {
   const cacheKey = generateCacheKey(queryParams);
   let cachedProducts = await getCachedProducts(cacheKey);
-  console.log("cachedProducts",cachedProducts);
+  console.log("cachedProducts", cachedProducts);
   if (!cachedProducts) {
     cachedProducts = await fetchProductsFromDB(queryParams);
-    console.log("db",cachedProducts);
+    console.log("db", cachedProducts);
     await cacheProducts(cacheKey, cachedProducts);
   }
   return cachedProducts;
@@ -144,34 +145,98 @@ const findProductById = async (id) => {
 };
 
 // Delete
-const removeProduct = async (productId) => {
+// const removeProduct = async (productId) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const product = await Product.findById(productId).session(session);
+//     if (!product) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return null;
+//     }
+
+//     // Delete product
+//     await Product.findByIdAndDelete(productId).session(session);
+
+//     // Remove images from AWS if present
+//     if (product.photo?.length > 0) {
+//       await awsRemove(product.photo);
+//       await invalidateCloudFrontCache(product.photo);
+//     }
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     // Clear cache
+//     await clearProductCache();
+
+//     return product;
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     throw error;
+//   }
+// };
+const deleteProducts = async (ids) => {
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    return { deletedCount: 0, invalidIds };
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const product = await Product.findById(productId).session(session);
-    if (!product) {
+    const products = await Product.find({ _id: { $in: ids } }).session(session);
+
+    if (products.length === 0) {
       await session.abortTransaction();
       session.endSession();
-      return null;
+      return { deletedCount: 0, invalidIds: [] };
     }
 
-    // Delete product
-    await Product.findByIdAndDelete(productId).session(session);
+    const photosToDelete = products.flatMap((product) => product.photo || []);
 
-    // Remove images from AWS if present
-    if (product.photo?.length > 0) {
-      await awsRemove(product.photo);
-      await invalidateCloudFrontCache(product.photo);
-    }
+    await Product.deleteMany({ _id: { $in: ids } }).session(session);
+
+    await Promise.all([
+      Category.updateMany(
+        { products: { $in: ids } },
+        { $pull: { products: { $in: ids } } }
+      ).session(session),
+
+      Order.updateMany(
+        { "items.productId": { $in: ids } },
+        {
+          $set: {
+            "items.$[elem].productId": null,
+            "items.$[elem]._id": null,
+          },
+        },
+        {
+          arrayFilters: [{ "elem.productId": { $in: ids } }],
+          session,
+        }
+      ),
+    ]);
 
     await session.commitTransaction();
     session.endSession();
 
-    // Clear cache
+    // AWS removal and cache clearing outside the transaction
+    if (photosToDelete.length > 0) {
+      await awsRemove(photosToDelete);
+      await invalidateCloudFrontCache(photosToDelete);
+    }
+
     await clearProductCache();
 
-    return product;
+    return {
+      deletedCount: products.length,
+      invalidIds: [],
+    };
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -322,7 +387,8 @@ module.exports = {
   validateCategoryIds,
   createProduct,
   findProductById,
-  removeProduct,
+  // removeProduct,
+  deleteProducts,
   updateProduct,
   updateCategories,
   duplicateProduct,

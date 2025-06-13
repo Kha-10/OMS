@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 // import InitialLoading from "@/components/InitialLoading";
 // import ErrorMessage from "@/components/ErrorMessages";
+import { ToastContainer } from "react-toastify";
 import useProducts from "@/hooks/useProducts";
 
 export default function ProductsPage() {
@@ -126,6 +127,7 @@ export default function ProductsPage() {
         setSearchParams={setSearchParams}
         clearAllFilters={clearAllFilters}
       />
+      <ToastContainer />
     </div>
   );
 }

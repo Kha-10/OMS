@@ -13,6 +13,7 @@ export const showToast = (toastId, message, type = "success") => {
 };
 
 export const successToast = (message) => {
+  console.log('gg');
   toast.success(message, {
     position: "top-center",
     autoClose: 3000,
