@@ -7,8 +7,19 @@ const addCategory = async (category) => {
   return data; // Assuming backend returns `{ _id, name }`
 };
 
-const deleteProducts = async (id) => {
+// const deleteProducts = async (id) => {
+//   const res = await axios.delete(`/api/categories/${id}`);
+//   return res.data;
+// };
+const deleteSingleCategory = async (id) => {
   const res = await axios.delete(`/api/categories/${id}`);
+  return res.data;
+};
+
+const bulkDeleteCateogries = async (categoryIds) => {
+  const res = await axios.delete("/api/categories/bulk", {
+    data: { ids: categoryIds },
+  });
   return res.data;
 };
 
@@ -67,19 +78,53 @@ const useCategoriesActions = (
     },
   });
 
+  // const deleteMutation = useMutation({
+  //   mutationFn: async (selectedCategories) => {
+  //     const responses = await Promise.all(
+  //       selectedCategories.map((id) => deleteProducts(id))
+  //     );
+  //     return responses;
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries(["categories"]);
+  //     setSelectedCategoriesId([]);
+  //   },
+  //   onError: (error) => {
+  //     console.error("Deleting products failed:", error);
+  //   },
+  // });
+
   const deleteMutation = useMutation({
     mutationFn: async (selectedCategories) => {
-      const responses = await Promise.all(
-        selectedCategories.map((id) => deleteProducts(id))
-      );
-      return responses;
+      if (selectedCategories.length === 0) {
+        throw new Error("No Categories selected");
+      }
+
+      if (selectedCategories.length === 1) {
+        console.log("Deleting single category:", selectedCategories[0]);
+        return await deleteSingleCategory(selectedCategories[0]);
+      } else {
+        console.log("Deleting multiple Categories:", selectedCategories);
+        return await bulkDeleteCateogries(selectedCategories);
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["categories"]);
-      setSelectedCategoriesId([]);
+    onSuccess: (result, variables, context) => {
+      console.log("Delete operation successful:", result);
+
+      if (Array.isArray(variables?.selectedCategories)) {
+        const count = variables.selectedCategories.length;
+        successToast(`Successfully deleted ${count} Categories`);
+        setSelectedCategoriesId([]);
+        queryClient.invalidateQueries(["categories"]);
+      } else {
+        successToast("Categories deleted successfully");
+        queryClient.invalidateQueries(["categories"]);
+        setSelectedCategoriesId([]);
+      }
     },
     onError: (error) => {
-      console.error("Deleting products failed:", error);
+      console.error("Deleting Categories failed:", error);
+      errorToast(error.response.data.message);
     },
   });
 

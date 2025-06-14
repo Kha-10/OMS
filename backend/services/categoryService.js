@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
 const Product = require("../models/Product");
+const clearProductCache = require("../helpers/clearProductCache")
 
 const fetchCategoriesFromDB = async (queryParams) => {
   const page = Number(queryParams.page) || 1;
@@ -74,7 +75,7 @@ const deleteCategories = async (ids) => {
     const categories = await Category.find({ _id: { $in: ids } }).session(
       session
     );
-
+      console.log("categories",categories);
     if (categories.length === 0) {
       await session.abortTransaction();
       session.endSession();

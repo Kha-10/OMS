@@ -122,7 +122,7 @@ const CategoriesController = {
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
-
+      console.log("bulkDestroy", ids);
       const result = await categoryService.deleteCategories(ids);
 
       if (result.invalidIds.length > 0) {
@@ -220,7 +220,7 @@ const CategoriesController = {
         message: "Category visibility updated successfully",
       });
     } catch (error) {
-      console.error("Error updating Category:", error);
+      console.error("Error updating product:", error);
       return res.status(500).json({ msg: "internet server error" });
     }
   },

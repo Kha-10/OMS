@@ -25,9 +25,6 @@ router.post(
   "",
   [
     body("name").notEmpty(),
-    body("categories")
-      .isArray({ min: 1 })
-      .withMessage("Category must be a non-empty array"),
   ],
   // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,

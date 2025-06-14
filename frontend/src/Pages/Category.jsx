@@ -21,6 +21,7 @@ import { Minus } from "lucide-react";
 import useCategories from "@/hooks/useCategories";
 import useCategoriesActions from "@/hooks/useCategoriesActions";
 import { useSearchParams } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import { Link } from "react-router-dom";
 
 export default function CategoryPage() {
@@ -294,6 +295,7 @@ export default function CategoryPage() {
         onOpenChange={setIsSequenceDialogOpen}
         categories={categories}
       />
+       <ToastContainer />
     </div>
   );
 }
