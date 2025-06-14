@@ -209,7 +209,7 @@ const deleteProducts = async (ids) => {
   }
 };
 
-const updateProduct = async (id, updateData, session) => {
+const updateProduct = async (id, updateData) => {
   const { images, deletedImages } = updateData;
 
   const formattedDeletedImages = (deletedImages || [])
@@ -235,18 +235,12 @@ const updateProduct = async (id, updateData, session) => {
 
   const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
     new: true,
-    session,
   });
 
   return updatedProduct;
 };
 
-const updateCategories = async (
-  existingProduct,
-  newCategoryIds,
-  id,
-  session
-) => {
+const updateCategories = async (existingProduct, newCategoryIds, id) => {
   const oldCategoryIds = (existingProduct.categories || []).map((c) =>
     c.toString()
   );
@@ -265,8 +259,7 @@ const updateCategories = async (
     ops.push(
       Category.updateMany(
         { _id: { $in: categoriesToRemove } },
-        { $pull: { products: id } },
-        { session }
+        { $pull: { products: id } }
       )
     );
   }
@@ -275,8 +268,7 @@ const updateCategories = async (
     ops.push(
       Category.updateMany(
         { _id: { $in: categoriesToAdd } },
-        { $addToSet: { products: id } },
-        { session }
+        { $addToSet: { products: id } }
       )
     );
   }
