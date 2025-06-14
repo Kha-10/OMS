@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { successToast, errorToast } from "@/helper/showToast";
 
 const addCategory = async (category) => {
   const { data } = await axios.post("/api/categories", category);
@@ -11,15 +12,15 @@ const deleteProducts = async (id) => {
   return res.data;
 };
 
-const updateProductVisibility = async (id, visibility) => {
-  const res = await axios.patch(`/api/categories/${id}`, {
+const updateCategoryVisibility = async (selectedCategoriesId, visibility) => {
+  const res = await axios.post(`/api/categories/visibility`, {
+    ids: selectedCategoriesId,
     visibility,
   });
   return res.data;
 };
 
 const updateSequenceProducts = async (updatedCategories) => {
-  console.log(updatedCategories);
   const res = await axios.patch(`/api/categories`, updatedCategories);
   return res.data;
 };
@@ -84,22 +85,29 @@ const useCategoriesActions = (
 
   const updateVisibilityMutation = useMutation({
     mutationFn: async ({ selectedCategoriesId, visibility }) => {
-      const responses = await Promise.all(
-        selectedCategoriesId.map((id) =>
-          updateProductVisibility(
-            id,
-            visibility === "visible" ? "hidden" : "visible"
-          )
-        )
+      if (selectedCategoriesId.length === 0) {
+        throw new Error("No categories selected");
+      }
+
+      console.log("Updating categories visibility :", selectedCategoriesId);
+      return await updateCategoryVisibility(
+        selectedCategoriesId,
+        visibility === "visible" ? "hidden" : "visible"
       );
-      return responses;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["categories"]);
-      setSelectedCategoriesId([]);
+    onSuccess: (result, variables, context) => {
+      console.log("update visibilty operation successful:", result);
+
+      if (Array.isArray(variables?.selectedCategoriesId)) {
+        const count = variables.selectedCategoriesId.length;
+        successToast(`Successfully updated Visibility of ${count} categories`);
+        setSelectedCategoriesId([]);
+        queryClient.invalidateQueries(["categories"]);
+      }
     },
-    onError: (error, { visibility }) => {
-      console.error(`Updating visibility to '${visibility}' failed:`, error);
+    onError: (error) => {
+      console.error("upadtin visibility categories failed:", error);
+      errorToast(error.response.data.message);
     },
   });
 

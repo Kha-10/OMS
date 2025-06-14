@@ -101,32 +101,48 @@ const CategoriesController = {
   },
   destroy: async (req, res) => {
     try {
-      let id = req.params.id;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid id" });
+      const { id } = req.params;
+
+      const result = await categoryService.deleteCategories([id]);
+
+      if (result.invalidIds.length > 0) {
+        return res.status(400).json({ msg: "Invalid category ID" });
       }
-      let category = await Category.findByIdAndDelete(id);
-      if (!category) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "category not found",
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ msg: "Category not found" });
+      }
+
+      return res.json({ msg: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Error in destroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
+    }
+  },
+  bulkDestroy: async (req, res) => {
+    try {
+      const { ids } = req.body;
+
+      const result = await categoryService.deleteCategories(ids);
+
+      if (result.invalidIds.length > 0) {
+        return res.status(400).json({
+          msg: "Some IDs are invalid",
+          invalidIds: result.invalidIds,
         });
       }
 
-      await Product.updateMany(
-        { categories: id },
-        { $pull: { categories: id } }
-      );
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ msg: "No categories found" });
+      }
 
-      await clearProductCache();
-      // await redisClient.del("products:*");
-
-      return res.json(category);
-    } catch (error) {
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internrt Server Error",
+      return res.json({
+        msg: "Categories deleted successfully",
+        deletedCount: result.deletedCount,
       });
+    } catch (error) {
+      console.error("Error in bulkDestroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   update: async (req, res) => {
@@ -181,38 +197,33 @@ const CategoriesController = {
       });
     }
   },
-  // updateSequence: async (req, res) => {
-  //   try {
-  //     const categories = req.body;
-  //     const validCategories = categories.filter((c) => c._id);
+  updateVisibility: async (req, res) => {
+    const { ids, visibility } = req.body;
+    const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ msg: "Invalid category ids" });
+    }
+    try {
+      const bulkOps = ids.map((id) => ({
+        updateOne: {
+          filter: { _id: id },
+          update: { $set: { visibility: visibility } },
+        },
+      }));
 
-  //     const category = await Promise.all(
-  //       validCategories.map((c, index) =>
-  //         Category.findByIdAndUpdate(
-  //           c._id,
-  //           { orderIndex: index },
-  //           { new: true }
-  //         )
-  //       )
-  //     );
+      const result = await Category.bulkWrite(bulkOps);
 
-  //     if (!category) {
-  //       return handler.handleError(res, {
-  //         status: 404,
-  //         message: "category not found",
-  //       });
-  //     }
+      await clearProductCache();
 
-  //     await clearProductCache();
-
-  //     return res.json(category);
-  //   } catch (error) {
-  //     return handler.handleError(res, {
-  //       status: 500,
-  //       message: "Internet Server Error",
-  //     });
-  //   }
-  // },
+      return res.json({
+        modifiedCount: result.modifiedCount,
+        message: "Category visibility updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating Category:", error);
+      return res.status(500).json({ msg: "internet server error" });
+    }
+  },
   updateSequence: async (req, res) => {
     try {
       const categories = req.body;

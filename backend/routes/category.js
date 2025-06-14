@@ -9,6 +9,19 @@ const router = express.Router();
 router.get("", CategoriesController.index);
 
 router.post(
+  "/visibility",
+  [
+    body("ids")
+      .isArray({ min: 1 })
+      .withMessage("Product IDs must be a non-empty array"),
+    body("visibility").notEmpty(),
+  ],
+  // RoleMiddleware(["tenant", "superadmin"]),
+  handleErrorMessage,
+  CategoriesController.updateVisibility
+);
+
+router.post(
   "",
   [
     body("name").notEmpty(),
@@ -22,6 +35,12 @@ router.post(
 );
 
 router.get("/:id", CategoriesController.show);
+
+router.delete(
+  "/bulk",
+  // RoleMiddleware(["admin", "superadmin"]),
+  CategoriesController.bulkDestroy
+);
 
 router.delete(
   "/:id",
