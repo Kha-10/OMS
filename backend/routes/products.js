@@ -24,6 +24,19 @@ router.post(
 );
 
 router.post(
+  "/visibility",
+  [
+    body("ids")
+      .isArray({ min: 1 })
+      .withMessage("Product IDs must be a non-empty array"),
+    body("visibility").notEmpty(),
+  ],
+  // RoleMiddleware(["tenant", "superadmin"]),
+  handleErrorMessage,
+  ProductsController.updateVisibility
+);
+
+router.post(
   "",
   [
     body("name").notEmpty(),

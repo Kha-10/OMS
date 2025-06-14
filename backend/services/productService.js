@@ -302,51 +302,6 @@ const updateCategories = async (existingProduct, newCategoryIds, id) => {
   await Promise.all(updateOperations);
 };
 
-// Duplicate
-// const duplicateProduct = async (ids) => {
-//   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-//   if (invalidIds.length > 0) {
-//     return { duplicatedCount: 0, invalidIds };
-//   }
-
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
-
-//   try {
-//     const originalProducts = await Product.find({ _id: { $in: ids } }).session(
-//       session
-//     );
-//     if (originalProducts.length === 0) {
-//       await session.abortTransaction();
-//       session.endSession();
-//       return { duplicatedCount: 0, invalidIds: [] };
-//     }
-
-//     let duplicatedImages;
-//     if (originalProducts.photo && originalProducts.photo.length > 0) {
-//       duplicatedImages = await duplicateImages(originalProducts.photo);
-//     }
-
-//     const productData = originalProducts.toObject();
-//     delete productData._id;
-//     delete productData.createdAt;
-//     delete productData.updatedAt;
-
-//     productData.photo = duplicatedImages;
-//     productData.name = `${productData.name} (Copy)`;
-
-//     const [newProduct] = await Product.create([productData], { session });
-
-//     await session.commitTransaction();
-//     session.endSession();
-//     await clearProductCache();
-//     return newProduct;
-//   } catch (error) {
-//     await session.abortTransaction();
-//     session.endSession();
-//     throw error;
-//   }
-// };
 const duplicateProduct = async (ids) => {
   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
@@ -406,7 +361,6 @@ const duplicateProduct = async (ids) => {
   }
 };
 
-
 module.exports = {
   findProducts,
   enhanceProductImages,
@@ -414,7 +368,6 @@ module.exports = {
   validateCategoryIds,
   createProduct,
   findProductById,
-  // removeProduct,
   deleteProducts,
   updateProduct,
   updateCategories,

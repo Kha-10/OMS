@@ -21,8 +21,9 @@ const bulkDeleteProducts = async (productIds) => {
   return res.data;
 };
 
-const updateProductVisibility = async (id, visibility) => {
-  const res = await axios.patch(`/api/products/${id}`, {
+const updateProductVisibility = async (productIds, visibility) => {
+  const res = await axios.post(`/api/products/visibility`, {
+    ids: productIds,
     visibility,
   });
   return res.data;
@@ -32,12 +33,6 @@ const useProductActions = (onSelectProducts) => {
   const queryClient = useQueryClient();
 
   const duplicateMutation = useMutation({
-    // mutationFn: async (selectedProducts) => {
-    //   const responses = await Promise.all(
-    //     selectedProducts.map((id) => duplicateProducts(id))
-    //   );
-    //   return responses;
-    // },
     mutationFn: async (selectedProducts) => {
       if (selectedProducts.length === 0) {
         throw new Error("No products selected");
@@ -52,7 +47,7 @@ const useProductActions = (onSelectProducts) => {
       if (Array.isArray(variables?.selectedProducts)) {
         const count = variables.selectedProducts.length;
         successToast(`Successfully Duplicated ${count} products`);
-        onSelectOrders([]);
+        onSelectProducts([]);
         queryClient.invalidateQueries(["products"]);
       } else {
         successToast("Product Duplicated successfully");
@@ -85,7 +80,7 @@ const useProductActions = (onSelectProducts) => {
       if (Array.isArray(variables?.selectedProducts)) {
         const count = variables.selectedProducts.length;
         successToast(`Successfully deleted ${count} products`);
-        onSelectOrders([]);
+        onSelectProducts([]);
         queryClient.invalidateQueries(["products"]);
       } else {
         successToast("Product deleted successfully");
@@ -100,18 +95,40 @@ const useProductActions = (onSelectProducts) => {
   });
 
   const updateVisibilityMutation = useMutation({
+    // mutationFn: async ({ selectedProducts, visibility }) => {
+    //   const responses = await Promise.all(
+    //     selectedProducts.map((id) => updateProductVisibility(id, visibility))
+    //   );
+    //   return responses;
+    // },
+    // onSuccess: () => {
+    //   queryClient.invalidateQueries(["products"]);
+    //   onSelectProducts([]);
+    // },
+    // onError: (error, { visibility }) => {
+    //   console.error(`Updating visibility to '${visibility}' failed:`, error);
+    // },
     mutationFn: async ({ selectedProducts, visibility }) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) => updateProductVisibility(id, visibility))
-      );
-      return responses;
+      if (selectedProducts.length === 0) {
+        throw new Error("No products selected");
+      }
+
+      console.log("Updating product visibility :", selectedProducts);
+      return await updateProductVisibility(selectedProducts, visibility);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
-      onSelectProducts([]);
+    onSuccess: (result, variables, context) => {
+      console.log("Delete operation successful:", result);
+
+      if (Array.isArray(variables?.selectedProducts)) {
+        const count = variables.selectedProducts.length;
+        successToast(`Successfully updated Visibility of ${count} products`);
+        onSelectProducts([]);
+        queryClient.invalidateQueries(["products"]);
+      }
     },
-    onError: (error, { visibility }) => {
-      console.error(`Updating visibility to '${visibility}' failed:`, error);
+    onError: (error) => {
+      console.error("Deleting products failed:", error);
+      errorToast(error.response.data.message);
     },
   });
 

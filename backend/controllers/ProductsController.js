@@ -164,6 +164,33 @@ const ProductsController = {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
+  updateVisibility: async (req, res) => {
+    const { ids, visibility } = req.body;
+    const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ msg: "Invalid products ids" });
+    }
+    try {
+      const bulkOps = ids.map((id) => ({
+        updateOne: {
+          filter: { _id: id },
+          update: { $set: { visibility: visibility } },
+        },
+      }));
+
+      const result = await Product.bulkWrite(bulkOps);
+
+      await clearProductCache();
+
+      return res.json({
+        modifiedCount: result.modifiedCount,
+        message: "Product visibility updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      return res.status(500).json({ msg: "internet server error" });
+    }
+  },
   upload: async (req, res) => {
     try {
       console.log("REQ", req.randomImageNames);
