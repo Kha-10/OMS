@@ -209,99 +209,82 @@ const deleteProducts = async (ids) => {
   }
 };
 
-// Update
-const updateProduct = async (id, updateData) => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error("Invalid id");
+const updateProduct = async (id, updateData, session) => {
+  const { images, deletedImages } = updateData;
+
+  const formattedDeletedImages = (deletedImages || [])
+    .map(extractFilename)
+    .filter(Boolean);
+
+  const formattedImages = (images || []).map(extractFilename).filter(Boolean);
+
+  if (formattedDeletedImages.length > 0) {
+    await awsRemove(formattedDeletedImages);
+    await invalidateCloudFrontCache(formattedDeletedImages);
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const updateFields = {
+    ...updateData,
+    ...(images && {
+      photo: formattedImages,
+      imgUrls: formattedImages.map(
+        (filename) => `https://d1pgjvyfhid4er.cloudfront.net/${filename}`
+      ),
+    }),
+  };
 
-  try {
-    let product = await Product.findById(id).session(session);
-    if (!product) {
-      await session.abortTransaction();
-      session.endSession();
-      throw new Error("Product not found");
-    }
+  const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
+    new: true,
+    session,
+  });
 
-    // Process images
-    const { images, deletedImages } = updateData;
-    const formattedDeletedImages = (deletedImages || [])
-      .map(extractFilename)
-      .filter(Boolean);
-    const formattedImages = (images || []).map(extractFilename).filter(Boolean);
-
-    // Remove deleted images from S3 and invalidate cache
-    if (formattedDeletedImages.length > 0) {
-      await awsRemove(formattedDeletedImages);
-      await invalidateCloudFrontCache(formattedDeletedImages);
-    }
-
-    // Update product fields
-    product = await Product.findByIdAndUpdate(
-      id,
-      {
-        ...updateData,
-        ...(images && {
-          photo: formattedImages,
-          imgUrls: formattedImages.map(
-            (filename) => `https://d1pgjvyfhid4er.cloudfront.net/${filename}`
-          ),
-        }),
-      },
-      { new: true, session }
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    await clearProductCache();
-    return product;
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
+  return updatedProduct;
 };
 
-// Update categories in a single operation
-const updateCategories = async (existingProduct, newCategoryIds, id) => {
-  const oldCategoryIds = existingProduct.categories || [];
+const updateCategories = async (
+  existingProduct,
+  newCategoryIds,
+  id,
+  session
+) => {
+  const oldCategoryIds = (existingProduct.categories || []).map((c) =>
+    c.toString()
+  );
 
-  // Categories to remove (exist in old but not in new)
   const categoriesToRemove = oldCategoryIds.filter(
-    (catId) => !newCategoryIds.includes(catId.toString())
+    (catId) => !newCategoryIds.includes(catId)
   );
 
-  // Categories to add (exist in new but not in old)
   const categoriesToAdd = newCategoryIds.filter(
-    (catId) => !oldCategoryIds.includes(catId.toString())
+    (catId) => !oldCategoryIds.includes(catId)
   );
 
-  // Only update categories if necessary
-  const updateOperations = [];
+  const ops = [];
+
   if (categoriesToRemove.length > 0) {
-    updateOperations.push(
+    ops.push(
       Category.updateMany(
         { _id: { $in: categoriesToRemove } },
-        { $pull: { products: id } }
+        { $pull: { products: id } },
+        { session }
       )
     );
   }
+
   if (categoriesToAdd.length > 0) {
-    updateOperations.push(
+    ops.push(
       Category.updateMany(
         { _id: { $in: categoriesToAdd } },
-        { $addToSet: { products: id } }
+        { $addToSet: { products: id } },
+        { session }
       )
     );
   }
 
-  await Promise.all(updateOperations);
+  await Promise.all(ops);
 };
 
+// Duplicate
 const duplicateProduct = async (ids) => {
   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
@@ -314,7 +297,9 @@ const duplicateProduct = async (ids) => {
   session.startTransaction();
 
   try {
-    const originalProducts = await Product.find({ _id: { $in: validIds } }).session(session);
+    const originalProducts = await Product.find({
+      _id: { $in: validIds },
+    }).session(session);
     if (originalProducts.length === 0) {
       await session.abortTransaction();
       return { duplicatedCount: 0, invalidIds };
@@ -343,7 +328,9 @@ const duplicateProduct = async (ids) => {
       duplicatedProducts.push(duplicated);
     }
 
-    const newProducts = await Product.insertMany(duplicatedProducts, { session });
+    const newProducts = await Product.insertMany(duplicatedProducts, {
+      session,
+    });
 
     await session.commitTransaction();
     await clearProductCache();

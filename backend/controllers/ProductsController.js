@@ -136,32 +136,79 @@ const ProductsController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
+  // update: async (req, res) => {
+  //   const id = req.params.id;
+
+  //   try {
+  //     const newCategoryIds = req.body.categories || [];
+  //     if (!Array.isArray(newCategoryIds)) {
+  //       return res.status(400).json({ msg: "Invalid categories format" });
+  //     }
+
+  //     // Get existing product with categories
+  //     const existingProduct = await Product.findById(id);
+  //     if (!existingProduct) {
+  //       return res.status(404).json({ msg: "Product not found" });
+  //     }
+
+  //     await productService.updateCategories(
+  //       existingProduct,
+  //       newCategoryIds,
+  //       id
+  //     );
+  //     const updatedProduct = await productService.updateProduct(id, req.body);
+  //     await clearProductCache();
+  //     return res.json(updatedProduct);
+  //   } catch (error) {
+  //     console.error("Error updating product:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   update: async (req, res) => {
     const id = req.params.id;
 
-    try {
-      const newCategoryIds = req.body.categories || [];
-      if (!Array.isArray(newCategoryIds)) {
-        return res.status(400).json({ msg: "Invalid categories format" });
-      }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ msg: "Invalid product ID" });
+    }
 
-      // Get existing product with categories
-      const existingProduct = await Product.findById(id);
+    const newCategoryIds = req.body.categories || [];
+    if (!Array.isArray(newCategoryIds)) {
+      return res.status(400).json({ msg: "Invalid categories format" });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const existingProduct = await Product.findById(id).session(session);
       if (!existingProduct) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({ msg: "Product not found" });
       }
 
       await productService.updateCategories(
         existingProduct,
         newCategoryIds,
-        id
+        id,
+        session
       );
-      const updatedProduct = await productService.updateProduct(id, req.body);
+      const updatedProduct = await productService.updateProduct(
+        id,
+        req.body,
+        session
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
       await clearProductCache();
       return res.json(updatedProduct);
     } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
       console.error("Error updating product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   updateVisibility: async (req, res) => {
