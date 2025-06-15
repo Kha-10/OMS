@@ -29,7 +29,7 @@ const CategoriesController = {
 
       return res.json(response);
     } catch (error) {
-      return handler.handleError(res, error);
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
   store: async (req, res) => {
@@ -39,10 +39,7 @@ const CategoriesController = {
       const existingCategory = await Category.findOne({ name });
 
       if (existingCategory) {
-        return handler.handleError(res, {
-          status: 409,
-          message: "Category name already exists",
-        });
+        return res.status(409).json({ msg: "Category name already exists" });
       }
 
       const lastCategory = await Category.findOne().sort({ orderIndex: -1 });
@@ -69,20 +66,14 @@ const CategoriesController = {
       return res.json(category);
     } catch (error) {
       console.error("Error creating category:", error);
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server error",
-      });
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
   show: async (req, res) => {
     try {
       let id = req.params.id;
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return handler.handleResponse(res, {
-          status: 400,
-          message: "Invalid id",
-        });
+        return res.status(400).json({ msg: "Invalid id" });
       }
       let category = await Category.findById(id).populate("products");
       if (!category) {
@@ -93,10 +84,7 @@ const CategoriesController = {
       }
       return res.json(category);
     } catch (error) {
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
-      });
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
   destroy: async (req, res) => {
@@ -149,18 +137,12 @@ const CategoriesController = {
     try {
       let id = req.params.id;
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "Invalid id",
-        });
+        return res.status(400).json({ msg: "invalid id" });
       }
 
       let newProductIds = req.body.products || [];
       if (!Array.isArray(newProductIds)) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "Invalid products format",
-        });
+        return res.status(400).json({ msg: "invalid product id" });
       }
 
       newProductIds = newProductIds.map((p) => p._id);
@@ -168,10 +150,7 @@ const CategoriesController = {
       // Get existing product with categories
       const existingCategory = await Category.findById(id);
       if (!existingCategory) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "Category not found",
-        });
+        return res.status(404).json({ msg: "Category not found" });
       }
 
       await categoryService.updateProducts(existingCategory, newProductIds, id);
@@ -179,22 +158,13 @@ const CategoriesController = {
       let category = await Category.findByIdAndUpdate(id, {
         ...req.body,
       });
-      if (!category) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "category not found",
-        });
-      }
 
       await clearProductCache();
       // await redisClient.del("products:*");
 
       return res.json(category);
     } catch (error) {
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
-      });
+      return res.status(500).json({ msg: "Internet Server Error" });
     }
   },
   updateVisibility: async (req, res) => {
@@ -228,19 +198,9 @@ const CategoriesController = {
     try {
       const categories = req.body;
 
-      if (!Array.isArray(categories) || categories.length === 0) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "Invalid or empty category list.",
-        });
-      }
-
       const validCategories = categories.filter((c) => c._id);
       if (validCategories.length === 0) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "No valid category IDs found.",
-        });
+        return res.status(400).json({ msg: "Invalid or empty category list." });
       }
 
       const bulkOps = validCategories.map((c, index) => ({

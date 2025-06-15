@@ -42,6 +42,65 @@ const findCustomers = async (queryParams) => {
   return categoriesData;
 };
 
+// Delete
+const deleteCustomers = async (ids) => {
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    return { deletedCount: 0, invalidIds };
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const customers = await Customer.find({ _id: { $in: ids } }).session(
+      session
+    );
+
+    if (customers.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return { deletedCount: 0, invalidIds: [] };
+    }
+
+    await Customer.deleteMany({ _id: { $in: ids } }).session(session);
+
+    // await Promise.all([
+    //   Category.updateMany(
+    //     { products: { $in: ids } },
+    //     { $pull: { products: { $in: ids } } }
+    //   ).session(session),
+
+    //   Order.updateMany(
+    //     { "items.productId": { $in: ids } },
+    //     {
+    //       $set: {
+    //         "items.$[elem].productId": null,
+    //         "items.$[elem]._id": null,
+    //       },
+    //     },
+    //     {
+    //       arrayFilters: [{ "elem.productId": { $in: ids } }],
+    //       session,
+    //     }
+    //   ),
+    // ]);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      deletedCount: customers.length,
+      invalidIds: [],
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 module.exports = {
   findCustomers,
+  deleteCustomers,
 };

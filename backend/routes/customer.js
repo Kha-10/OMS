@@ -3,7 +3,7 @@ const CustomerController = require("../controllers/CustomerController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
-const validatePhotoUpload = require ("../middlewares/validatePhotoUpload")
+const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
@@ -17,9 +17,8 @@ router.post(
   "",
   [
     body("name").notEmpty(),
-    body("categories")
-      .isArray({ min: 1 })
-      .withMessage("Category must be a non-empty array"),
+    body("phoneNumber").notEmpty(),
+    body("address").notEmpty(),
   ],
   // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
@@ -27,6 +26,12 @@ router.post(
 );
 
 router.get("/:id", CustomerController.show);
+
+router.delete(
+  "/bulk",
+  // RoleMiddleware(["admin", "superadmin"]),
+  CustomerController.bulkDestroy
+);
 
 router.delete(
   "/:id",

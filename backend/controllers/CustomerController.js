@@ -25,23 +25,20 @@ const Customercontroller = {
           hasPreviousPage: page > 1,
         },
       };
-
-      return handler.handleResponse(res, { status: 200, message: response });
+      console.log("response", response);
+      return res.json(response);
     } catch (error) {
-      return handler.handleError(res, error);
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
   store: async (req, res) => {
-    const { name, phoneNumber, address,condoName,condoUnit } = req.body;
-
+    const { name, phoneNumber, address, condoName, condoUnit } = req.body;
+    console.log("req.body", req.body);
     try {
       const existingCustomer = await Customer.findOne({ phoneNumber });
 
       if (existingCustomer) {
-        return handler.handleError(res, {
-          status: 409,
-          message: "Customer already exists",
-        });
+        return res.status(409).json({ msg: "Customer already exists" });
       }
 
       const customer = await Customer.create({
@@ -49,93 +46,92 @@ const Customercontroller = {
         phoneNumber,
         address,
         condoName,
-        condoUnit
+        condoUnit,
       });
       return res.json(customer);
     } catch (error) {
       console.error("Error creating category:", error);
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server error",
-      });
+      return res.status(500).json({ msg: "internet server error" });
     }
   },
   show: async (req, res) => {
     try {
       let id = req.params.id;
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "Invalid id",
-        });
+        return res.status(400).json({ msg: "Invalid id" });
       }
 
       let customer = await Customer.findById(id);
       if (!customer) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "Customer not found",
-        });
+        return res.status(404).json({ msg: "Customer not found" });
       }
       return res.json(customer);
     } catch (error) {
       console.log("err", error);
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
-      });
+      return res.status(500).json({ msg: "Internet Server Error" });
     }
   },
   destroy: async (req, res) => {
     try {
-      let id = req.params.id;
-      console.log("GGG", id);
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "Invalid id",
-        });
+      const { id } = req.params;
+
+      const result = await customerService.deleteCustomers([id]);
+
+      if (result.invalidIds.length > 0) {
+        return res.status(400).json({ msg: "Invalid customer ID" });
       }
-      let customer = await Customer.findByIdAndDelete(id);
-      if (!customer) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "Customer not found",
-        });
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ msg: "Customer not found" });
       }
-      return res.json(customer);
+
+      return res.json({ msg: "Customer deleted successfully" });
     } catch (error) {
-      console.log("err", error);
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
+      console.error("Error in destroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
+    }
+  },
+  bulkDestroy: async (req, res) => {
+    try {
+      const { ids } = req.body;
+
+      const result = await customerService.deleteCustomers(ids);
+
+      if (result.invalidIds.length > 0) {
+        return res.status(400).json({
+          msg: "Some IDs are invalid",
+          invalidIds: result.invalidIds,
+        });
+      }
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ msg: "No Customers found" });
+      }
+
+      return res.json({
+        msg: "Customers deleted successfully",
+        deletedCount: result.deletedCount,
       });
+    } catch (error) {
+      console.error("Error in bulkDestroy:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   update: async (req, res) => {
     try {
       let id = req.params.id;
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return handler.handleError(res, {
-          status: 400,
-          message: "Invalid id",
-        });
+        return res.status(400).json({ msg: "Invalid id" });
       }
       let customer = await Customer.findByIdAndUpdate(id, {
         ...req.body,
       });
       if (!customer) {
-        return handler.handleError(res, {
-          status: 404,
-          message: "Customer not found",
-        });
+        return res.status(404).json({ msg: "Customer not found" });
       }
       return res.json(customer);
     } catch (error) {
-      return handler.handleError(res, {
-        status: 500,
-        message: "Internet Server Error",
-      });
+      return res.status(500).json({ msg: "Internet Server Error" });
     }
   },
 };

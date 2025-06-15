@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import axios from "@/helper/axios";
 import debounce from "lodash.debounce";
 import useCustomers from "@/hooks/useCustomers";
+import { ToastContainer } from "react-toastify";
 
 export default function CustomerPage() {
   const [selectedCustomers, setSelectedCustomers] = useState([]);
@@ -67,21 +68,13 @@ export default function CustomerPage() {
     debouncedSearch(e.target.value);
   };
 
-  if (errorMessage)
-    return (
-      <ErrorMessage
-        title={errorMessage.data.message}
-        code={errorMessage.status}
-        action={{
-          label: "Return to Dashboard",
-          to: "/",
-        }}
-      />
-    );
-
   return (
     <div className="p-6 space-y-6">
-      <ProductsHeader header="Customers" buttonText="customers" context="manage" />
+      <ProductsHeader
+        header="Customers"
+        buttonText="customers"
+        context="manage"
+      />
 
       <ProductsToolbar
         text="Search by customer name"
@@ -110,6 +103,7 @@ export default function CustomerPage() {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
+      <ToastContainer />
     </div>
   );
 }
