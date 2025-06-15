@@ -82,6 +82,14 @@ function index() {
           element: tenant ? <Orders /> : <Navigate to={"/sign-in"} />,
         },
         {
+          path: "/addToCart",
+          element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
+        },
+        {
+          path: "/addToCart/:id",
+          element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
+        },
+        {
           path: "/orders/:id",
           element: tenant ? <OrderDetailsPage /> : <Navigate to={"/sign-in"} />,
         },
@@ -89,15 +97,15 @@ function index() {
           path: "/:tennantName/orders/:id",
           element: tenant ? <OrderReceipt /> : <Navigate to={"/sign-in"} />,
         },
-        {
-          path: "/checkout",
-          // element: tenant ? <CheckoutForm /> : <Navigate to={"/sign-in"} />,
-          element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
-        },
-        {
-          path: "/checkout/:id",
-          element: tenant ? <CheckoutForm /> : <Navigate to={"/sign-in"} />,
-        },
+        // {
+        //   path: "/checkout",
+        //   // element: tenant ? <CheckoutForm /> : <Navigate to={"/sign-in"} />,
+        //   element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
+        // },
+        // {
+        //   path: "/checkout/:id",
+        //   element: tenant ? <CheckoutForm /> : <Navigate to={"/sign-in"} />,
+        // },
         {
           path: "/products",
           element: tenant ? <ProductsPage /> : <Navigate to={"/sign-in"} />,
