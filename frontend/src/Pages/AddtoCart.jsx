@@ -1572,7 +1572,7 @@ export default function AddToCart() {
                           <div className="grid grid-cols-1 gap-3">
                             {productsfromDb.map((product) => (
                               <Card
-                                key={product.id}
+                                key={product._id}
                                 className="cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-[1.01] border"
                                 onClick={() => handleProductSelect(product)}
                               >
