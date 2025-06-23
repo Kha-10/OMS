@@ -238,7 +238,7 @@ export function Sidebar({ open, onClose }) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-white transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:w-64",
+          "fixed inset-0 z-50 bg-white min-h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:w-64",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >

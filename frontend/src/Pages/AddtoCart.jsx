@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,112 +68,102 @@ const customerFormSchema = z.object({
 });
 
 const createFormSchema = (product) => {
-  console.log(product);
-  const schemaFields = {
-    quantity: z.number().min(1, "Quantity must be at least 1"),
-  };
-  console.log("schema", schemaFields);
-  if (product.variants.length > 0) {
-    schemaFields["variantId"] = z
-      .string()
-      .min(1, "Product variant is required");
-  }
+  return z.object({
+    inventory: z.object({
+      quantity: z.preprocess((val) => {
+        if (val === "" || val === null || val === undefined) {
+          return 0;
+        }
 
-  product.options.forEach((option) => {
-    switch (option.type) {
-      case "Text":
-        schemaFields[option._id] = option.required
-          ? z.string().min(1, `${option.name} is required`)
-          : z.string().optional();
-        break;
+        const parsed = typeof val === "string" ? parseFloat(val) : val;
+        return isNaN(parsed) ? 0 : parsed;
+      }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
+    }),
+    variantId: z.string().min(1, "Product variant is required"),
+    totalPrice: z.number().optional(),
+    options: z.array(
+      z
+        .object({
+          name: z.string(),
+          answers: z
+            .array(z.union([z.string(), z.number()]))
+            .optional()
+            .default([]),
+          prices: z.array(z.number()),
+          quantities: z.array(z.number()).optional(),
+        })
+        .superRefine((data, ctx) => {
+          const optionMeta = product.options.find((o) => o.name === data.name);
 
-      case "Number":
-        schemaFields[option._id] = option.required
-          ? z.coerce.number().min(1, `${option.name} must be at least 1`)
-          : z.coerce.number().optional();
-        break;
+          if (!optionMeta || !optionMeta.required) return;
+          const { type, settings } = optionMeta;
+          const answers = data.answers || [];
+          const answersValid =
+            answers.length > 0 &&
+            answers.every((a) => a !== "" && a !== undefined);
 
-      case "Selection":
-        schemaFields[option._id] = option.required
-          ? z.object({
-              value: z.string().min(1, `${option.name} is required`),
-              quantity: z
-                .number()
-                .min(1, `${option.name} quantity must be at least 1`),
-            })
-          : z
-              .object({
-                value: z.string().min(1),
-                quantity: z.number().min(1),
-              })
-              .optional();
-
-        break;
-
-      case "Checkbox":
-        if (option.required) {
-          let checkboxSchema = z.array(
-            z.object({
-              value: z.string().min(1),
-              quantity: z.number().min(1),
-            })
-          );
-
-          const rules = option.validation || {};
-
-          switch (rules.type) {
-            case "at_least":
-              checkboxSchema = checkboxSchema.min(
-                rules.atLeastMin || 1,
-                `Select at least ${rules.atLeastMin || 1} ${option.name}`
-              );
-              break;
-            case "at_most":
-              checkboxSchema = checkboxSchema.max(
-                rules.atMostMax,
-                `You can select at most ${rules.atMostMax} ${option.name}`
-              );
-              break;
-            case "between":
-              checkboxSchema = checkboxSchema
-                .min(
-                  rules.betweenMin || 1,
-                  `Select at least ${rules.betweenMin || 1} ${option.name}`
-                )
-                .max(
-                  rules.betweenMax || Infinity,
-                  `You can select at most ${rules.betweenMax || "unlimited"} ${
-                    option.name
-                  }`
-                );
-              break;
-            case "not_applicable":
-            default:
-              checkboxSchema = checkboxSchema.min(
-                1,
-                `${option.name} is required`
-              );
+          // Handle Text, Number, Selection types
+          if (type === "Text" || type === "Number" || type === "Selection") {
+            if (!answersValid) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["answers"],
+                message: "Select an option",
+              });
+              return;
+            }
           }
 
-          schemaFields[option._id] = checkboxSchema;
-        } else {
-          schemaFields[option._id] = z
-            .array(
-              z.object({
-                value: z.string().min(1),
-                quantity: z.number().min(1),
-              })
-            )
-            .optional();
-        }
-        break;
+          if (type === "Checkbox") {
+            // Skip validation if inputType is "na"
+            if (settings?.inputType === "not_applicable") return;
 
-      default:
-        schemaFields[option._id] = z.any().optional();
-    }
+            const selectedCount = answers.length;
+
+            // Check if required but no selection
+            if (selectedCount === 0) {
+              // Show specific error based on inputType if available
+              if (settings?.inputType === "min") {
+                const minRequired = settings.min || 1;
+                if (selectedCount < minRequired) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["answers"],
+                    message: `Select at least ${minRequired}`,
+                  });
+                }
+              } else if (settings?.inputType === "max") {
+                const maxAllowed = settings.max || 1;
+                if (selectedCount > maxAllowed) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["answers"],
+                    message: `You can select up to ${maxAllowed}`,
+                  });
+                }
+              } else if (settings?.inputType === "minmax") {
+                const min = settings.min || 1;
+                const max = settings.max || Infinity;
+                if (selectedCount < min || selectedCount > max) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["answers"],
+                    message: `You can select between ${min} and ${max}`,
+                  });
+                }
+              } else {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  path: ["answers"],
+                  message: "Select an option",
+                });
+              }
+              return;
+            }
+          }
+        })
+    ),
   });
-
-  return z.object(schemaFields);
 };
 
 export default function AddToCart() {
@@ -211,115 +201,80 @@ export default function AddToCart() {
     },
   });
 
-  // Update the productForm initialization
+  const defaultValuesFromProduct = (product) => ({
+    inventory: { quantity: 1 },
+    variantId: "",
+    totalPrice: 0,
+    options:
+      product?.options?.map((opt) => ({
+        name: opt.name,
+        answers: [],
+        prices: [],
+        quantities: [],
+      })) || [],
+  });
+
   const productForm = useForm({
     mode: "onSubmit",
-    shouldFocusError: true,
     resolver: selectedProduct
       ? zodResolver(createFormSchema(selectedProduct))
       : undefined,
-    defaultValues: {
-      quantity: 1,
-      variantId: "",
-
-      // set default values for options dynamically
-      ...selectedProduct?.options.reduce((acc, option) => {
-        const hasRealValidation =
-          option.validation &&
-          Object.keys(option.validation).some((key) => key !== "_id");
-
-        if (option.type === "Checkbox") {
-          acc[option._id] = [];
-        } else if (option.type === "Selection") {
-          if (option.required || hasRealValidation) {
-            acc[option._id] = { value: "", quantity: 1 };
-          }
-        } else if (option.type === "Text") {
-          acc[option._id] = "";
-        } else if (option.type === "Number") {
-          acc[option._id] = "";
-        }
-
-        return acc;
-      }, {}),
-    },
+    defaultValues: defaultValuesFromProduct(selectedProduct),
   });
 
   useEffect(() => {
-    if (selectedProduct) {
-      productForm.reset({
-        quantity: 1,
-        variantId: "",
-        ...selectedProduct.options.reduce((acc, option) => {
-          const hasRealValidation =
-            option.validation &&
-            Object.keys(option.validation).some((key) => key !== "_id");
+    selectedProduct?.options?.forEach((opt, index) => {
+      productForm.setValue(`options.${index}.name`, opt.name);
+      productForm.setValue(`options.${index}.answers`, []);
+      productForm.setValue(`options.${index}.prices`, []);
+      productForm.setValue(`options.${index}.quantities`, []);
+    });
+  }, [selectedProduct]);
 
-          if (option.type === "Checkbox") acc[option._id] = [];
-          else if (option.type === "Selection") {
-            if (option.required || hasRealValidation) {
-              acc[option._id] = { value: "", quantity: 1 };
-            }
-          } else if (option.type === "Text") acc[option._id] = "";
-          else if (option.type === "Number") acc[option._id] = "";
-          return acc;
-        }, {}),
-      });
-    }
-  }, [selectedProduct, productForm]);
+  console.log(selectedProduct);
 
   // Add this after productForm is defined
   const watchedQuantity = useWatch({
     control: productForm.control,
-    name: "quantity",
+    name: "inventory.quantity",
   });
 
-  // Calculate price for a specific product configuration
-  const calculateItemPrice = (product, selectedVariants, selectedOptions) => {
-    console.log(product);
-    console.log(selectedVariants);
-    console.log(selectedOptions);
-    let itemPrice = product.price || product.originalPrice || 0;
+  const calculateItemPrice = (product, formValues) => {
+    let baseItemPrice = product.price || product.originalPrice || 0;
 
-    const selectedVariantId =
-      Object.keys(selectedVariants)[0] !== "id"
-        ? Object.keys(selectedVariants)[0]
-        : selectedVariants.id;
-
-    if (selectedVariantId) {
-      const variant = product.variants.find((v) => v._id === selectedVariantId);
-      console.log(variant);
+    // Check variant override price
+    if (formValues.variantId) {
+      const variant = product.variants?.find(
+        (v) => v._id === formValues.variantId
+      );
       if (variant && typeof variant.price === "number") {
-        itemPrice = variant.price;
+        baseItemPrice = variant.price;
       }
     }
 
-    Object.entries(selectedOptions).forEach(([optionId, selectedValue]) => {
-      const option = product.options.find((o) => o._id === optionId);
+    // Calculate total option price (this should NOT be multiplied by inventory quantity)
+    let optionPrice = 0;
+    formValues.options?.forEach((option, i) => {
+      const { answers, prices, quantities } = option;
+      if (!answers || !prices) return;
 
-      if (!option || !option.choices) return;
-
-      if (option.type === "Selection" && !Array.isArray(selectedValue)) {
-        const selected = option.choices.find(
-          (c) => c._id === selectedValue.value
-        );
-        if (selected) {
-          itemPrice += selected.amount * selectedValue.quantity;
-        }
-      } else if (option.type === "Checkbox" && Array.isArray(selectedValue)) {
-        selectedValue.forEach((checkboxItem) => {
-          const matchedChoice = option.choices.find(
-            (c) => c.name === checkboxItem.name
-          );
-
-          if (matchedChoice) {
-            itemPrice += matchedChoice.amount * checkboxItem.quantity;
-          }
+      // Filter out undefined/empty answers before processing
+      answers
+        .filter(
+          (answer) => answer !== undefined && answer !== null && answer !== ""
+        )
+        .forEach((answer, idx) => {
+          const quantity = quantities?.[idx] || 1;
+          const price = prices?.[idx] || 0;
+          optionPrice += price * quantity;
         });
-      }
     });
 
-    return itemPrice;
+    // Add option price to base price, then multiply by inventory quantity
+    const inventoryQuantity = formValues.inventory?.quantity || 1;
+    const totalPrice = baseItemPrice * inventoryQuantity + optionPrice;
+
+    return totalPrice;
   };
 
   // Calculate cart subtotal
@@ -350,36 +305,20 @@ export default function AddToCart() {
     return Math.max(0, total);
   };
 
-  // Watch form changes to update price
   useEffect(() => {
     if (selectedProduct) {
-      const subscription = productForm.watch((data) => {
-        const updatedVariants = {};
-        const updatedOptions = {};
-
-        // Use variantId for selected variant
-        if (data.variantId) {
-          updatedVariants[data.variantId] = true;
-        }
-
-        selectedProduct.options.forEach((option) => {
-          if (data[option._id] !== undefined) {
-            updatedOptions[option._id] = data[option._id];
-          }
-        });
-
-        const itemPrice = calculateItemPrice(
-          selectedProduct,
-          updatedVariants,
-          updatedOptions
-        );
-
-        setCurrentItemPrice(itemPrice);
+      const subscription = productForm.watch((formValues) => {
+        const price = calculateItemPrice(selectedProduct, formValues);
+        setCurrentItemPrice(price);
       });
-      // Initial calculation
-      const itemPrice =
-        selectedProduct.price || selectedProduct.originalPrice || 0;
-      setCurrentItemPrice(itemPrice);
+
+      // Set initial price
+      const price = calculateItemPrice(
+        selectedProduct,
+        productForm.getValues()
+      );
+      setCurrentItemPrice(price);
+
       return () => subscription.unsubscribe();
     }
   }, [selectedProduct, productForm]);
@@ -402,11 +341,10 @@ export default function AddToCart() {
     setOrderNotes(orderNotes.filter((note) => note.id !== id));
   };
 
-  // Add to cart function
   const addToCart = async (formData) => {
     if (!selectedProduct) return;
 
-    // Extract selected variant info
+    // Extract selected variant
     const variant = selectedProduct.variants.find(
       (v) => v._id === formData.variantId
     );
@@ -419,53 +357,57 @@ export default function AddToCart() {
         }
       : {};
 
-    // Extract selected options
+    // Extract selected options from formData.options array
     const selectedOptions = selectedProduct.options
-      .map((option) => {
-        const rawValue = formData[option._id];
-        if (rawValue === undefined) return null;
+      .map((option, index) => {
+        const formOption = formData.options?.[index];
+        if (!formOption) return null;
+
+        const { answers = [], quantities = [], prices = [] } = formOption;
 
         if (option.type === "Text" || option.type === "Number") {
+          if (!answers[0]) return null;
           return {
             id: option._id,
             name: option.name,
             type: option.type,
-            value: rawValue,
+            value: answers[0],
           };
         }
 
         if (option.type === "Selection") {
-          const selectedChoice = option.choices?.find(
-            (c) => c._id === rawValue?.value
-          );
+          const value = answers[0];
+          const quantity = quantities[0] || 1;
+          const price = prices[0] || 0;
 
-          if (!selectedChoice) return null;
+          if (!value) return null;
 
           return {
             id: option._id,
             name: option.name,
             type: option.type,
             value: {
-              value: selectedChoice.name,
-              quantity: rawValue.quantity,
-              price: selectedChoice.amount ?? 0,
+              value,
+              quantity,
+              price,
             },
           };
         }
 
-        if (option.type === "Checkbox" && Array.isArray(rawValue)) {
-          const value = rawValue
-            .map((item) => {
-              const matched = option.choices?.find((c) => c._id === item.value);
-              if (!matched) return null;
-              return {
-                value: matched.name,
-                quantity: item.quantity,
-                price: matched.amount ?? 0,
-              };
-            })
-            .filter(Boolean);
-          console.log(value);
+        if (option.type === "Checkbox") {
+          const value = answers.map((val, i) => {
+            const quantity = quantities[i] || 1;
+            const price = prices[i] || 0;
+
+            return {
+              value: val,
+              quantity,
+              price,
+            };
+          });
+
+          if (value.length === 0) return null;
+
           return {
             id: option._id,
             name: option.name,
@@ -476,9 +418,9 @@ export default function AddToCart() {
 
         return null;
       })
-      .filter(Boolean);
+      .filter(Boolean); // remove nulls
 
-    // Calculate pricing
+    // Pricing calculation
     const basePrice =
       variant?.price ??
       selectedProduct.price ??
@@ -502,7 +444,7 @@ export default function AddToCart() {
       return sum;
     }, 0);
 
-    const quantity = formData.quantity || 1;
+    const quantity = formData.inventory?.quantity || 1;
     const itemPrice = basePrice + optionPrice;
     const totalPrice = itemPrice * quantity;
 
@@ -514,7 +456,7 @@ export default function AddToCart() {
       selectedOptions,
       quantity,
       itemPrice,
-      totalPrice,
+      totalPrice: currentItemPrice,
       product: selectedProduct,
     };
 
@@ -528,7 +470,6 @@ export default function AddToCart() {
 
       setCartButtonAnimation(true);
       setTimeout(() => setCartButtonAnimation(false), 1000);
-
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Failed to add to cart:", error);
@@ -555,7 +496,6 @@ export default function AddToCart() {
     selectedVariant,
     selectedOptions
   ) => {
-    console.log(selectedOptions);
     // Default base price
     let price = product.price || product.originalPrice || 0;
 
@@ -685,7 +625,6 @@ export default function AddToCart() {
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
     setCurrentView("product-config");
-    productForm.reset();
   };
 
   const addPricingAdjustment = (type) => {
@@ -762,293 +701,6 @@ export default function AddToCart() {
     }
   };
 
-  const renderOption = (option) => {
-    switch (option.type) {
-      case "Text":
-        return (
-          <FormField
-            key={option._id}
-            control={productForm.control}
-            name={option._id}
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel className="text-sm font-medium">
-                  {option.name}
-                  {option.required && (
-                    <span className="text-red-500 ml-1">*</span>
-                  )}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder={`Enter ${option.name.toLowerCase()}`}
-                    {...field}
-                    className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-
-      case "Number":
-        return (
-          <FormField
-            key={option._id}
-            control={productForm.control}
-            name={option._id}
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel className="text-sm font-medium">
-                  {option.name}
-                  {option.required && (
-                    <span className="text-red-500 ml-1">*</span>
-                  )}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="1"
-                    // min="1"
-                    {...field}
-                    value={
-                      field.value === undefined || field.value === null
-                        ? ""
-                        : field.value
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      field.onChange(val === "" ? "" : Number(val));
-                    }}
-                    className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-
-      case "Selection":
-        return (
-          <FormField
-            key={option._id}
-            control={productForm.control}
-            name={option._id}
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel className="text-sm font-medium">
-                  {option.name}
-                  {option.required && (
-                    <span className="text-red-500 ml-1">*</span>
-                  )}
-                </FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={(value) => {
-                      field.onChange({ value, quantity: 1 });
-                    }}
-                    value={field.value?.value || ""}
-                    className="grid grid-cols-1 gap-2"
-                  >
-                    {option.choices?.map((choice) => (
-                      <div
-                        key={choice._id}
-                        className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
-                      >
-                        <RadioGroupItem
-                          className="border-[1.5px] text-white border-gray-300 
-                        before:h-2 before:w-2 before:bg-white
-                        data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
-                        data-[state=checked]:before:bg-white"
-                          value={choice._id}
-                          id={`${option._id}-${choice._id}`}
-                        />
-                        <Label
-                          htmlFor={`${option._id}-${choice._id}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          {choice.name}
-                          {choice.amount > 0 && (
-                            <span className="ml-1 text-green-600">
-                              (+${choice.amount.toFixed(2)})
-                            </span>
-                          )}
-                        </Label>
-                        {field.value?.value === choice._id && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const newQuantity = Math.max(
-                                  1,
-                                  (field.value?.quantity || 1) - 1
-                                );
-                                field.onChange({
-                                  value: choice._id,
-                                  quantity: newQuantity,
-                                });
-                              }}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="text-sm font-medium w-8 text-center">
-                              {field.value?.quantity || 1}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const newQuantity =
-                                  (field.value?.quantity || 1) + 1;
-                                field.onChange({
-                                  value: choice._id,
-                                  quantity: newQuantity,
-                                });
-                              }}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-
-      case "Checkbox":
-        return (
-          <FormField
-            key={option._id}
-            control={productForm.control}
-            name={option._id}
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel className="text-sm font-medium">
-                  {option.name}{" "}
-                  {option.required && (
-                    <span className="text-red-500 ml-1">*</span>
-                  )}
-                </FormLabel>
-                <div className="grid grid-cols-1 gap-2">
-                  {option.choices?.map((choice) => {
-                    const currentOptions = field.value || [];
-                    const existingOption = currentOptions.find(
-                      (opt) => opt.value === choice._id
-                    );
-                    const isChecked = !!existingOption;
-
-                    return (
-                      <div
-                        key={choice._id}
-                        className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
-                      >
-                        <Checkbox
-                          className="w-5 h-5 peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
-                          id={`${option._id}-${choice._id}`}
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              field.onChange([
-                                ...currentOptions,
-                                {
-                                  value: choice._id,
-                                  name: choice.name,
-                                  quantity: 1,
-                                },
-                              ]);
-                            } else {
-                              field.onChange(
-                                currentOptions.filter(
-                                  (opt) => opt.value !== choice._id
-                                )
-                              );
-                            }
-                          }}
-                        />
-                        <Label
-                          htmlFor={`${option._id}-${choice._id}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          {choice.name}
-                          {choice.amount > 0 && (
-                            <span className="ml-1 text-green-600">
-                              (+${choice.amount.toFixed(2)})
-                            </span>
-                          )}
-                        </Label>
-                        {isChecked && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const newQuantity = Math.max(
-                                  1,
-                                  existingOption.quantity - 1
-                                );
-                                const updatedOptions = currentOptions.map(
-                                  (opt) =>
-                                    opt.value === choice._id
-                                      ? { ...opt, quantity: newQuantity }
-                                      : opt
-                                );
-                                field.onChange(updatedOptions);
-                              }}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="text-sm font-medium w-8 text-center">
-                              {existingOption.quantity}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const newQuantity = existingOption.quantity + 1;
-                                const updatedOptions = currentOptions.map(
-                                  (opt) =>
-                                    opt.value === choice._id
-                                      ? { ...opt, quantity: newQuantity }
-                                      : opt
-                                );
-                                field.onChange(updatedOptions);
-                              }}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  // Render cart item details
   const renderCartItemDetails = (item) => {
     return (
       <div className="space-y-3">
@@ -1261,9 +913,9 @@ export default function AddToCart() {
     );
   };
 
-  const selectedVariantId = productForm.watch("variantId");
+  const variants = productForm.watch("variantId");
   const selectedVariant = selectedProduct?.variants.find(
-    (v) => v._id === selectedVariantId
+    (v) => v._id === variants
   );
 
   return (
@@ -1931,37 +1583,38 @@ export default function AddToCart() {
                                         <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">
                                           {product.name}
                                         </h3>
-                                        {/* <p className="text-xs text-gray-600 line-clamp-1">
+                                        <p className="text-xs text-gray-600 line-clamp-1">
                                           {product.description}
-                                        </p> */}
+                                        </p>
                                       </div>
                                       <Package className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                                     </div>
-
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-1">
-                                        {product.price &&
-                                          product.originalPrice > 1 && (
-                                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs font-semibold">
-                                              ${product.price}
-                                            </Badge>
-                                          )}
-                                        {product.originalPrice > 1 &&
-                                          product.price && (
-                                            <Badge
-                                              variant="outline"
-                                              className="line-through text-gray-500 text-xs"
-                                            >
-                                              ${product.originalPrice}
-                                            </Badge>
-                                          )}
-                                        {product.price &&
-                                          product.originalPrice < 1 && (
-                                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
-                                              ${product.price}
-                                            </Badge>
-                                          )}
+                                        {product.variants[0].price ? (
+                                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
+                                            ${product.variants[0].price}
+                                          </Badge>
+                                        ) : (
+                                          <>
+                                            {product.price && (
+                                              <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs font-semibold">
+                                                ${product.price}
+                                              </Badge>
+                                            )}
+                                            {product.originalPrice > 1 &&
+                                              product.price && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className="line-through text-gray-500 text-xs"
+                                                >
+                                                  ${product.originalPrice}
+                                                </Badge>
+                                              )}
+                                          </>
+                                        )}
                                       </div>
+
                                       <Button
                                         size="sm"
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
@@ -2000,7 +1653,11 @@ export default function AddToCart() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentView("products")}
+                      onClick={() => {
+                        setCurrentView("products");
+                        setSelectedProduct(null);
+                        productForm.reset();
+                      }}
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Back to Products
@@ -2023,30 +1680,35 @@ export default function AddToCart() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
-                        {selectedProduct.price && (
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-lg px-3 py-1">
-                            ${selectedProduct.price}
+                        {selectedVariant && (
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-lg px-3 py-1">
+                            ${selectedVariant.price.toFixed(2)}
                           </Badge>
                         )}
-                        {selectedProduct.originalPrice > 0 &&
-                          selectedProduct.price && (
-                            <Badge
-                              variant="outline"
-                              className="line-through text-gray-500"
-                            >
-                              ${selectedProduct.originalPrice}
-                            </Badge>
-                          )}
-                        {selectedProduct.originalPrice > 0 &&
-                          !selectedProduct.price && (
-                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-lg px-3 py-1">
-                              ${selectedProduct.originalPrice}
-                            </Badge>
-                          )}
                       </div>
                     </CardHeader>
 
                     <CardContent>
+                      <div className="mb-6">
+                        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {selectedProduct.imgUrls.length > 0 ? (
+                            selectedProduct.imgUrls.map((img) => (
+                              <img
+                                src={img}
+                                alt={selectedProduct.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ))
+                          ) : (
+                            <div className="text-center">
+                              <Package className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">
+                                Product Image
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <Form {...productForm}>
                         <form
                           onSubmit={productForm.handleSubmit(
@@ -2093,10 +1755,10 @@ export default function AddToCart() {
                                                   <RadioGroupItem
                                                     value={variant._id}
                                                     id={`variant-${variant._id}`}
-                                                    className="border-[1.5px] text-white border-gray-300 
-                                                    before:h-2 before:w-2 before:bg-white
-                                                    data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
-                                                    data-[state=checked]:before:bg-white"
+                                                    className="border-[1.5px] text-white border-gray-300
+                                                      before:h-2 before:w-2 before:bg-white
+                                                      data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
+                                                      data-[state=checked]:before:bg-white"
                                                   />
                                                   <Label
                                                     htmlFor={`variant-${variant._id}`}
@@ -2133,7 +1795,536 @@ export default function AddToCart() {
                                     Additional Options
                                   </h3>
                                   <div className="space-y-6">
-                                    {selectedProduct.options.map(renderOption)}
+                                    <FormField
+                                      control={productForm.control}
+                                      name="inventory.quantity"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Quantity</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                              type="number"
+                                              min={1}
+                                              {...field}
+                                              value={
+                                                field.value === undefined ||
+                                                field.value === null
+                                                  ? ""
+                                                  : field.value
+                                              }
+                                              onChange={(e) => {
+                                                const value = e.target.value;
+                                                field.onChange(
+                                                  value === ""
+                                                    ? ""
+                                                    : Number(value)
+                                                );
+                                              }}
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    {/* {selectedProduct.options.map(renderOption)} */}
+                                    {productForm
+                                      .getValues("options")
+                                      .map((option, index) => {
+                                        const baseName = `options.${index}`;
+                                        const type =
+                                          selectedProduct.options[index].type;
+                                        const label =
+                                          selectedProduct.options[index].name;
+                                        const required =
+                                          selectedProduct.options[index]
+                                            .required;
+                                        const choices =
+                                          selectedProduct.options[index]
+                                            .settings?.choices || [];
+                                        const enableQuantity =
+                                          selectedProduct.options[index]
+                                            .settings?.enableQuantity;
+
+                                        if (
+                                          type === "Text" ||
+                                          type === "Number"
+                                        ) {
+                                          return (
+                                            <FormField
+                                              key={option.id || label}
+                                              control={productForm.control}
+                                              name={`${baseName}.answers.0`}
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel>
+                                                    {label}
+                                                    {required && (
+                                                      <span className="text-red-500 ml-1">
+                                                        *
+                                                      </span>
+                                                    )}
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      type={
+                                                        type === "Number"
+                                                          ? "number"
+                                                          : "text"
+                                                      }
+                                                      {...field}
+                                                      className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                                      value={field.value ?? ""}
+                                                      onChange={(e) =>
+                                                        field.onChange(
+                                                          type === "Number"
+                                                            ? e.target.value ===
+                                                              ""
+                                                              ? ""
+                                                              : Number(
+                                                                  e.target.value
+                                                                )
+                                                            : e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          );
+                                        }
+
+                                        if (type === "Selection") {
+                                          const selectedValue =
+                                            productForm.watch(
+                                              `${baseName}.answers.0`
+                                            );
+                                          const quantity =
+                                            productForm.watch(
+                                              `${baseName}.quantities.0`
+                                            ) || 1;
+
+                                          return (
+                                            <FormField
+                                              key={option.id || label}
+                                              control={productForm.control}
+                                              name={`${baseName}.answers.0`}
+                                              render={() => (
+                                                <FormItem>
+                                                  <FormLabel>
+                                                    {label}
+                                                    {required && (
+                                                      <span className="text-red-500 ml-1">
+                                                        *
+                                                      </span>
+                                                    )}
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <RadioGroup
+                                                      value={
+                                                        selectedValue || ""
+                                                      }
+                                                      onValueChange={(
+                                                        value
+                                                      ) => {
+                                                        productForm.setValue(
+                                                          `${baseName}.answers`,
+                                                          [value]
+                                                        );
+                                                        productForm.setValue(
+                                                          `${baseName}.quantities`,
+                                                          [1]
+                                                        );
+
+                                                        const selectedChoice =
+                                                          choices.find(
+                                                            (c) =>
+                                                              c.name === value
+                                                          );
+                                                        const selectedAmount =
+                                                          selectedChoice?.amount ||
+                                                          0;
+                                                        productForm.setValue(
+                                                          `${baseName}.prices`,
+                                                          [selectedAmount]
+                                                        );
+                                                      }}
+                                                      className="grid grid-cols-1 gap-2"
+                                                    >
+                                                      {choices.map(
+                                                        (choice, cIdx) => (
+                                                          <div
+                                                            key={cIdx}
+                                                            className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
+                                                          >
+                                                            <RadioGroupItem
+                                                              value={
+                                                                choice.name
+                                                              }
+                                                              id={`${baseName}-${choice.name}`}
+                                                              className="border-[1.5px] text-white border-gray-300
+                                                              before:h-2 before:w-2 before:bg-white
+                                                                data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
+                                                                data-[state=checked]:before:bg-white"
+                                                            />
+                                                            <Label
+                                                              htmlFor={`${baseName}-${choice.name}`}
+                                                              className="flex-1 cursor-pointer"
+                                                            >
+                                                              {choice.name}{" "}
+                                                              {choice.amount >
+                                                                0 && (
+                                                                <span>
+                                                                  (+$
+                                                                  {
+                                                                    choice.amount
+                                                                  }
+                                                                  )
+                                                                </span>
+                                                              )}
+                                                            </Label>
+                                                            {selectedValue ===
+                                                              choice.name &&
+                                                              enableQuantity && (
+                                                                <div className="flex items-center gap-1">
+                                                                  <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() =>
+                                                                      productForm.setValue(
+                                                                        `${baseName}.quantities.0`,
+                                                                        Math.max(
+                                                                          1,
+                                                                          quantity -
+                                                                            1
+                                                                        )
+                                                                      )
+                                                                    }
+                                                                  >
+                                                                    <Minus className="h-3 w-3" />
+                                                                  </Button>
+                                                                  <span className="text-sm w-8 text-center">
+                                                                    {quantity}
+                                                                  </span>
+                                                                  <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() =>
+                                                                      productForm.setValue(
+                                                                        `${baseName}.quantities.0`,
+                                                                        quantity +
+                                                                          1
+                                                                      )
+                                                                    }
+                                                                  >
+                                                                    <Plus className="h-3 w-3" />
+                                                                  </Button>
+                                                                </div>
+                                                              )}
+                                                          </div>
+                                                        )
+                                                      )}
+                                                    </RadioGroup>
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          );
+                                        }
+
+                                        if (type === "Checkbox") {
+                                          return (
+                                            <FormField
+                                              key={option.id || label}
+                                              control={productForm.control}
+                                              name={`${baseName}.answers`}
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel>
+                                                    {label}
+                                                    {required && (
+                                                      <span className="text-red-500 ml-1">
+                                                        *
+                                                      </span>
+                                                    )}
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                      {choices.map(
+                                                        (choice, cIdx) => {
+                                                          const isChecked =
+                                                            field.value?.includes(
+                                                              choice.name
+                                                            );
+
+                                                          // Find the index of this choice in the selected answers
+                                                          const answerIndex =
+                                                            field.value?.indexOf(
+                                                              choice.name
+                                                            ) ?? -1;
+                                                          const quantity =
+                                                            answerIndex >= 0
+                                                              ? productForm.watch(
+                                                                  `${baseName}.quantities.${answerIndex}`
+                                                                ) || 1
+                                                              : 1;
+
+                                                          console.log(
+                                                            "quantity",
+                                                            quantity
+                                                          );
+
+                                                          return (
+                                                            <div
+                                                              key={cIdx}
+                                                              className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
+                                                            >
+                                                              <Checkbox
+                                                                className="w-5 h-5 peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
+                                                                checked={
+                                                                  isChecked
+                                                                }
+                                                                onCheckedChange={(
+                                                                  checked
+                                                                ) => {
+                                                                  const currentAnswers =
+                                                                    field.value ||
+                                                                    [];
+                                                                  const currentQuantities =
+                                                                    productForm.getValues(
+                                                                      `${baseName}.quantities`
+                                                                    ) || [];
+                                                                  const currentPrices =
+                                                                    productForm.getValues(
+                                                                      `${baseName}.prices`
+                                                                    ) || [];
+                                                                  const choiceAmount =
+                                                                    choice.amount ||
+                                                                    0;
+
+                                                                  if (checked) {
+                                                                    // Add new choice
+                                                                    const newAnswers =
+                                                                      [
+                                                                        ...currentAnswers,
+                                                                        choice.name,
+                                                                      ];
+                                                                    const newQuantities =
+                                                                      [
+                                                                        ...currentQuantities,
+                                                                        1,
+                                                                      ];
+                                                                    const newPrices =
+                                                                      [
+                                                                        ...currentPrices,
+                                                                        choiceAmount,
+                                                                      ];
+
+                                                                    field.onChange(
+                                                                      newAnswers
+                                                                    );
+                                                                    productForm.setValue(
+                                                                      `${baseName}.quantities`,
+                                                                      newQuantities
+                                                                    );
+                                                                    productForm.setValue(
+                                                                      `${baseName}.prices`,
+                                                                      newPrices
+                                                                    );
+                                                                  } else {
+                                                                    // Remove choice and maintain array consistency
+                                                                    const removeIndex =
+                                                                      currentAnswers.indexOf(
+                                                                        choice.name
+                                                                      );
+
+                                                                    if (
+                                                                      removeIndex !==
+                                                                      -1
+                                                                    ) {
+                                                                      const newAnswers =
+                                                                        currentAnswers.filter(
+                                                                          (
+                                                                            _,
+                                                                            idx
+                                                                          ) =>
+                                                                            idx !==
+                                                                            removeIndex
+                                                                        );
+                                                                      const newQuantities =
+                                                                        currentQuantities.filter(
+                                                                          (
+                                                                            _,
+                                                                            idx
+                                                                          ) =>
+                                                                            idx !==
+                                                                            removeIndex
+                                                                        );
+                                                                      const newPrices =
+                                                                        currentPrices.filter(
+                                                                          (
+                                                                            _,
+                                                                            idx
+                                                                          ) =>
+                                                                            idx !==
+                                                                            removeIndex
+                                                                        );
+
+                                                                      field.onChange(
+                                                                        newAnswers
+                                                                      );
+                                                                      productForm.setValue(
+                                                                        `${baseName}.quantities`,
+                                                                        newQuantities
+                                                                      );
+                                                                      productForm.setValue(
+                                                                        `${baseName}.prices`,
+                                                                        newPrices
+                                                                      );
+                                                                    }
+                                                                  }
+                                                                }}
+                                                              />
+                                                              <Label className="flex-1 cursor-pointer">
+                                                                {choice.name}{" "}
+                                                                {choice.amount >
+                                                                  0 && (
+                                                                  <span>
+                                                                    (+$
+                                                                    {
+                                                                      choice.amount
+                                                                    }
+                                                                    )
+                                                                  </span>
+                                                                )}
+                                                              </Label>
+                                                              {isChecked &&
+                                                                enableQuantity && (
+                                                                  <div className="flex items-center gap-1">
+                                                                    <Button
+                                                                      type="button"
+                                                                      size="sm"
+                                                                      variant="outline"
+                                                                      onClick={() => {
+                                                                        const currentAnswers =
+                                                                          field.value ||
+                                                                          [];
+                                                                        const answerIndex =
+                                                                          currentAnswers.indexOf(
+                                                                            choice.name
+                                                                          );
+
+                                                                        if (
+                                                                          answerIndex !==
+                                                                          -1
+                                                                        ) {
+                                                                          const qList =
+                                                                            productForm.getValues(
+                                                                              `${baseName}.quantities`
+                                                                            ) ||
+                                                                            [];
+                                                                          const updated =
+                                                                            [
+                                                                              ...qList,
+                                                                            ];
+                                                                          updated[
+                                                                            answerIndex
+                                                                          ] =
+                                                                            Math.max(
+                                                                              1,
+                                                                              (updated[
+                                                                                answerIndex
+                                                                              ] ||
+                                                                                1) -
+                                                                                1
+                                                                            );
+
+                                                                          productForm.setValue(
+                                                                            `${baseName}.quantities`,
+                                                                            updated
+                                                                          );
+                                                                          console.log(
+                                                                            "decreased quantity",
+                                                                            updated
+                                                                          );
+                                                                        }
+                                                                      }}
+                                                                    >
+                                                                      <Minus className="h-3 w-3" />
+                                                                    </Button>
+                                                                    <span className="text-sm w-8 text-center">
+                                                                      {quantity}
+                                                                    </span>
+                                                                    <Button
+                                                                      type="button"
+                                                                      size="sm"
+                                                                      variant="outline"
+                                                                      onClick={() => {
+                                                                        const currentAnswers =
+                                                                          field.value ||
+                                                                          [];
+                                                                        const answerIndex =
+                                                                          currentAnswers.indexOf(
+                                                                            choice.name
+                                                                          );
+
+                                                                        if (
+                                                                          answerIndex !==
+                                                                          -1
+                                                                        ) {
+                                                                          const qList =
+                                                                            productForm.getValues(
+                                                                              `${baseName}.quantities`
+                                                                            ) ||
+                                                                            [];
+                                                                          const updated =
+                                                                            [
+                                                                              ...qList,
+                                                                            ];
+                                                                          updated[
+                                                                            answerIndex
+                                                                          ] =
+                                                                            (updated[
+                                                                              answerIndex
+                                                                            ] ||
+                                                                              1) +
+                                                                            1;
+
+                                                                          productForm.setValue(
+                                                                            `${baseName}.quantities`,
+                                                                            updated
+                                                                          );
+                                                                          console.log(
+                                                                            "increased quantity",
+                                                                            updated
+                                                                          );
+                                                                        }
+                                                                      }}
+                                                                    >
+                                                                      <Plus className="h-3 w-3" />
+                                                                    </Button>
+                                                                  </div>
+                                                                )}
+                                                            </div>
+                                                          );
+                                                        }
+                                                      )}
+                                                    </div>
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          );
+                                        }
+
+                                        return null;
+                                      })}
                                   </div>
                                 </div>
                               </>
@@ -2160,105 +2351,85 @@ export default function AddToCart() {
                                 Object.keys(productForm.watch()).length > 0 && (
                                   <div className="space-y-1 mb-2">
                                     {selectedVariant && (
-                                      <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">
-                                          {selectedVariant.name}
-                                        </span>
-                                        <span className="text-green-600">
-                                          +${selectedVariant.price.toFixed(2)}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {selectedProduct.options.map((option) => {
-                                      const selectedValue = productForm.watch(
-                                        option._id
-                                      );
-                                      const choices = option.choices || [];
-                                      // Handle Selection (single choice)
-                                      if (
-                                        selectedValue &&
-                                        option.type === "Selection" &&
-                                        !Array.isArray(selectedValue)
-                                      ) {
-                                        const selectedChoice = choices.find(
-                                          (c) => c._id === selectedValue.value
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-gray-600">
+                                        Price per item - {selectedVariant.name}
+                                      </span>
+                                      <span className="text-green-600">
+                                        +${selectedVariant.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  )}
+                                    {selectedProduct.options.map(
+                                      (option, i) => {
+                                        const selectedValue = productForm.watch(
+                                          option._id
                                         );
-
+                                        const choices = (
+                                          productForm.getValues(
+                                            `options.${i}.answers`
+                                          ) || []
+                                        ).filter(Boolean);
+                                        const quantities =
+                                          productForm.getValues(
+                                            `options.${i}.quantities`
+                                          ) || [];
+                                        const prices =
+                                          productForm.getValues(
+                                            `options.${i}.prices`
+                                          ) || [];
                                         if (
-                                          selectedChoice &&
-                                          selectedChoice.amount > 0
+                                          selectedValue &&
+                                          option.type === "Selection"
                                         ) {
-                                          return (
-                                            <div
-                                              key={option._id}
-                                              className="flex items-center justify-between text-sm"
-                                            >
-                                              <span className="text-gray-600">
-                                                {option.name}:{" "}
-                                                {selectedChoice.name} (x
-                                                {selectedValue.quantity})
-                                              </span>
-                                              <span className="text-green-600">
-                                                +$
-                                                {(
-                                                  selectedChoice.amount *
-                                                  selectedValue.quantity
-                                                ).toFixed(2)}
-                                              </span>
-                                            </div>
-                                          );
+                                          return choices.map((choice, i) => {
+                                            return (
+                                              <div
+                                                key={`${option._id}-${i}`}
+                                                className="flex items-center justify-between text-sm"
+                                              >
+                                                <span className="text-gray-600">
+                                                  {choice} (x
+                                                  {quantities[i]})
+                                                </span>
+                                                <span className="text-green-600">
+                                                  +$
+                                                  {(
+                                                    prices[i] * quantities[i]
+                                                  ).toFixed(2)}
+                                                </span>
+                                              </div>
+                                            );
+                                          });
                                         }
-                                      }
 
-                                      // Handle Checkbox (multiple choices)
-                                      if (
-                                        Array.isArray(selectedValue) &&
-                                        option.type === "Checkbox"
-                                      ) {
-                                        return selectedValue.map(
-                                          (checkboxItem) => {
-                                            const matchedChoice = choices.find(
-                                              (c) =>
-                                                c.name === checkboxItem.name
+                                        if (option.type === "Checkbox") {
+                                          return choices.map((choice, i) => {
+                                            return (
+                                              <div
+                                                key={`${option._id}-${i}`}
+                                                className="flex items-center justify-between text-sm"
+                                              >
+                                                <span className="text-gray-600">
+                                                  {choice} (x
+                                                  {quantities[i]})
+                                                </span>
+                                                <span className="text-green-600">
+                                                  +$
+                                                  {(
+                                                    prices[i] * quantities[i]
+                                                  ).toFixed(2)}
+                                                </span>
+                                              </div>
                                             );
-                                            console.log(
-                                              "matchedChoice",
-                                              matchedChoice
-                                            );
-                                            if (
-                                              matchedChoice &&
-                                              matchedChoice.amount > 0
-                                            ) {
-                                              return (
-                                                <div
-                                                  key={`${option._id}-${checkboxItem.value}`}
-                                                  className="flex items-center justify-between text-sm"
-                                                >
-                                                  <span className="text-gray-600">
-                                                    {option.name}:{" "}
-                                                    {matchedChoice.name} (x
-                                                    {checkboxItem.quantity})
-                                                  </span>
-                                                  <span className="text-green-600">
-                                                    +$
-                                                    {(
-                                                      matchedChoice.amount *
-                                                      checkboxItem.quantity
-                                                    ).toFixed(2)}
-                                                  </span>
-                                                </div>
-                                              );
-                                            }
-                                            return null;
-                                          }
-                                        );
-                                      }
+                                          });
+                                        }
 
-                                      return null;
-                                    })}
+                                        return null;
+                                      }
+                                    )}
                                   </div>
                                 )}
-
                               <div className="border-t pt-2 mb-2">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-gray-600">
@@ -2273,16 +2444,14 @@ export default function AddToCart() {
                                     Quantity:
                                   </span>
                                   <span className="font-medium">
-                                    {productForm.watch("quantity") || 1}
+                                    {productForm.watch("inventory.quantity") ||
+                                      1}
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between font-bold">
                                   <span>Total:</span>
                                   <span className="text-blue-600">
-                                    $
-                                    {(
-                                      currentItemPrice * (watchedQuantity || 1)
-                                    ).toFixed(2)}
+                                    ${currentItemPrice.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
@@ -2295,10 +2464,7 @@ export default function AddToCart() {
                               className="w-full bg-blue-600 hover:bg-blue-700"
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
-                              Add to Cart - $
-                              {(
-                                currentItemPrice * (watchedQuantity || 1)
-                              ).toFixed(2)}
+                              Add to Cart - ${currentItemPrice.toFixed(2)}
                             </Button>
                           </div>
                         </form>
@@ -2378,7 +2544,11 @@ export default function AddToCart() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedProduct(null)}
+                        onClick={() => {
+                          setCurrentView("products");
+                          setSelectedProduct(null);
+                          productForm.reset();
+                        }}
                       >
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Products
@@ -2389,9 +2559,9 @@ export default function AddToCart() {
                         <CardTitle className="text-2xl text-gray-900">
                           {selectedProduct.name}
                         </CardTitle>
-                        {/* <p className="text-gray-600 mt-1">
+                        <p className="text-gray-600 mt-1">
                           {selectedProduct.description}
-                        </p> */}
+                        </p>
                       </div>
                       <Badge variant="outline">
                         {selectedProduct.categories?.length > 0 &&
@@ -2401,30 +2571,27 @@ export default function AddToCart() {
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      {selectedProduct.price && (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-lg px-3 py-1">
-                          ${selectedProduct.price}
+                      {selectedVariant && (
+                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-lg px-3 py-1">
+                          ${selectedVariant.price.toFixed(2)}
                         </Badge>
                       )}
-                      {selectedProduct.originalPrice > 0 &&
-                        selectedProduct.price > 0 && (
-                          <Badge
-                            variant="outline"
-                            className="line-through text-gray-500"
-                          >
-                            ${selectedProduct.originalPrice}
-                          </Badge>
-                        )}
-                      {selectedProduct.originalPrice > 0 &&
-                        selectedProduct.price < 1 && (
-                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-lg px-3 py-1">
-                            ${selectedProduct.originalPrice}
-                          </Badge>
-                        )}
                     </div>
                   </CardHeader>
 
                   <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
+                    <div className="mb-6">
+                      <div className="w-[500px] h-[300px] bg-gray-100 rounded-lg flex items-center justify-center">
+                        {selectedProduct.imgUrls.length > 0 &&
+                          selectedProduct.imgUrls.map((img) => (
+                            <img
+                              src={img}
+                              alt={selectedProduct.name}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ))}
+                      </div>
+                    </div>
                     <Form {...productForm}>
                       <form
                         onSubmit={productForm.handleSubmit(
@@ -2447,7 +2614,7 @@ export default function AddToCart() {
                               </h3>
                               <FormField
                                 control={productForm.control}
-                                name="variantId" // this will store the _id of selected variant
+                                name="variantId"
                                 render={({ field }) => (
                                   <FormItem className="space-y-3">
                                     <FormLabel className="text-base font-medium">
@@ -2511,15 +2678,15 @@ export default function AddToCart() {
                                 <div className="space-y-6">
                                   <FormField
                                     control={productForm.control}
-                                    name="quantity"
+                                    name="inventory.quantity"
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Quantity</FormLabel>
                                         <FormControl>
                                           <Input
-                                            className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                            className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                             type="number"
-                                            min={1}
+                                            placeholder="1"
                                             {...field}
                                             value={
                                               field.value === undefined ||
@@ -2541,7 +2708,489 @@ export default function AddToCart() {
                                       </FormItem>
                                     )}
                                   />
-                                  {selectedProduct.options.map(renderOption)}
+                                  {/* {selectedProduct.options.map(renderOption)} */}
+                                  {productForm
+                                    .getValues("options")
+                                    .map((option, index) => {
+                                      const baseName = `options.${index}`;
+                                      const type =
+                                        selectedProduct.options[index].type;
+                                      const label =
+                                        selectedProduct.options[index].name;
+                                      const required =
+                                        selectedProduct.options[index].required;
+                                      const choices =
+                                        selectedProduct.options[index].settings
+                                          ?.choices || [];
+                                      const enableQuantity =
+                                        selectedProduct.options[index].settings
+                                          ?.enableQuantity;
+
+                                      if (
+                                        type === "Text" ||
+                                        type === "Number"
+                                      ) {
+                                        return (
+                                          <FormField
+                                            key={option.id || label}
+                                            control={productForm.control}
+                                            name={`${baseName}.answers.0`}
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>
+                                                  {label}
+                                                  {required && (
+                                                    <span className="text-red-500 ml-1">
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    type={
+                                                      type === "Number"
+                                                        ? "number"
+                                                        : "text"
+                                                    }
+                                                    className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                                    {...field}
+                                                    value={field.value ?? ""}
+                                                    onChange={(e) =>
+                                                      field.onChange(
+                                                        type === "Number"
+                                                          ? e.target.value ===
+                                                            ""
+                                                            ? ""
+                                                            : Number(
+                                                                e.target.value
+                                                              )
+                                                          : e.target.value
+                                                      )
+                                                    }
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        );
+                                      }
+
+                                      if (type === "Selection") {
+                                        const selectedValue = productForm.watch(
+                                          `${baseName}.answers.0`
+                                        );
+                                        const quantity =
+                                          productForm.watch(
+                                            `${baseName}.quantities.0`
+                                          ) || 1;
+
+                                        return (
+                                          <FormField
+                                            key={option.id || label}
+                                            control={productForm.control}
+                                            name={`${baseName}.answers.0`}
+                                            render={() => (
+                                              <FormItem>
+                                                <FormLabel>
+                                                  {label}
+                                                  {required && (
+                                                    <span className="text-red-500 ml-1">
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </FormLabel>
+                                                <FormControl>
+                                                  <RadioGroup
+                                                    value={selectedValue || ""}
+                                                    onValueChange={(value) => {
+                                                      productForm.setValue(
+                                                        `${baseName}.answers`,
+                                                        [value]
+                                                      );
+                                                      productForm.setValue(
+                                                        `${baseName}.quantities`,
+                                                        [1]
+                                                      );
+
+                                                      const selectedChoice =
+                                                        choices.find(
+                                                          (c) =>
+                                                            c.name === value
+                                                        );
+                                                      const selectedAmount =
+                                                        selectedChoice?.amount ||
+                                                        0;
+                                                      productForm.setValue(
+                                                        `${baseName}.prices`,
+                                                        [selectedAmount]
+                                                      );
+                                                    }}
+                                                    className="grid grid-cols-1 gap-2"
+                                                  >
+                                                    {choices.map(
+                                                      (choice, cIdx) => (
+                                                        <div
+                                                          key={cIdx}
+                                                          className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
+                                                        >
+                                                          <RadioGroupItem
+                                                            className="border-[1.5px] text-white border-gray-300
+                                                          before:h-2 before:w-2 before:bg-white
+                                                            data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
+                                                            data-[state=checked]:before:bg-white"
+                                                            value={choice.name}
+                                                            id={`${baseName}-${choice.name}`}
+                                                          />
+                                                          <Label
+                                                            htmlFor={`${baseName}-${choice.name}`}
+                                                            className="flex-1 cursor-pointer"
+                                                          >
+                                                            {choice.name}{" "}
+                                                            {choice.amount >
+                                                              0 && (
+                                                              <span>
+                                                                (+$
+                                                                {choice.amount})
+                                                              </span>
+                                                            )}
+                                                          </Label>
+                                                          {selectedValue ===
+                                                            choice.name &&
+                                                            enableQuantity && (
+                                                              <div className="flex items-center gap-1">
+                                                                <Button
+                                                                  type="button"
+                                                                  size="sm"
+                                                                  variant="outline"
+                                                                  onClick={() =>
+                                                                    productForm.setValue(
+                                                                      `${baseName}.quantities.0`,
+                                                                      Math.max(
+                                                                        1,
+                                                                        quantity -
+                                                                          1
+                                                                      )
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  <Minus className="h-3 w-3" />
+                                                                </Button>
+                                                                <span className="text-sm w-8 text-center">
+                                                                  {quantity}
+                                                                </span>
+                                                                <Button
+                                                                  type="button"
+                                                                  size="sm"
+                                                                  variant="outline"
+                                                                  onClick={() =>
+                                                                    productForm.setValue(
+                                                                      `${baseName}.quantities.0`,
+                                                                      quantity +
+                                                                        1
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  <Plus className="h-3 w-3" />
+                                                                </Button>
+                                                              </div>
+                                                            )}
+                                                        </div>
+                                                      )
+                                                    )}
+                                                  </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        );
+                                      }
+
+                                      if (type === "Checkbox") {
+                                        return (
+                                          <FormField
+                                            key={option.id || label}
+                                            control={productForm.control}
+                                            name={`${baseName}.answers`}
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>
+                                                  {label}
+                                                  {required && (
+                                                    <span className="text-red-500 ml-1">
+                                                      *
+                                                    </span>
+                                                  )}
+                                                </FormLabel>
+                                                <FormControl>
+                                                  <div className="grid grid-cols-1 gap-2">
+                                                    {choices.map(
+                                                      (choice, cIdx) => {
+                                                        const isChecked =
+                                                          field.value?.includes(
+                                                            choice.name
+                                                          );
+
+                                                        // Find the index of this choice in the selected answers
+                                                        const answerIndex =
+                                                          field.value?.indexOf(
+                                                            choice.name
+                                                          ) ?? -1;
+                                                        const quantity =
+                                                          answerIndex >= 0
+                                                            ? productForm.watch(
+                                                                `${baseName}.quantities.${answerIndex}`
+                                                              ) || 1
+                                                            : 1;
+
+                                                        console.log(
+                                                          "quantity",
+                                                          quantity
+                                                        );
+
+                                                        return (
+                                                          <div
+                                                            key={cIdx}
+                                                            className="flex items-center space-x-2 p-2 rounded-lg border hover:bg-gray-50"
+                                                          >
+                                                            <Checkbox
+                                                              className="w-5 h-5 peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
+                                                              checked={
+                                                                isChecked
+                                                              }
+                                                              onCheckedChange={(
+                                                                checked
+                                                              ) => {
+                                                                const currentAnswers =
+                                                                  field.value ||
+                                                                  [];
+                                                                const currentQuantities =
+                                                                  productForm.getValues(
+                                                                    `${baseName}.quantities`
+                                                                  ) || [];
+                                                                const currentPrices =
+                                                                  productForm.getValues(
+                                                                    `${baseName}.prices`
+                                                                  ) || [];
+                                                                const choiceAmount =
+                                                                  choice.amount ||
+                                                                  0;
+
+                                                                if (checked) {
+                                                                  // Add new choice
+                                                                  const newAnswers =
+                                                                    [
+                                                                      ...currentAnswers,
+                                                                      choice.name,
+                                                                    ];
+                                                                  const newQuantities =
+                                                                    [
+                                                                      ...currentQuantities,
+                                                                      1,
+                                                                    ];
+                                                                  const newPrices =
+                                                                    [
+                                                                      ...currentPrices,
+                                                                      choiceAmount,
+                                                                    ];
+
+                                                                  field.onChange(
+                                                                    newAnswers
+                                                                  );
+                                                                  productForm.setValue(
+                                                                    `${baseName}.quantities`,
+                                                                    newQuantities
+                                                                  );
+                                                                  productForm.setValue(
+                                                                    `${baseName}.prices`,
+                                                                    newPrices
+                                                                  );
+                                                                } else {
+                                                                  // Remove choice and maintain array consistency
+                                                                  const removeIndex =
+                                                                    currentAnswers.indexOf(
+                                                                      choice.name
+                                                                    );
+
+                                                                  if (
+                                                                    removeIndex !==
+                                                                    -1
+                                                                  ) {
+                                                                    const newAnswers =
+                                                                      currentAnswers.filter(
+                                                                        (
+                                                                          _,
+                                                                          idx
+                                                                        ) =>
+                                                                          idx !==
+                                                                          removeIndex
+                                                                      );
+                                                                    const newQuantities =
+                                                                      currentQuantities.filter(
+                                                                        (
+                                                                          _,
+                                                                          idx
+                                                                        ) =>
+                                                                          idx !==
+                                                                          removeIndex
+                                                                      );
+                                                                    const newPrices =
+                                                                      currentPrices.filter(
+                                                                        (
+                                                                          _,
+                                                                          idx
+                                                                        ) =>
+                                                                          idx !==
+                                                                          removeIndex
+                                                                      );
+
+                                                                    field.onChange(
+                                                                      newAnswers
+                                                                    );
+                                                                    productForm.setValue(
+                                                                      `${baseName}.quantities`,
+                                                                      newQuantities
+                                                                    );
+                                                                    productForm.setValue(
+                                                                      `${baseName}.prices`,
+                                                                      newPrices
+                                                                    );
+                                                                  }
+                                                                }
+                                                              }}
+                                                            />
+                                                            <Label className="flex-1 cursor-pointer">
+                                                              {choice.name}{" "}
+                                                              {choice.amount >
+                                                                0 && (
+                                                                <span>
+                                                                  (+$
+                                                                  {
+                                                                    choice.amount
+                                                                  }
+                                                                  )
+                                                                </span>
+                                                              )}
+                                                            </Label>
+                                                            {isChecked &&
+                                                              enableQuantity && (
+                                                                <div className="flex items-center gap-1">
+                                                                  <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                      const currentAnswers =
+                                                                        field.value ||
+                                                                        [];
+                                                                      const answerIndex =
+                                                                        currentAnswers.indexOf(
+                                                                          choice.name
+                                                                        );
+
+                                                                      if (
+                                                                        answerIndex !==
+                                                                        -1
+                                                                      ) {
+                                                                        const qList =
+                                                                          productForm.getValues(
+                                                                            `${baseName}.quantities`
+                                                                          ) ||
+                                                                          [];
+                                                                        const updated =
+                                                                          [
+                                                                            ...qList,
+                                                                          ];
+                                                                        updated[
+                                                                          answerIndex
+                                                                        ] =
+                                                                          Math.max(
+                                                                            1,
+                                                                            (updated[
+                                                                              answerIndex
+                                                                            ] ||
+                                                                              1) -
+                                                                              1
+                                                                          );
+
+                                                                        productForm.setValue(
+                                                                          `${baseName}.quantities`,
+                                                                          updated
+                                                                        );
+                                                                      }
+                                                                    }}
+                                                                  >
+                                                                    <Minus className="h-3 w-3" />
+                                                                  </Button>
+                                                                  <span className="text-sm w-8 text-center">
+                                                                    {quantity}
+                                                                  </span>
+                                                                  <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                      const currentAnswers =
+                                                                        field.value ||
+                                                                        [];
+                                                                      const answerIndex =
+                                                                        currentAnswers.indexOf(
+                                                                          choice.name
+                                                                        );
+
+                                                                      if (
+                                                                        answerIndex !==
+                                                                        -1
+                                                                      ) {
+                                                                        const qList =
+                                                                          productForm.getValues(
+                                                                            `${baseName}.quantities`
+                                                                          ) ||
+                                                                          [];
+                                                                        const updated =
+                                                                          [
+                                                                            ...qList,
+                                                                          ];
+                                                                        updated[
+                                                                          answerIndex
+                                                                        ] =
+                                                                          (updated[
+                                                                            answerIndex
+                                                                          ] ||
+                                                                            1) +
+                                                                          1;
+
+                                                                        productForm.setValue(
+                                                                          `${baseName}.quantities`,
+                                                                          updated
+                                                                        );
+                                                                        console.log(
+                                                                          "increased quantity",
+                                                                          updated
+                                                                        );
+                                                                      }
+                                                                    }}
+                                                                  >
+                                                                    <Plus className="h-3 w-3" />
+                                                                  </Button>
+                                                                </div>
+                                                              )}
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        );
+                                      }
+
+                                      return null;
+                                    })}
                                 </div>
                               </div>
                             </>
@@ -2568,95 +3217,78 @@ export default function AddToCart() {
                                   {selectedVariant && (
                                     <div className="flex items-center justify-between text-sm">
                                       <span className="text-gray-600">
-                                        {selectedVariant.name}
+                                        Price per item - {selectedVariant.name}
                                       </span>
                                       <span className="text-green-600">
                                         +${selectedVariant.price.toFixed(2)}
                                       </span>
                                     </div>
                                   )}
-                                  {selectedProduct.options.map((option) => {
+                                  {selectedProduct.options.map((option, i) => {
                                     const selectedValue = productForm.watch(
                                       option._id
                                     );
-                                    const choices = option.choices || [];
-                                    // Handle Selection (single choice)
+                                    const choices = (
+                                      productForm.getValues(
+                                        `options.${i}.answers`
+                                      ) || []
+                                    ).filter(Boolean);
+                                    const quantities =
+                                      productForm.getValues(
+                                        `options.${i}.quantities`
+                                      ) || [];
+                                    const prices =
+                                      productForm.getValues(
+                                        `options.${i}.prices`
+                                      ) || [];
                                     if (
                                       selectedValue &&
-                                      option.type === "Selection" &&
-                                      !Array.isArray(selectedValue)
+                                      option.type === "Selection"
                                     ) {
-                                      const selectedChoice = choices.find(
-                                        (c) => c._id === selectedValue.value
-                                      );
-
-                                      if (
-                                        selectedChoice &&
-                                        selectedChoice.amount > 0
-                                      ) {
+                                      return choices.map((choice, i) => {
                                         return (
                                           <div
-                                            key={option._id}
+                                            key={`${option._id}-${i}`}
                                             className="flex items-center justify-between text-sm"
                                           >
                                             <span className="text-gray-600">
-                                              {option.name}:{" "}
-                                              {selectedChoice.name} (x
-                                              {selectedValue.quantity})
+                                              {choice} (x
+                                              {quantities[i]})
                                             </span>
                                             <span className="text-green-600">
                                               +$
                                               {(
-                                                selectedChoice.amount *
-                                                selectedValue.quantity
+                                                prices[i] * quantities[i]
                                               ).toFixed(2)}
                                             </span>
                                           </div>
                                         );
-                                      }
+                                      });
                                     }
 
-                                    // Handle Checkbox (multiple choices)
                                     if (
-                                      Array.isArray(selectedValue) &&
+                                      selectedValue &&
                                       option.type === "Checkbox"
                                     ) {
-                                      return selectedValue.map(
-                                        (checkboxItem) => {
-                                          const matchedChoice = choices.find(
-                                            (c) => c.name === checkboxItem.name
-                                          );
-                                          console.log(
-                                            "matchedChoice",
-                                            matchedChoice
-                                          );
-                                          if (
-                                            matchedChoice &&
-                                            matchedChoice.amount > 0
-                                          ) {
-                                            return (
-                                              <div
-                                                key={`${option._id}-${checkboxItem.value}`}
-                                                className="flex items-center justify-between text-sm"
-                                              >
-                                                <span className="text-gray-600">
-                                                  {option.name}:{" "}
-                                                  {matchedChoice.name} (x
-                                                  {checkboxItem.quantity})
-                                                </span>
-                                                <span className="text-green-600">
-                                                  +$
-                                                  {(
-                                                    matchedChoice.amount *
-                                                    checkboxItem.quantity
-                                                  ).toFixed(2)}
-                                                </span>
-                                              </div>
-                                            );
-                                          }
-                                          return null;
-                                        }
-                                      );
+                                      return choices.map((choice, i) => {
+                                        return (
+                                          <div
+                                            key={`${option._id}-${i}`}
+                                            className="flex items-center justify-between text-sm"
+                                          >
+                                            <span className="text-gray-600">
+                                              {choice} (x
+                                              {quantities[i]})
+                                            </span>
+                                            <span className="text-green-600">
+                                              +$
+                                              {(
+                                                prices[i] * quantities[i]
+                                              ).toFixed(2)}
+                                            </span>
+                                          </div>
+                                        );
+                                      });
                                     }
 
                                     return null;
@@ -2676,16 +3308,13 @@ export default function AddToCart() {
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-600">Quantity:</span>
                                 <span className="font-medium">
-                                  {productForm.watch("quantity") || 1}
+                                  {productForm.watch("inventory.quantity") || 1}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between font-bold">
                                 <span>Total:</span>
                                 <span className="text-blue-600">
-                                  $
-                                  {(
-                                    currentItemPrice * (watchedQuantity || 1)
-                                  ).toFixed(2)}
+                                  ${currentItemPrice.toFixed(2)}
                                 </span>
                               </div>
                             </div>
@@ -2698,10 +3327,7 @@ export default function AddToCart() {
                               className="w-full bg-blue-600 hover:bg-blue-700"
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
-                              Add to Cart - $
-                              {(
-                                currentItemPrice * (watchedQuantity || 1)
-                              ).toFixed(2)}
+                              Add to Cart - ${currentItemPrice.toFixed(2)}
                             </Button>
                           </div>
                         </div>
@@ -2764,36 +3390,39 @@ export default function AddToCart() {
                                     <h4 className="font-semibold text-gray-900 text-sm line-clamp-2 leading-tight">
                                       {product.name}
                                     </h4>
-                                    {/* <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                                       {product.description}
-                                    </p> */}
+                                    </p>
                                   </div>
                                   <Package className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1">
-                                    {product.price && (
-                                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs font-semibold">
-                                        ${product.price}
+                                    {product.variants[0].price ? (
+                                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
+                                        ${product.variants[0].price}
                                       </Badge>
+                                    ) : (
+                                      <>
+                                        {product.price && (
+                                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs font-semibold">
+                                            ${product.price}
+                                          </Badge>
+                                        )}
+                                        {product.originalPrice > 1 &&
+                                          product.price && (
+                                            <Badge
+                                              variant="outline"
+                                              className="line-through text-gray-500 text-xs"
+                                            >
+                                              ${product.originalPrice}
+                                            </Badge>
+                                          )}
+                                      </>
                                     )}
-                                    {product.originalPrice > 0 &&
-                                      product.price > 0 && (
-                                        <Badge
-                                          variant="outline"
-                                          className="line-through text-gray-500 text-xs"
-                                        >
-                                          ${product.originalPrice}
-                                        </Badge>
-                                      )}
-                                    {product.originalPrice > 0 &&
-                                      product.originalPrice < 1 && (
-                                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
-                                          ${product.price}
-                                        </Badge>
-                                      )}
                                   </div>
+
                                   <Button
                                     size="sm"
                                     className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"

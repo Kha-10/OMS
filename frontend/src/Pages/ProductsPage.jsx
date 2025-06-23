@@ -79,7 +79,6 @@ export default function ProductsPage() {
     debouncedSearch(e.target.value);
   };
 
-  console.log(products);
   return (
     <div className="p-6 space-y-6">
       <ProductsHeader header="Products" buttonText="products" context="new" />

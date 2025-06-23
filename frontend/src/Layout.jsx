@@ -12,27 +12,27 @@ export default function RootLayout() {
   const location = useLocation();
   const pathnames = location.pathname;
 
-  const excludedPrefixes = ['/checkout', `/${tenant?.name}/orders`];
+  const excludedPrefixes = ["/checkout", `/addToCart`];
 
-  const isExcluded = excludedPrefixes.some(prefix => pathnames.startsWith(prefix));
-  
+  const isExcluded = excludedPrefixes.some((prefix) =>
+    pathnames.startsWith(prefix)
+  );
+
   const showSidebar = !isExcluded;
-  
 
-//   if (loading) {
-//     return <InitialLoading />;
-//   }
+  //   if (loading) {
+  //     return <InitialLoading />;
+  //   }
 
   return tenant ? (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {showSidebar && (
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="fixed left-0 top-0 bottom-0 z-10">
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        </div>
       )}
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {showSidebar && (
-          <Nav onOpenSidebar={() => setSidebarOpen(true)} />
-        )}
+      <div className={`flex-1 ${showSidebar ? "lg:ml-64" : ""}`}>
+        {showSidebar && <Nav onOpenSidebar={() => setSidebarOpen(true)} />}
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
@@ -40,7 +40,7 @@ export default function RootLayout() {
             className={`${
               !showSidebar
                 ? "w-full mx-auto"
-                : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"
+                : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 overflow-y-auto min-h-screen"
             }`}
           >
             <Outlet />
