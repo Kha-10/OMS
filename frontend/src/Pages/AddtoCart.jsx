@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useForm, useWatch, useFieldArray } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,70 +74,137 @@ const createFormSchema = (product) => {
         if (val === "" || val === null || val === undefined) {
           return 0;
         }
-
         const parsed = typeof val === "string" ? parseFloat(val) : val;
         return isNaN(parsed) ? 0 : parsed;
       }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
     }),
     variantId: z.string().min(1, "Product variant is required"),
     totalPrice: z.number().optional(),
-    options: z.array(
-      z
-        .object({
+    options: z
+      .array(
+        z.object({
           name: z.string(),
           answers: z
             .array(z.union([z.string(), z.number()]))
+            .default([])
             .optional()
-            .default([]),
-          prices: z.array(z.number()),
-          quantities: z.array(z.number()).optional(),
+            .refine(
+              (arr) =>
+                arr === undefined ||
+                arr.every((val) => val !== undefined && val !== null),
+              { message: "Invalid answer value" }
+            ),
+
+          prices: z.array(z.number()).default([]).optional(),
+          quantities: z.array(z.number()).default([]).optional(),
         })
-        .superRefine((data, ctx) => {
-          const optionMeta = product.options.find((o) => o.name === data.name);
+      )
+      .superRefine((options, ctx) => {
+        // Validate each option
+        options.forEach((optionData, optionIndex) => {
+          const optionMeta = product.options.find(
+            (o) => o.name === optionData.name
+          );
 
-          if (!optionMeta || !optionMeta.required) return;
-          const { type, settings } = optionMeta;
-          const answers = data.answers || [];
-          const answersValid =
-            answers.length > 0 &&
-            answers.every((a) => a !== "" && a !== undefined);
+          if (!optionMeta) {
+            return;
+          }
 
-          // Handle Text, Number, Selection types
-          if (type === "Text" || type === "Number" || type === "Selection") {
-            if (!answersValid) {
+          // Skip validation for non-required options
+          if (!optionMeta.required) {
+            return;
+          }
+
+          const { type } = optionMeta;
+          const answers = optionData.answers || [];
+
+          // Handle Text type
+          if (type === "Text") {
+            const hasValidAnswer =
+              answers.length > 0 &&
+              answers[0] !== undefined &&
+              answers[0] !== null &&
+              answers[0] !== "" &&
+              typeof answers[0] === "string" &&
+              answers[0].trim() !== "";
+
+            if (!hasValidAnswer) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ["answers"],
-                message: "Select an option",
+                path: [optionIndex, "answers", 0],
+                message: "This field is required",
               });
-              return;
             }
           }
 
+          // Handle Number type
+          if (type === "Number") {
+            const hasValidAnswer =
+              answers.length > 0 &&
+              answers[0] !== undefined &&
+              answers[0] !== null &&
+              answers[0] !== "" &&
+              typeof answers[0] === "number" &&
+              !isNaN(answers[0]);
+
+            if (!hasValidAnswer) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [optionIndex, "answers", 0],
+                message: "Please enter a valid number",
+              });
+            }
+          }
+
+          // Handle Selection type
+          if (type === "Selection") {
+            const hasValidAnswer =
+              answers.length > 0 &&
+              answers[0] !== undefined &&
+              answers[0] !== null &&
+              answers[0] !== "";
+
+            console.log("Selection validation:", {
+              hasValidAnswer,
+              answersLength: answers.length,
+              firstAnswer: answers[0],
+              answersArray: answers,
+            });
+
+            if (!hasValidAnswer) {
+              console.log("Adding validation error for Selection field");
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [optionIndex, "answers", 0],
+                message: "Please select an option",
+              });
+            }
+          }
+
+          // Handle Checkbox type (keeping your existing logic)
           if (type === "Checkbox") {
-            // Skip validation if inputType is "na"
+            console.log("lee pl 3");
+            const settings = optionMeta.settings;
             if (settings?.inputType === "not_applicable") return;
 
             const selectedCount = answers.length;
-
-            // Check if required but no selection
-            if (selectedCount === 0) {
-              // Show specific error based on inputType if available
+            console.log("answers", answers);
+            console.log("selectedCount", selectedCount);
+            if (selectedCount > 0 && answers[0] === "") {
+              console.log("shit");
               if (settings?.inputType === "min") {
                 const minRequired = settings.min || 1;
-                if (selectedCount < minRequired) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["answers"],
-                    message: `Select at least ${minRequired}`,
-                  });
-                }
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  path: [optionIndex, "answers"],
+                  message: `Select at least ${minRequired}`,
+                });
               } else if (settings?.inputType === "max") {
                 const maxAllowed = settings.max || 1;
                 if (selectedCount > maxAllowed) {
                   ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ["answers"],
+                    path: [optionIndex, "answers"],
                     message: `You can select up to ${maxAllowed}`,
                   });
                 }
@@ -147,22 +214,21 @@ const createFormSchema = (product) => {
                 if (selectedCount < min || selectedCount > max) {
                   ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ["answers"],
+                    path: [optionIndex, "answers"],
                     message: `You can select between ${min} and ${max}`,
                   });
                 }
               } else {
                 ctx.addIssue({
                   code: z.ZodIssueCode.custom,
-                  path: ["answers"],
+                  path: [optionIndex, "answers"],
                   message: "Select an option",
                 });
               }
-              return;
             }
           }
-        })
-    ),
+        });
+      }),
   });
 };
 
@@ -208,9 +274,9 @@ export default function AddToCart() {
     options:
       product?.options?.map((opt) => ({
         name: opt.name,
-        answers: [],
-        prices: [],
-        quantities: [],
+        answers: [""], // << FIX: prevent undefined
+        prices: [0], // you may also want default price
+        quantities: [1], // default quantity
       })) || [],
   });
 
@@ -223,12 +289,9 @@ export default function AddToCart() {
   });
 
   useEffect(() => {
-    selectedProduct?.options?.forEach((opt, index) => {
-      productForm.setValue(`options.${index}.name`, opt.name);
-      productForm.setValue(`options.${index}.answers`, []);
-      productForm.setValue(`options.${index}.prices`, []);
-      productForm.setValue(`options.${index}.quantities`, []);
-    });
+    if (selectedProduct) {
+      productForm.reset(defaultValuesFromProduct(selectedProduct));
+    }
   }, [selectedProduct]);
 
   console.log(selectedProduct);
@@ -340,8 +403,11 @@ export default function AddToCart() {
   const removeOrderNote = (id) => {
     setOrderNotes(orderNotes.filter((note) => note.id !== id));
   };
+  console.log("Current form values:", productForm.getValues());
 
   const addToCart = async (formData) => {
+    console.log("Form values on submit:", productForm.getValues());
+    console.log("formData:", formData);
     if (!selectedProduct) return;
 
     // Extract selected variant
@@ -700,7 +766,7 @@ export default function AddToCart() {
       console.error("Failed to complete order:", error);
     }
   };
-
+  console.log("options", productForm.getValues("options"));
   const renderCartItemDetails = (item) => {
     return (
       <div className="space-y-3">
@@ -917,7 +983,9 @@ export default function AddToCart() {
   const selectedVariant = selectedProduct?.variants.find(
     (v) => v._id === variants
   );
-
+  {
+    console.log("gg", productForm?.formState?.errors);
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto p-4 max-w-7xl">
@@ -933,19 +1001,36 @@ export default function AddToCart() {
             {/* Navigation */}
             <div className="flex items-center gap-2">
               <Button
-                variant={currentView === "products" ? "default" : "outline"}
+                // variant={currentView === "products" ? "default" : "outline"}
                 onClick={() => setCurrentView("products")}
+                className={` ${
+                  currentView === "products"
+                    ? "bg-blue-100 text-blue-700 hover:bg-blue-50"
+                    : "bg-white text-gray-700 hover:bg-slate-100 border border-gray-200"
+                }`}
               >
                 Products
               </Button>
               <Button
                 variant={currentView === "cart" ? "default" : "outline"}
                 onClick={() => setCurrentView("cart")}
-                className={`relative transition-all duration-300 ${
+                // className={`relative transition-all duration-300 ${
+                //   cartButtonAnimation
+                //     ? "scale-110 bg-green-100 border-green-300"
+                //     : ""
+                // }`}
+                className={`relative transition-all duration-300
+                ${
+                  currentView === "cart"
+                    ? "bg-blue-100 text-blue-700 hover:bg-blue-50"
+                    : ""
+                }
+                ${
                   cartButtonAnimation
                     ? "scale-110 bg-green-100 border-green-300"
                     : ""
-                }`}
+                }
+              `}
                 disabled={cart.length === 0}
               >
                 <ShoppingCart
@@ -956,7 +1041,7 @@ export default function AddToCart() {
                 Cart
                 {cart.length > 0 && (
                   <Badge
-                    className={`absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center transition-all duration-300 ${
+                    className={`absolute bg-blue-600 -top-2 hover:bg-blue-500 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center transition-all duration-300 ${
                       cartButtonAnimation ? "scale-125 bg-green-500" : ""
                     }`}
                   >
@@ -1827,32 +1912,29 @@ export default function AddToCart() {
                                         </FormItem>
                                       )}
                                     />
-                                    {/* {selectedProduct.options.map(renderOption)} */}
+
                                     {productForm
                                       .getValues("options")
-                                      .map((option, index) => {
+                                      ?.map((option, index) => {
                                         const baseName = `options.${index}`;
                                         const type =
-                                          selectedProduct.options[index].type;
+                                          selectedProduct.options[index]?.type;
                                         const label =
-                                          selectedProduct.options[index].name;
+                                          selectedProduct.options[index]?.name;
                                         const required =
                                           selectedProduct.options[index]
-                                            .required;
+                                            ?.required;
                                         const choices =
                                           selectedProduct.options[index]
-                                            .settings?.choices || [];
+                                            ?.settings?.choices || [];
                                         const enableQuantity =
                                           selectedProduct.options[index]
-                                            .settings?.enableQuantity;
+                                            ?.settings?.enableQuantity;
 
-                                        if (
-                                          type === "Text" ||
-                                          type === "Number"
-                                        ) {
+                                        if (type === "Text") {
                                           return (
                                             <FormField
-                                              key={option.id || label}
+                                              key={label}
                                               control={productForm.control}
                                               name={`${baseName}.answers.0`}
                                               render={({ field }) => (
@@ -1867,26 +1949,54 @@ export default function AddToCart() {
                                                   </FormLabel>
                                                   <FormControl>
                                                     <Input
-                                                      type={
-                                                        type === "Number"
-                                                          ? "number"
-                                                          : "text"
-                                                      }
+                                                      type="text"
                                                       {...field}
-                                                      className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                                       value={field.value ?? ""}
                                                       onChange={(e) =>
                                                         field.onChange(
-                                                          type === "Number"
-                                                            ? e.target.value ===
-                                                              ""
-                                                              ? ""
-                                                              : Number(
-                                                                  e.target.value
-                                                                )
-                                                            : e.target.value
+                                                          e.target.value
                                                         )
                                                       }
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          );
+                                        }
+
+                                        if (type === "Number") {
+                                          return (
+                                            <FormField
+                                              key={label}
+                                              control={productForm.control}
+                                              name={`${baseName}.answers.0`}
+                                              rules={{ required: required }}
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormLabel>
+                                                    {label}
+                                                    {required && (
+                                                      <span className="text-red-500 ml-1">
+                                                        *
+                                                      </span>
+                                                    )}
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      type="number"
+                                                      {...field}
+                                                      value={field.value ?? ""}
+                                                      onChange={(e) => {
+                                                        const val =
+                                                          e.target.value;
+                                                        field.onChange(
+                                                          val === ""
+                                                            ? undefined
+                                                            : Number(val)
+                                                        );
+                                                      }}
                                                     />
                                                   </FormControl>
                                                   <FormMessage />
@@ -2092,102 +2202,108 @@ export default function AddToCart() {
                                                                 onCheckedChange={(
                                                                   checked
                                                                 ) => {
-                                                                  const currentAnswers =
+                                                                  let currentAnswers =
                                                                     field.value ||
                                                                     [];
-                                                                  const currentQuantities =
-                                                                    productForm.getValues(
-                                                                      `${baseName}.quantities`
-                                                                    ) || [];
-                                                                  const currentPrices =
+                                                                  let currentPrices =
                                                                     productForm.getValues(
                                                                       `${baseName}.prices`
                                                                     ) || [];
-                                                                  const choiceAmount =
-                                                                    choice.amount ||
-                                                                    0;
+                                                                  let currentQuantities =
+                                                                    productForm.getValues(
+                                                                      `${baseName}.quantities`
+                                                                    ) || [];
+
+                                                                  // Remove placeholder if present
+                                                                  if (
+                                                                    currentAnswers.length ===
+                                                                      1 &&
+                                                                    (currentAnswers[0] ===
+                                                                      "" ||
+                                                                      currentAnswers[0] ===
+                                                                        undefined)
+                                                                  ) {
+                                                                    currentAnswers =
+                                                                      [];
+                                                                    currentPrices =
+                                                                      [];
+                                                                    currentQuantities =
+                                                                      [];
+                                                                  }
 
                                                                   if (checked) {
-                                                                    // Add new choice
-                                                                    const newAnswers =
-                                                                      [
-                                                                        ...currentAnswers,
-                                                                        choice.name,
-                                                                      ];
-                                                                    const newQuantities =
-                                                                      [
-                                                                        ...currentQuantities,
-                                                                        1,
-                                                                      ];
-                                                                    const newPrices =
-                                                                      [
-                                                                        ...currentPrices,
-                                                                        choiceAmount,
-                                                                      ];
-
-                                                                    field.onChange(
-                                                                      newAnswers
-                                                                    );
-                                                                    productForm.setValue(
-                                                                      `${baseName}.quantities`,
-                                                                      newQuantities
-                                                                    );
-                                                                    productForm.setValue(
-                                                                      `${baseName}.prices`,
-                                                                      newPrices
-                                                                    );
+                                                                    if (
+                                                                      !currentAnswers.includes(
+                                                                        choice.name
+                                                                      )
+                                                                    ) {
+                                                                      currentAnswers =
+                                                                        [
+                                                                          ...currentAnswers,
+                                                                          choice.name,
+                                                                        ];
+                                                                      currentPrices =
+                                                                        [
+                                                                          ...currentPrices,
+                                                                          choice.amount ||
+                                                                            0,
+                                                                        ];
+                                                                      currentQuantities =
+                                                                        [
+                                                                          ...currentQuantities,
+                                                                          1,
+                                                                        ];
+                                                                    }
                                                                   } else {
-                                                                    // Remove choice and maintain array consistency
                                                                     const removeIndex =
                                                                       currentAnswers.indexOf(
                                                                         choice.name
                                                                       );
-
                                                                     if (
                                                                       removeIndex !==
                                                                       -1
                                                                     ) {
-                                                                      const newAnswers =
+                                                                      currentAnswers =
                                                                         currentAnswers.filter(
                                                                           (
                                                                             _,
-                                                                            idx
+                                                                            i
                                                                           ) =>
-                                                                            idx !==
+                                                                            i !==
                                                                             removeIndex
                                                                         );
-                                                                      const newQuantities =
-                                                                        currentQuantities.filter(
-                                                                          (
-                                                                            _,
-                                                                            idx
-                                                                          ) =>
-                                                                            idx !==
-                                                                            removeIndex
-                                                                        );
-                                                                      const newPrices =
+                                                                      currentPrices =
                                                                         currentPrices.filter(
                                                                           (
                                                                             _,
-                                                                            idx
+                                                                            i
                                                                           ) =>
-                                                                            idx !==
+                                                                            i !==
                                                                             removeIndex
                                                                         );
-
-                                                                      field.onChange(
-                                                                        newAnswers
-                                                                      );
-                                                                      productForm.setValue(
-                                                                        `${baseName}.quantities`,
-                                                                        newQuantities
-                                                                      );
-                                                                      productForm.setValue(
-                                                                        `${baseName}.prices`,
-                                                                        newPrices
-                                                                      );
+                                                                      currentQuantities =
+                                                                        currentQuantities.filter(
+                                                                          (
+                                                                            _,
+                                                                            i
+                                                                          ) =>
+                                                                            i !==
+                                                                            removeIndex
+                                                                        );
                                                                     }
                                                                   }
+
+                                                                  field.onChange(
+                                                                    currentAnswers
+                                                                  );
+                                                                  productForm.setValue(
+                                                                    `${baseName}.prices`,
+                                                                    currentPrices
+                                                                  );
+                                                                  productForm.setValue(
+                                                                    `${baseName}.quantities`,
+                                                                    currentQuantities
+                                                                  );
                                                                 }}
                                                               />
                                                               <Label className="flex-1 cursor-pointer">
@@ -2351,15 +2467,16 @@ export default function AddToCart() {
                                 Object.keys(productForm.watch()).length > 0 && (
                                   <div className="space-y-1 mb-2">
                                     {selectedVariant && (
-                                    <div className="flex items-center justify-between text-sm">
-                                      <span className="text-gray-600">
-                                        Price per item - {selectedVariant.name}
-                                      </span>
-                                      <span className="text-green-600">
-                                        +${selectedVariant.price.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  )}
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">
+                                          Price per item -{" "}
+                                          {selectedVariant.name}
+                                        </span>
+                                        <span className="text-green-600">
+                                          +${selectedVariant.price.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    )}
                                     {selectedProduct.options.map(
                                       (option, i) => {
                                         const selectedValue = productForm.watch(
@@ -2582,14 +2699,22 @@ export default function AddToCart() {
                   <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
                     <div className="mb-6">
                       <div className="w-[500px] h-[300px] bg-gray-100 rounded-lg flex items-center justify-center">
-                        {selectedProduct.imgUrls.length > 0 &&
+                        {selectedProduct.imgUrls.length > 0 ? (
                           selectedProduct.imgUrls.map((img) => (
                             <img
                               src={img}
                               alt={selectedProduct.name}
                               className="w-full h-full object-cover rounded-lg"
                             />
-                          ))}
+                          ))
+                        ) : (
+                          <div className="text-center">
+                            <Package className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">
+                              Product Image
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <Form {...productForm}>
@@ -2708,23 +2833,24 @@ export default function AddToCart() {
                                       </FormItem>
                                     )}
                                   />
-                                  {/* {selectedProduct.options.map(renderOption)} */}
+
                                   {productForm
                                     .getValues("options")
-                                    .map((option, index) => {
+                                    ?.map((option, index) => {
                                       const baseName = `options.${index}`;
                                       const type =
-                                        selectedProduct.options[index].type;
+                                        selectedProduct?.options[index]?.type;
                                       const label =
-                                        selectedProduct.options[index].name;
+                                        selectedProduct?.options[index]?.name;
                                       const required =
-                                        selectedProduct.options[index].required;
+                                        selectedProduct?.options[index]
+                                          ?.required;
                                       const choices =
-                                        selectedProduct.options[index].settings
-                                          ?.choices || [];
+                                        selectedProduct?.options[index]
+                                          ?.settings?.choices || [];
                                       const enableQuantity =
-                                        selectedProduct.options[index].settings
-                                          ?.enableQuantity;
+                                        selectedProduct?.options[index]
+                                          ?.settings?.enableQuantity;
 
                                       if (
                                         type === "Text" ||
@@ -2962,102 +3088,108 @@ export default function AddToCart() {
                                                               onCheckedChange={(
                                                                 checked
                                                               ) => {
-                                                                const currentAnswers =
+                                                                let currentAnswers =
                                                                   field.value ||
                                                                   [];
-                                                                const currentQuantities =
-                                                                  productForm.getValues(
-                                                                    `${baseName}.quantities`
-                                                                  ) || [];
-                                                                const currentPrices =
+                                                                let currentPrices =
                                                                   productForm.getValues(
                                                                     `${baseName}.prices`
                                                                   ) || [];
-                                                                const choiceAmount =
-                                                                  choice.amount ||
-                                                                  0;
+                                                                let currentQuantities =
+                                                                  productForm.getValues(
+                                                                    `${baseName}.quantities`
+                                                                  ) || [];
+
+                                                                // Remove placeholder if present
+                                                                if (
+                                                                  currentAnswers.length ===
+                                                                    1 &&
+                                                                  (currentAnswers[0] ===
+                                                                    "" ||
+                                                                    currentAnswers[0] ===
+                                                                      undefined)
+                                                                ) {
+                                                                  currentAnswers =
+                                                                    [];
+                                                                  currentPrices =
+                                                                    [];
+                                                                  currentQuantities =
+                                                                    [];
+                                                                }
 
                                                                 if (checked) {
-                                                                  // Add new choice
-                                                                  const newAnswers =
-                                                                    [
-                                                                      ...currentAnswers,
-                                                                      choice.name,
-                                                                    ];
-                                                                  const newQuantities =
-                                                                    [
-                                                                      ...currentQuantities,
-                                                                      1,
-                                                                    ];
-                                                                  const newPrices =
-                                                                    [
-                                                                      ...currentPrices,
-                                                                      choiceAmount,
-                                                                    ];
-
-                                                                  field.onChange(
-                                                                    newAnswers
-                                                                  );
-                                                                  productForm.setValue(
-                                                                    `${baseName}.quantities`,
-                                                                    newQuantities
-                                                                  );
-                                                                  productForm.setValue(
-                                                                    `${baseName}.prices`,
-                                                                    newPrices
-                                                                  );
+                                                                  if (
+                                                                    !currentAnswers.includes(
+                                                                      choice.name
+                                                                    )
+                                                                  ) {
+                                                                    currentAnswers =
+                                                                      [
+                                                                        ...currentAnswers,
+                                                                        choice.name,
+                                                                      ];
+                                                                    currentPrices =
+                                                                      [
+                                                                        ...currentPrices,
+                                                                        choice.amount ||
+                                                                          0,
+                                                                      ];
+                                                                    currentQuantities =
+                                                                      [
+                                                                        ...currentQuantities,
+                                                                        1,
+                                                                      ];
+                                                                  }
                                                                 } else {
-                                                                  // Remove choice and maintain array consistency
                                                                   const removeIndex =
                                                                     currentAnswers.indexOf(
                                                                       choice.name
                                                                     );
-
                                                                   if (
                                                                     removeIndex !==
                                                                     -1
                                                                   ) {
-                                                                    const newAnswers =
+                                                                    currentAnswers =
                                                                       currentAnswers.filter(
                                                                         (
                                                                           _,
-                                                                          idx
+                                                                          i
                                                                         ) =>
-                                                                          idx !==
+                                                                          i !==
                                                                           removeIndex
                                                                       );
-                                                                    const newQuantities =
-                                                                      currentQuantities.filter(
-                                                                        (
-                                                                          _,
-                                                                          idx
-                                                                        ) =>
-                                                                          idx !==
-                                                                          removeIndex
-                                                                      );
-                                                                    const newPrices =
+                                                                    currentPrices =
                                                                       currentPrices.filter(
                                                                         (
                                                                           _,
-                                                                          idx
+                                                                          i
                                                                         ) =>
-                                                                          idx !==
+                                                                          i !==
                                                                           removeIndex
                                                                       );
-
-                                                                    field.onChange(
-                                                                      newAnswers
-                                                                    );
-                                                                    productForm.setValue(
-                                                                      `${baseName}.quantities`,
-                                                                      newQuantities
-                                                                    );
-                                                                    productForm.setValue(
-                                                                      `${baseName}.prices`,
-                                                                      newPrices
-                                                                    );
+                                                                    currentQuantities =
+                                                                      currentQuantities.filter(
+                                                                        (
+                                                                          _,
+                                                                          i
+                                                                        ) =>
+                                                                          i !==
+                                                                          removeIndex
+                                                                      );
                                                                   }
                                                                 }
+
+                                                                field.onChange(
+                                                                  currentAnswers
+                                                                );
+                                                                productForm.setValue(
+                                                                  `${baseName}.prices`,
+                                                                  currentPrices
+                                                                );
+                                                                productForm.setValue(
+                                                                  `${baseName}.quantities`,
+                                                                  currentQuantities
+                                                                );
                                                               }}
                                                             />
                                                             <Label className="flex-1 cursor-pointer">
