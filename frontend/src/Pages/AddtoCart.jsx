@@ -69,7 +69,6 @@ const customerFormSchema = z.object({
 
 const createFormSchema = (product) => {
   return z.object({
-    inventory: z.object({
       quantity: z.preprocess((val) => {
         if (val === "" || val === null || val === undefined) {
           return 0;
@@ -77,7 +76,6 @@ const createFormSchema = (product) => {
         const parsed = typeof val === "string" ? parseFloat(val) : val;
         return isNaN(parsed) ? 0 : parsed;
       }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
-    }),
     variantId: z.string().min(1, "Product variant is required"),
     totalPrice: z.number().optional(),
     options: z
@@ -268,15 +266,14 @@ export default function AddToCart() {
   });
 
   const defaultValuesFromProduct = (product) => ({
-    inventory: { quantity: 1 },
+    quantity: 1 ,
     variantId: "",
-    totalPrice: 0,
     options:
       product?.options?.map((opt) => ({
         name: opt.name,
-        answers: [""], // << FIX: prevent undefined
-        prices: [0], // you may also want default price
-        quantities: [1], // default quantity
+        answers: [""],
+        prices: [0],
+        quantities: [1],
       })) || [],
   });
 
@@ -299,7 +296,7 @@ export default function AddToCart() {
   // Add this after productForm is defined
   const watchedQuantity = useWatch({
     control: productForm.control,
-    name: "inventory.quantity",
+    name: "quantity",
   });
 
   const calculateItemPrice = (product, formValues) => {
@@ -334,7 +331,7 @@ export default function AddToCart() {
     });
 
     // Add option price to base price, then multiply by inventory quantity
-    const inventoryQuantity = formValues.inventory?.quantity || 1;
+    const inventoryQuantity = formValues.quantity || 1;
     const totalPrice = baseItemPrice * inventoryQuantity + optionPrice;
 
     return totalPrice;
@@ -403,88 +400,26 @@ export default function AddToCart() {
   const removeOrderNote = (id) => {
     setOrderNotes(orderNotes.filter((note) => note.id !== id));
   };
-  console.log("Current form values:", productForm.getValues());
 
   const addToCart = async (formData) => {
-    console.log("Form values on submit:", productForm.getValues());
     console.log("formData:", formData);
     if (!selectedProduct) return;
-
+    formData.options.forEach((opt) => {
+      if (
+        Array.isArray(opt.answers) &&
+        opt.answers.length === 1 &&
+        opt.answers[0] === ""
+      ) {
+        opt.answers = [];
+        opt.prices = [];
+        opt.quantities = [];
+      }
+    });
+    console.log("formData2:", formData);
     // Extract selected variant
     const variant = selectedProduct.variants.find(
       (v) => v._id === formData.variantId
     );
-
-    const selectedVariants = variant
-      ? {
-          id: variant._id,
-          name: variant.name,
-          price: variant.price ?? 0,
-        }
-      : {};
-
-    // Extract selected options from formData.options array
-    const selectedOptions = selectedProduct.options
-      .map((option, index) => {
-        const formOption = formData.options?.[index];
-        if (!formOption) return null;
-
-        const { answers = [], quantities = [], prices = [] } = formOption;
-
-        if (option.type === "Text" || option.type === "Number") {
-          if (!answers[0]) return null;
-          return {
-            id: option._id,
-            name: option.name,
-            type: option.type,
-            value: answers[0],
-          };
-        }
-
-        if (option.type === "Selection") {
-          const value = answers[0];
-          const quantity = quantities[0] || 1;
-          const price = prices[0] || 0;
-
-          if (!value) return null;
-
-          return {
-            id: option._id,
-            name: option.name,
-            type: option.type,
-            value: {
-              value,
-              quantity,
-              price,
-            },
-          };
-        }
-
-        if (option.type === "Checkbox") {
-          const value = answers.map((val, i) => {
-            const quantity = quantities[i] || 1;
-            const price = prices[i] || 0;
-
-            return {
-              value: val,
-              quantity,
-              price,
-            };
-          });
-
-          if (value.length === 0) return null;
-
-          return {
-            id: option._id,
-            name: option.name,
-            type: option.type,
-            value,
-          };
-        }
-
-        return null;
-      })
-      .filter(Boolean); // remove nulls
 
     // Pricing calculation
     const basePrice =
@@ -493,37 +428,21 @@ export default function AddToCart() {
       selectedProduct.originalPrice ??
       0;
 
-    const optionPrice = selectedOptions.reduce((sum, opt) => {
-      if (opt.type === "Selection") {
-        return sum + opt.value.price * opt.value.quantity;
-      }
-
-      if (opt.type === "Checkbox") {
-        return (
-          sum +
-          opt.value.reduce((subSum, item) => {
-            return subSum + item.price * item.quantity;
-          }, 0)
-        );
-      }
-
-      return sum;
-    }, 0);
-
-    const quantity = formData.inventory?.quantity || 1;
-    const itemPrice = basePrice + optionPrice;
-    const totalPrice = itemPrice * quantity;
-
     const cartItem = {
       id: Date.now().toString(),
-      productId: selectedProduct._id,
-      productName: selectedProduct.name,
-      selectedVariants,
-      selectedOptions,
-      quantity,
-      itemPrice,
+      items: {
+        cartMinimum: selectedProduct?.cartMinimum,
+        cartMaximum: selectedProduct?.cartMaximum,
+        categories: selectedProduct?.categories,
+        imgUrls: selectedProduct?.imgUrls,
+        ...formData,
+        productId: selectedProduct._id,
+        productName: selectedProduct.name,
+        photo: selectedProduct?.photo,
+        productinventory: selectedProduct?.inventory?.quantity,
+      },
+      basePrice,
       totalPrice: currentItemPrice,
-      product: selectedProduct,
     };
 
     try {
@@ -766,7 +685,7 @@ export default function AddToCart() {
       console.error("Failed to complete order:", error);
     }
   };
-  console.log("options", productForm.getValues("options"));
+
   const renderCartItemDetails = (item) => {
     return (
       <div className="space-y-3">
@@ -983,9 +902,7 @@ export default function AddToCart() {
   const selectedVariant = selectedProduct?.variants.find(
     (v) => v._id === variants
   );
-  {
-    console.log("gg", productForm?.formState?.errors);
-  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto p-4 max-w-7xl">
@@ -1136,7 +1053,6 @@ export default function AddToCart() {
                       )}
                     />
                   </div>
-
                   {/* Address Selection */}
                   {selectedCustomer && !isNewCustomer && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1882,7 +1798,7 @@ export default function AddToCart() {
                                   <div className="space-y-6">
                                     <FormField
                                       control={productForm.control}
-                                      name="inventory.quantity"
+                                      name="quantity"
                                       render={({ field }) => (
                                         <FormItem>
                                           <FormLabel>Quantity</FormLabel>
@@ -2803,7 +2719,7 @@ export default function AddToCart() {
                                 <div className="space-y-6">
                                   <FormField
                                     control={productForm.control}
-                                    name="inventory.quantity"
+                                    name="quantity"
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Quantity</FormLabel>
@@ -3069,11 +2985,6 @@ export default function AddToCart() {
                                                                 `${baseName}.quantities.${answerIndex}`
                                                               ) || 1
                                                             : 1;
-
-                                                        console.log(
-                                                          "quantity",
-                                                          quantity
-                                                        );
 
                                                         return (
                                                           <div
