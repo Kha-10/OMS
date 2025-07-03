@@ -38,7 +38,6 @@ import {
   Minus,
   Percent,
   Edit,
-  Trash2,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -46,6 +45,8 @@ import { condoLists } from "@/helper/constant";
 import useCustomers from "@/hooks/useCustomers";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
+import { v4 as uuidv4 } from "uuid";
+import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
 
 // Form schemas
@@ -69,13 +70,13 @@ const customerFormSchema = z.object({
 
 const createFormSchema = (product) => {
   return z.object({
-      quantity: z.preprocess((val) => {
-        if (val === "" || val === null || val === undefined) {
-          return 0;
-        }
-        const parsed = typeof val === "string" ? parseFloat(val) : val;
-        return isNaN(parsed) ? 0 : parsed;
-      }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
+    quantity: z.preprocess((val) => {
+      if (val === "" || val === null || val === undefined) {
+        return 0;
+      }
+      const parsed = typeof val === "string" ? parseFloat(val) : val;
+      return isNaN(parsed) ? 0 : parsed;
+    }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
     variantId: z.string().min(1, "Product variant is required"),
     totalPrice: z.number().optional(),
     options: z
@@ -266,7 +267,7 @@ export default function AddToCart() {
   });
 
   const defaultValuesFromProduct = (product) => ({
-    quantity: 1 ,
+    quantity: 1,
     variantId: "",
     options:
       product?.options?.map((opt) => ({
@@ -292,12 +293,6 @@ export default function AddToCart() {
   }, [selectedProduct]);
 
   console.log(selectedProduct);
-
-  // Add this after productForm is defined
-  const watchedQuantity = useWatch({
-    control: productForm.control,
-    name: "quantity",
-  });
 
   const calculateItemPrice = (product, formValues) => {
     let baseItemPrice = product.price || product.originalPrice || 0;
@@ -401,8 +396,20 @@ export default function AddToCart() {
     setOrderNotes(orderNotes.filter((note) => note.id !== id));
   };
 
+  function getOrCreateCartId() {
+    let cartId = sessionStorage.getItem("adminCartId");
+    if (!cartId) {
+      cartId = uuidv4();
+      sessionStorage.setItem("adminCartId", cartId);
+    }
+    return cartId;
+  }
+
+  function clearCartId() {
+    sessionStorage.removeItem("adminCartId");
+  }
+
   const addToCart = async (formData) => {
-    console.log("formData:", formData);
     if (!selectedProduct) return;
     formData.options.forEach((opt) => {
       if (
@@ -415,7 +422,7 @@ export default function AddToCart() {
         opt.quantities = [];
       }
     });
-    console.log("formData2:", formData);
+
     // Extract selected variant
     const variant = selectedProduct.variants.find(
       (v) => v._id === formData.variantId
@@ -428,8 +435,10 @@ export default function AddToCart() {
       selectedProduct.originalPrice ??
       0;
 
+    const cartId = getOrCreateCartId();
+
     const cartItem = {
-      id: Date.now().toString(),
+      cartId,
       items: {
         cartMinimum: selectedProduct?.cartMinimum,
         cartMaximum: selectedProduct?.cartMaximum,
@@ -447,7 +456,8 @@ export default function AddToCart() {
 
     try {
       console.log("Sending to backend:", cartItem);
-
+      const res = await axios.post("/api/cart", cartItem);
+      console.log("res",res);
       setCart([...cart, cartItem]);
       setSelectedProduct(null);
       setCurrentView("products");
@@ -687,214 +697,216 @@ export default function AddToCart() {
   };
 
   const renderCartItemDetails = (item) => {
+    console.log(item);
     return (
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h4 className="font-medium text-lg">{item.productName}</h4>
-            <div className="mt-1">
-              <p className="text-base font-bold">
-                ${item.totalPrice.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600">
-                ${item.itemPrice.toFixed(2)} each
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => removeFromCart(item.id)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+      // <div className="space-y-3">
+      //   <div className="flex items-start justify-between">
+      //     <div className="flex-1">
+      //       <h4 className="font-medium text-lg">{item.productName}</h4>
+      //       <div className="mt-1">
+      //         <p className="text-base font-bold">
+      //           ${item.totalPrice.toFixed(2)}
+      //         </p>
+      //         <p className="text-sm text-gray-600">
+      //           ${item.itemPrice?.toFixed(2)} each
+      //         </p>
+      //       </div>
+      //     </div>
+      //     <Button
+      //       variant="ghost"
+      //       size="sm"
+      //       onClick={() => removeFromCart(item.id)}
+      //       className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+      //     >
+      //       <Trash2 className="h-4 w-4" />
+      //     </Button>
+      //   </div>
 
-        {/* Main quantity control */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <span className="font-medium">Main Quantity:</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-              disabled={item.quantity <= 1}
-              className="h-8 w-8 p-0"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="font-medium w-12 text-center">
-              {item.quantity}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-              className="h-8 w-8 p-0"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      //   {/* Main quantity control */}
+      //   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      //     <span className="font-medium">Main Quantity:</span>
+      //     <div className="flex items-center gap-2">
+      //       <Button
+      //         variant="outline"
+      //         size="sm"
+      //         onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+      //         disabled={item.quantity <= 1}
+      //         className="h-8 w-8 p-0"
+      //       >
+      //         <Minus className="h-4 w-4" />
+      //       </Button>
+      //       <span className="font-medium w-12 text-center">
+      //         {item.quantity}
+      //       </span>
+      //       <Button
+      //         variant="outline"
+      //         size="sm"
+      //         onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+      //         className="h-8 w-8 p-0"
+      //       >
+      //         <Plus className="h-4 w-4" />
+      //       </Button>
+      //     </div>
+      //   </div>
 
-        {/* Variants */}
-        {Object.keys(item.selectedVariants).length > 0 && (
-          <div className="space-y-2">
-            <h5 className="font-medium">Selected Variants:</h5>
-            {Object.entries(item.selectedVariants)
-              .filter(([key]) => key !== "id")
-              .map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex justify-between text-sm p-2 bg-gray-50 rounded"
-                >
-                  <span className="font-medium">{key}:</span>
-                  <span>{value}</span>
-                </div>
-              ))}
-          </div>
-        )}
+      //   {/* Variants */}
+      //   {Object.keys(item.selectedVariants).length > 0 && (
+      //     <div className="space-y-2">
+      //       <h5 className="font-medium">Selected Variants:</h5>
+      //       {Object.entries(item.selectedVariants)
+      //         .filter(([key]) => key !== "id")
+      //         .map(([key, value]) => (
+      //           <div
+      //             key={key}
+      //             className="flex justify-between text-sm p-2 bg-gray-50 rounded"
+      //           >
+      //             <span className="font-medium">{key}:</span>
+      //             <span>{value}</span>
+      //           </div>
+      //         ))}
+      //     </div>
+      //   )}
 
-        {/* Options with quantities */}
-        {item.selectedOptions.length > 0 && (
-          <div className="space-y-2">
-            <h5 className="font-medium">Selected Options:</h5>
+      //   {/* Options with quantities */}
+      //   {item.selectedOptions.length > 0 && (
+      //     <div className="space-y-2">
+      //       <h5 className="font-medium">Selected Options:</h5>
 
-            {item.selectedOptions.map((option) => {
-              // Handle "Selection" type
-              if (
-                option.type === "Selection" &&
-                typeof option.value === "object"
-              ) {
-                const { value, quantity, price } = option.value;
+      //       {item.selectedOptions.map((option) => {
+      //         // Handle "Selection" type
+      //         if (
+      //           option.type === "Selection" &&
+      //           typeof option.value === "object"
+      //         ) {
+      //           const { value, quantity, price } = option.value;
 
-                return (
-                  <div
-                    key={option.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium">{option.name}:</span>{" "}
-                      {value}
-                      {price > 0 && (
-                        <span className="ml-1 text-green-600">
-                          (+${price.toFixed(2)} each)
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          updateCartItemOptionQuantity(
-                            item.id,
-                            option.id,
-                            value,
-                            quantity - 1
-                          )
-                        }
-                        disabled={quantity <= 1}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-sm font-medium w-8 text-center">
-                        {quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          updateCartItemOptionQuantity(
-                            item.id,
-                            option.id,
-                            value,
-                            quantity + 1
-                          )
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-              // Handle "Checkbox" type
-              if (option.type === "Checkbox" && Array.isArray(option.value)) {
-                return (
-                  <div key={option.id} className="space-y-1">
-                    <span className="font-medium">{option.name}:</span>
-                    {option.value.map((choice) => (
-                      <div
-                        key={choice.value}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded ml-4"
-                      >
-                        <div className="flex-1">
-                          {choice.value}
-                          {choice.price > 0 && (
-                            <span className="ml-1 text-green-600">
-                              (+${choice.price.toFixed(2)} each)
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              updateCartItemOptionQuantity(
-                                item.id,
-                                option.id,
-                                choice.value,
-                                choice.quantity - 1
-                              )
-                            }
-                            disabled={choice.quantity <= 1}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-sm font-medium w-8 text-center">
-                            {choice.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              updateCartItemOptionQuantity(
-                                item.id,
-                                option.id,
-                                choice.value,
-                                choice.quantity + 1
-                              )
-                            }
-                            className="h-6 w-6 p-0"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
+      //           return (
+      //             <div
+      //               key={option.id}
+      //               className="flex items-center justify-between p-2 bg-gray-50 rounded"
+      //             >
+      //               <div className="flex-1">
+      //                 <span className="font-medium">{option.name}:</span>{" "}
+      //                 {value}
+      //                 {price > 0 && (
+      //                   <span className="ml-1 text-green-600">
+      //                     (+${price.toFixed(2)} each)
+      //                   </span>
+      //                 )}
+      //               </div>
+      //               <div className="flex items-center gap-1">
+      //                 <Button
+      //                   variant="outline"
+      //                   size="sm"
+      //                   onClick={() =>
+      //                     updateCartItemOptionQuantity(
+      //                       item.id,
+      //                       option.id,
+      //                       value,
+      //                       quantity - 1
+      //                     )
+      //                   }
+      //                   disabled={quantity <= 1}
+      //                   className="h-6 w-6 p-0"
+      //                 >
+      //                   <Minus className="h-3 w-3" />
+      //                 </Button>
+      //                 <span className="text-sm font-medium w-8 text-center">
+      //                   {quantity}
+      //                 </span>
+      //                 <Button
+      //                   variant="outline"
+      //                   size="sm"
+      //                   onClick={() =>
+      //                     updateCartItemOptionQuantity(
+      //                       item.id,
+      //                       option.id,
+      //                       value,
+      //                       quantity + 1
+      //                     )
+      //                   }
+      //                   className="h-6 w-6 p-0"
+      //                 >
+      //                   <Plus className="h-3 w-3" />
+      //                 </Button>
+      //               </div>
+      //             </div>
+      //           );
+      //         }
+      //         // Handle "Checkbox" type
+      //         if (option.type === "Checkbox" && Array.isArray(option.value)) {
+      //           return (
+      //             <div key={option.id} className="space-y-1">
+      //               <span className="font-medium">{option.name}:</span>
+      //               {option.value.map((choice) => (
+      //                 <div
+      //                   key={choice.value}
+      //                   className="flex items-center justify-between p-2 bg-gray-50 rounded ml-4"
+      //                 >
+      //                   <div className="flex-1">
+      //                     {choice.value}
+      //                     {choice.price > 0 && (
+      //                       <span className="ml-1 text-green-600">
+      //                         (+${choice.price.toFixed(2)} each)
+      //                       </span>
+      //                     )}
+      //                   </div>
+      //                   <div className="flex items-center gap-1">
+      //                     <Button
+      //                       variant="outline"
+      //                       size="sm"
+      //                       onClick={() =>
+      //                         updateCartItemOptionQuantity(
+      //                           item.id,
+      //                           option.id,
+      //                           choice.value,
+      //                           choice.quantity - 1
+      //                         )
+      //                       }
+      //                       disabled={choice.quantity <= 1}
+      //                       className="h-6 w-6 p-0"
+      //                     >
+      //                       <Minus className="h-3 w-3" />
+      //                     </Button>
+      //                     <span className="text-sm font-medium w-8 text-center">
+      //                       {choice.quantity}
+      //                     </span>
+      //                     <Button
+      //                       variant="outline"
+      //                       size="sm"
+      //                       onClick={() =>
+      //                         updateCartItemOptionQuantity(
+      //                           item.id,
+      //                           option.id,
+      //                           choice.value,
+      //                           choice.quantity + 1
+      //                         )
+      //                       }
+      //                       className="h-6 w-6 p-0"
+      //                     >
+      //                       <Plus className="h-3 w-3" />
+      //                     </Button>
+      //                   </div>
+      //                 </div>
+      //               ))}
+      //             </div>
+      //           );
+      //         }
 
-              // Default fallback (e.g., Text type)
-              return (
-                <div key={option.id}>
-                  <p>
-                    <span className="font-medium">{option.name}:</span>{" "}
-                    {option.value}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      //         // Default fallback (e.g., Text type)
+      //         return (
+      //           <div key={option.id}>
+      //             <p>
+      //               <span className="font-medium">{option.name}:</span>{" "}
+      //               {option.value}
+      //             </p>
+      //           </div>
+      //         );
+      //       })}
+      //     </div>
+      //   )}
+      // </div>
+      <p>gg</p>
     );
   };
 

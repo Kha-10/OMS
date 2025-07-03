@@ -8,6 +8,8 @@ const productRoutes = require("./routes/products");
 
 const categoryRoutes = require("./routes/category");
 
+const cartRoutes = require("./routes/cart");
+
 const userRoutes = require("./routes/users");
 
 const customerRoutes = require("./routes/customer");
@@ -85,6 +87,8 @@ app.get("/", (req, res) => {
 app.use("/api/products", authMiddleware, productRoutes);
 
 app.use("/api/categories", authMiddleware, categoryRoutes);
+
+app.use("/api/cart", authMiddleware, cartRoutes);
 
 app.use("/api/customers", authMiddleware, customerRoutes);
 
