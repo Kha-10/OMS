@@ -38,6 +38,7 @@ import {
   Minus,
   Percent,
   Edit,
+  Trash2,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -408,6 +409,22 @@ export default function AddToCart() {
   function clearCartId() {
     sessionStorage.removeItem("adminCartId");
   }
+  console.log("cart", cart);
+  const cartId = sessionStorage.getItem("adminCartId");
+
+  const fetchCart = async () => {
+    const res = await axios(`/api/cart/${cartId}`);
+    if (res.status === 200) {
+      console.log(res.data.items);
+      setCart([...cart, ...res.data.items]);
+    }
+  };
+
+  useEffect(() => {
+    if (cartId) {
+      fetchCart();
+    }
+  }, [cartId]);
 
   const addToCart = async (formData) => {
     if (!selectedProduct) return;
@@ -446,7 +463,7 @@ export default function AddToCart() {
         imgUrls: selectedProduct?.imgUrls,
         ...formData,
         productId: selectedProduct._id,
-        productName: selectedProduct.name,
+        productName: `${selectedProduct.name} - ${variant.name}`,
         photo: selectedProduct?.photo,
         productinventory: selectedProduct?.inventory?.quantity,
       },
@@ -457,10 +474,10 @@ export default function AddToCart() {
     try {
       console.log("Sending to backend:", cartItem);
       const res = await axios.post("/api/cart", cartItem);
-      console.log("res",res);
-      setCart([...cart, cartItem]);
+      console.log("res", res);
+      setCart([...res.data.cart.items]);
       setSelectedProduct(null);
-      setCurrentView("products");
+      setCurrentView("cart");
       productForm.reset();
 
       setCartButtonAnimation(true);
@@ -471,121 +488,124 @@ export default function AddToCart() {
     }
   };
 
-  // Cart quantity update functions
-  const updateCartItemQuantity = (itemId, newQuantity) => {
+  const updateCartItemQuantity = async (productId, variantId, newQuantity) => {
     if (newQuantity < 1) return;
 
-    setCart(
-      cart.map((item) => {
-        if (item.id === itemId) {
-          const newTotalPrice = item.itemPrice * newQuantity;
-          return { ...item, quantity: newQuantity, totalPrice: newTotalPrice };
+    setCart((prevCart) => {
+      const updatedItems = prevCart.map((item) => {
+        if (item.productId === productId && item.variantId === variantId) {
+          const updatedTotalPrice = calculateCartItemPrice(
+            item.basePrice,
+            item.options,
+            newQuantity
+          );
+
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: updatedTotalPrice,
+          };
         }
         return item;
-      })
-    );
-  };
+      });
 
-  const calculateCartItemPrice = (
-    product,
-    selectedVariant,
-    selectedOptions
-  ) => {
-    // Default base price
-    let price = product.price || product.originalPrice || 0;
-
-    // Override with selectedVariant price if provided
-    if (selectedVariant && typeof selectedVariant.price === "number") {
-      price = selectedVariant.price;
-    }
-
-    // Process options
-    selectedOptions?.forEach((option) => {
-      const productOption = product.options?.find((o) => o._id === option.id);
-      if (!productOption) return;
-
-      if (option.type === "Selection" && option.value) {
-        const selectedChoice = option;
-
-        if (selectedChoice) {
-          price += selectedChoice.value.price * (option.value.quantity || 1);
-        }
-      } else if (option.type === "Checkbox" && Array.isArray(option.value)) {
-        option.value.forEach((opt) => {
-          const matchedChoice = productOption.choices.find(
-            (c) => c.name === opt.value
-          );
-          if (matchedChoice) {
-            price += matchedChoice.amount * (opt.quantity || 1);
-          }
-        });
-      } else if (option.type === "Number") {
-        const choice = productOption.choices?.[0];
-        if (choice) {
-          price += choice.amount * (option.value || 0);
-        }
-      }
+      return updatedItems;
     });
 
-    return price;
+    try {
+      const cartId = sessionStorage.getItem("adminCartId");
+      if (!cartId) throw new Error("Missing adminCartId");
+
+      await axios.patch(`/api/cart/${cartId}`, {
+        productId,
+        variantId,
+        quantity: newQuantity,
+      });
+    } catch (error) {
+      console.error("❌ Failed to sync with Redis:", error);
+    }
   };
 
-  // Update option quantities in cart
-  const updateCartItemOptionQuantity = (
-    itemId,
-    optionId,
-    optionValue,
+  const calculateCartItemPrice = (basePrice, options = [], quantity = 1) => {
+    let optionTotal = 0;
+
+    for (const option of options) {
+      const { prices = [], quantities = [] } = option;
+
+      for (let i = 0; i < prices.length; i++) {
+        const price = prices[i] || 0;
+        const qty = quantities[i] || 0;
+        optionTotal += price * qty;
+      }
+    }
+
+    return (basePrice + optionTotal) * quantity;
+  };
+
+  const updateCartItemOptionQuantity = async (
+    productId,
+    variantId,
+    optionName,
+    answerValue,
     newQuantity
   ) => {
     if (newQuantity < 1) return;
 
-    setCart((prevCart) =>
-      prevCart.map((item) => {
-        if (item.id !== itemId) return item;
+    // Optimistically update UI
+    setCart((prevCart) => {
+      const updatedItems = prevCart.map((item) => {
+        if (item.productId !== productId || item.variantId !== variantId) {
+          return item;
+        }
 
-        const updatedOptions = item.selectedOptions.map((option) => {
-          if (option.id !== optionId) return option;
+        const updatedOptions = item.options.map((option) => {
+          if (option.name !== optionName) return option;
 
-          if (
-            option.type === "Selection" &&
-            option.value.value === optionValue
-          ) {
-            return {
-              ...option,
-              value: {
-                ...option.value,
-                quantity: newQuantity,
-              },
-            };
-          }
+          const answerIndex = option.answers.findIndex(
+            (a) => a === answerValue
+          );
+          if (answerIndex === -1) return option;
 
-          if (option.type === "Checkbox" && Array.isArray(option.value)) {
-            const updatedCheckboxValues = option.value.map((v) =>
-              v.value === optionValue ? { ...v, quantity: newQuantity } : v
-            );
-            return {
-              ...option,
-              value: updatedCheckboxValues,
-            };
-          }
+          const updatedQuantities = [...option.quantities];
+          updatedQuantities[answerIndex] = newQuantity;
 
-          return option;
+          return {
+            ...option,
+            quantities: updatedQuantities,
+          };
         });
 
-        const newItemPrice = calculateCartItemPrice(
-          item.product,
-          item.selectedVariants,
-          updatedOptions
+        const updatedTotalPrice = calculateCartItemPrice(
+          item.basePrice,
+          updatedOptions,
+          item.quantity
         );
 
         return {
           ...item,
-          selectedOptions: updatedOptions,
-          itemPrice: newItemPrice,
-          totalPrice: newItemPrice * item.quantity,
+          options: updatedOptions,
+          totalPrice: updatedTotalPrice,
         };
-      })
-    );
+      });
+
+      return updatedItems;
+    });
+
+    // Persist change to Redis
+    try {
+      const cartId = sessionStorage.getItem("adminCartId");
+      if (!cartId) throw new Error("Missing adminCartId");
+
+      await axios.patch(`/api/cart/${cartId}`, {
+        productId,
+        variantId,
+        optionName,
+        optionValue: answerValue,
+        optionQuantity: newQuantity,
+      });
+    } catch (err) {
+      console.error("❌ Failed to update Redis cart:", err);
+    }
   };
 
   const removeFromCart = (itemId) => {
@@ -699,214 +719,193 @@ export default function AddToCart() {
   const renderCartItemDetails = (item) => {
     console.log(item);
     return (
-      // <div className="space-y-3">
-      //   <div className="flex items-start justify-between">
-      //     <div className="flex-1">
-      //       <h4 className="font-medium text-lg">{item.productName}</h4>
-      //       <div className="mt-1">
-      //         <p className="text-base font-bold">
-      //           ${item.totalPrice.toFixed(2)}
-      //         </p>
-      //         <p className="text-sm text-gray-600">
-      //           ${item.itemPrice?.toFixed(2)} each
-      //         </p>
-      //       </div>
-      //     </div>
-      //     <Button
-      //       variant="ghost"
-      //       size="sm"
-      //       onClick={() => removeFromCart(item.id)}
-      //       className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-      //     >
-      //       <Trash2 className="h-4 w-4" />
-      //     </Button>
-      //   </div>
+      <div className="space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h4 className="font-medium text-lg">{item.productName}</h4>
+            <div className="mt-1">
+              <p className="text-base font-bold">
+                ${item.totalPrice?.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-600">
+                ${item.basePrice?.toFixed(2)} each
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removeFromCart(item.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
 
-      //   {/* Main quantity control */}
-      //   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-      //     <span className="font-medium">Main Quantity:</span>
-      //     <div className="flex items-center gap-2">
-      //       <Button
-      //         variant="outline"
-      //         size="sm"
-      //         onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-      //         disabled={item.quantity <= 1}
-      //         className="h-8 w-8 p-0"
-      //       >
-      //         <Minus className="h-4 w-4" />
-      //       </Button>
-      //       <span className="font-medium w-12 text-center">
-      //         {item.quantity}
-      //       </span>
-      //       <Button
-      //         variant="outline"
-      //         size="sm"
-      //         onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-      //         className="h-8 w-8 p-0"
-      //       >
-      //         <Plus className="h-4 w-4" />
-      //       </Button>
-      //     </div>
-      //   </div>
+        {/* Main quantity control */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <span className="font-medium">Main Quantity:</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                updateCartItemQuantity(
+                  item.productId,
+                  item.variantId,
+                  item.quantity - 1
+                )
+              }
+              disabled={item.quantity <= 1}
+              className="h-8 w-8 p-0"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="font-medium w-12 text-center">
+              {item.quantity}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                updateCartItemQuantity(
+                  item.productId,
+                  item.variantId,
+                  item.quantity + 1
+                )
+              }
+              className="h-8 w-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-      //   {/* Variants */}
-      //   {Object.keys(item.selectedVariants).length > 0 && (
-      //     <div className="space-y-2">
-      //       <h5 className="font-medium">Selected Variants:</h5>
-      //       {Object.entries(item.selectedVariants)
-      //         .filter(([key]) => key !== "id")
-      //         .map(([key, value]) => (
-      //           <div
-      //             key={key}
-      //             className="flex justify-between text-sm p-2 bg-gray-50 rounded"
-      //           >
-      //             <span className="font-medium">{key}:</span>
-      //             <span>{value}</span>
-      //           </div>
-      //         ))}
-      //     </div>
-      //   )}
+        {/* Options with quantities */}
+        {item.options.length > 0 && (
+          <div className="space-y-2">
+            <h5 className="font-medium">Selected Options:</h5>
 
-      //   {/* Options with quantities */}
-      //   {item.selectedOptions.length > 0 && (
-      //     <div className="space-y-2">
-      //       <h5 className="font-medium">Selected Options:</h5>
+            {item.options.map((option, i) => {
+              return (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                >
+                  <div className="w-full">
+                    <p className="font-semibold">{option.name}</p>
+                    <div className="flex-1">
+                      {/* {option.answers.length > 0 &&
+                        option.answers.map((answer, i) => (
+                          <span key={i} className="font-medium">
+                            {answer}:
+                          </span>
+                        ))}
+                      {option.prices > 0 &&
+                        option.prices.map((price, i) => (
+                          <span key={i} className="ml-1 text-green-600">
+                            (+${price.toFixed(2)} each)
+                          </span>
+                        ))} */}
+                      {option.answers.map((answer, i) => (
+                        <div
+                          key={i}
+                          className="w-full flex items-center justify-between pl-2"
+                        >
+                          <div className="flex-1">
+                            <span className="font-medium">{answer}</span>
+                            <span className="ml-2 text-green-600">
+                              (+${option.prices?.[i]?.toFixed(2) || "0.00"}{" "}
+                              each)
+                            </span>
+                          </div>
 
-      //       {item.selectedOptions.map((option) => {
-      //         // Handle "Selection" type
-      //         if (
-      //           option.type === "Selection" &&
-      //           typeof option.value === "object"
-      //         ) {
-      //           const { value, quantity, price } = option.value;
-
-      //           return (
-      //             <div
-      //               key={option.id}
-      //               className="flex items-center justify-between p-2 bg-gray-50 rounded"
-      //             >
-      //               <div className="flex-1">
-      //                 <span className="font-medium">{option.name}:</span>{" "}
-      //                 {value}
-      //                 {price > 0 && (
-      //                   <span className="ml-1 text-green-600">
-      //                     (+${price.toFixed(2)} each)
-      //                   </span>
-      //                 )}
-      //               </div>
-      //               <div className="flex items-center gap-1">
-      //                 <Button
-      //                   variant="outline"
-      //                   size="sm"
-      //                   onClick={() =>
-      //                     updateCartItemOptionQuantity(
-      //                       item.id,
-      //                       option.id,
-      //                       value,
-      //                       quantity - 1
-      //                     )
-      //                   }
-      //                   disabled={quantity <= 1}
-      //                   className="h-6 w-6 p-0"
-      //                 >
-      //                   <Minus className="h-3 w-3" />
-      //                 </Button>
-      //                 <span className="text-sm font-medium w-8 text-center">
-      //                   {quantity}
-      //                 </span>
-      //                 <Button
-      //                   variant="outline"
-      //                   size="sm"
-      //                   onClick={() =>
-      //                     updateCartItemOptionQuantity(
-      //                       item.id,
-      //                       option.id,
-      //                       value,
-      //                       quantity + 1
-      //                     )
-      //                   }
-      //                   className="h-6 w-6 p-0"
-      //                 >
-      //                   <Plus className="h-3 w-3" />
-      //                 </Button>
-      //               </div>
-      //             </div>
-      //           );
-      //         }
-      //         // Handle "Checkbox" type
-      //         if (option.type === "Checkbox" && Array.isArray(option.value)) {
-      //           return (
-      //             <div key={option.id} className="space-y-1">
-      //               <span className="font-medium">{option.name}:</span>
-      //               {option.value.map((choice) => (
-      //                 <div
-      //                   key={choice.value}
-      //                   className="flex items-center justify-between p-2 bg-gray-50 rounded ml-4"
-      //                 >
-      //                   <div className="flex-1">
-      //                     {choice.value}
-      //                     {choice.price > 0 && (
-      //                       <span className="ml-1 text-green-600">
-      //                         (+${choice.price.toFixed(2)} each)
-      //                       </span>
-      //                     )}
-      //                   </div>
-      //                   <div className="flex items-center gap-1">
-      //                     <Button
-      //                       variant="outline"
-      //                       size="sm"
-      //                       onClick={() =>
-      //                         updateCartItemOptionQuantity(
-      //                           item.id,
-      //                           option.id,
-      //                           choice.value,
-      //                           choice.quantity - 1
-      //                         )
-      //                       }
-      //                       disabled={choice.quantity <= 1}
-      //                       className="h-6 w-6 p-0"
-      //                     >
-      //                       <Minus className="h-3 w-3" />
-      //                     </Button>
-      //                     <span className="text-sm font-medium w-8 text-center">
-      //                       {choice.quantity}
-      //                     </span>
-      //                     <Button
-      //                       variant="outline"
-      //                       size="sm"
-      //                       onClick={() =>
-      //                         updateCartItemOptionQuantity(
-      //                           item.id,
-      //                           option.id,
-      //                           choice.value,
-      //                           choice.quantity + 1
-      //                         )
-      //                       }
-      //                       className="h-6 w-6 p-0"
-      //                     >
-      //                       <Plus className="h-3 w-3" />
-      //                     </Button>
-      //                   </div>
-      //                 </div>
-      //               ))}
-      //             </div>
-      //           );
-      //         }
-
-      //         // Default fallback (e.g., Text type)
-      //         return (
-      //           <div key={option.id}>
-      //             <p>
-      //               <span className="font-medium">{option.name}:</span>{" "}
-      //               {option.value}
-      //             </p>
-      //           </div>
-      //         );
-      //       })}
-      //     </div>
-      //   )}
-      // </div>
-      <p>gg</p>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                updateCartItemOptionQuantity(
+                                  item.productId,
+                                  item.variantId,
+                                  option.name,
+                                  answer,
+                                  option.quantities[i] - 1
+                                )
+                              }
+                              disabled={option.quantities[i] <= 1}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="text-sm font-medium w-8 text-center">
+                              {option.quantities[i]}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                updateCartItemOptionQuantity(
+                                  item.productId,
+                                  item.variantId,
+                                  option.name,
+                                  answer,
+                                  option.quantities[i] + 1
+                                )
+                              }
+                              className="h-6 w-6 p-0"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateCartItemOptionQuantity(
+                          item.productId,
+                          item.variantId,
+                          option.name,
+                          answer, // 👈 specific optionValue
+                          option.quantities[i] - 1 // 👈 specific quantity
+                        )
+                      }
+                      disabled={item?.quantity <= 1}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="text-sm font-medium w-8 text-center">
+                      {item?.quantity}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateCartItemOptionQuantity(
+                          item.productId,
+                          item.variantId,
+                          option.name,
+                          answer,
+                          option.quantities[i] + 1
+                        )
+                      }
+                      className="h-6 w-6 p-0"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div> */}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -914,6 +913,18 @@ export default function AddToCart() {
   const selectedVariant = selectedProduct?.variants.find(
     (v) => v._id === variants
   );
+
+  const quantity = productForm.watch("quantity");
+  const isBelowMinimum =
+    selectedProduct?.cartMinimumEnabled &&
+    quantity < selectedProduct?.cartMinimum;
+  const isAboveMaximum =
+    selectedProduct?.cartMaximumEnabled &&
+    quantity > selectedProduct?.cartMaximum;
+  const isOutOfStock = quantity > selectedProduct?.inventory?.quantity;
+  const isSoldOut = isAboveMaximum || isOutOfStock;
+
+  const isDisabled = isBelowMinimum || isSoldOut;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1515,7 +1526,7 @@ export default function AddToCart() {
                                 key={category._id}
                                 onClick={() => setSelectedCategory(category)}
                                 className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                                  selectedCategory.name === category
+                                  selectedCategory.name === category.name
                                     ? "bg-blue-100 text-blue-700 border-r-2 border-blue-500"
                                     : "hover:bg-gray-50 text-gray-700"
                                 }`}
@@ -1741,6 +1752,9 @@ export default function AddToCart() {
                                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                   <Check className="h-5 w-5 text-blue-600" />
                                   Product Variants
+                                  {selectedProduct?.inventory.quantity <= 5 && (
+                                    <Badge variant="secondary">5 left</Badge>
+                                  )}
                                 </h3>
                                 <FormField
                                   control={productForm.control}
@@ -2506,10 +2520,19 @@ export default function AddToCart() {
                             <Button
                               type="submit"
                               size="lg"
-                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={isDisabled}
+                              className={`w-full ${
+                                isSoldOut
+                                  ? "bg-gray-400"
+                                  : "bg-blue-600 hover:bg-blue-700"
+                              }`}
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
-                              Add to Cart - ${currentItemPrice.toFixed(2)}
+                              {isSoldOut
+                                ? "Sold Out"
+                                : `Add to Cart - $${currentItemPrice.toFixed(
+                                    2
+                                  )}`}
                             </Button>
                           </div>
                         </form>
@@ -2664,6 +2687,9 @@ export default function AddToCart() {
                               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <Check className="h-5 w-5 text-blue-600" />
                                 Product Variants
+                                {selectedProduct?.inventory.quantity <= 5 && (
+                                  <Badge variant="secondary">5 left</Badge>
+                                )}
                               </h3>
                               <FormField
                                 control={productForm.control}
@@ -3379,10 +3405,19 @@ export default function AddToCart() {
                             <Button
                               type="submit"
                               size="lg"
-                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={isDisabled}
+                              className={`w-full ${
+                                isSoldOut
+                                  ? "bg-gray-400"
+                                  : "bg-blue-600 hover:bg-blue-700"
+                              }`}
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
-                              Add to Cart - ${currentItemPrice.toFixed(2)}
+                              {isSoldOut
+                                ? "Sold Out"
+                                : `Add to Cart - $${currentItemPrice.toFixed(
+                                    2
+                                  )}`}
                             </Button>
                           </div>
                         </div>

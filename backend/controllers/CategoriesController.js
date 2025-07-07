@@ -26,7 +26,7 @@ const CategoriesController = {
           hasPreviousPage: page > 1,
         },
       };
-
+      console.log("response",response);
       return res.json(response);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
