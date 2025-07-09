@@ -793,6 +793,9 @@ export default function AddToCart() {
             >
               <Plus className="h-4 w-4" />
             </Button>
+            {item.quantity > item.productinventory && (
+              <span className="text-red-500">sold out</span>
+            )}
           </div>
         </div>
 
@@ -1259,8 +1262,8 @@ export default function AddToCart() {
                 <div className="space-y-6">
                   {/* Cart Items */}
                   <div className="space-y-4">
-                    {cart.map((item) => (
-                      <Card key={item.id} className="border">
+                    {cart.map((item,i) => (
+                      <Card key={i} className="border">
                         <CardContent className="p-4">
                           {renderCartItemDetails(item)}
                         </CardContent>
