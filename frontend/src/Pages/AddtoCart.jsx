@@ -488,14 +488,16 @@ export default function AddToCart() {
       console.log("Sending to backend:", cartItem);
       const res = await axios.post("/api/cart", cartItem);
       console.log("res", res);
-      setCart([...res.data.cart.items]);
-      setSelectedProduct(null);
-      setCurrentView("cart");
-      productForm.reset();
+      if (res.status === 200) {
+        setCart([...res.data.cart.items]);
+        setSelectedProduct(null);
+        setCurrentView("cart");
+        productForm.reset();
 
-      setCartButtonAnimation(true);
-      setTimeout(() => setCartButtonAnimation(false), 1000);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+        setCartButtonAnimation(true);
+        setTimeout(() => setCartButtonAnimation(false), 1000);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (error) {
       console.error("Failed to add to cart:", error);
     }
