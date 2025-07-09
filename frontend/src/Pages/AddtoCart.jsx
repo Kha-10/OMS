@@ -1270,7 +1270,7 @@ export default function AddToCart() {
                   <p className="text-gray-600">Your cart is empty</p>
                   <Button
                     onClick={() => setCurrentView("products")}
-                    className="mt-4"
+                    className="mt-4 bg-blue-500 hover:bg-blue-600"
                   >
                     Browse Products
                   </Button>
@@ -2434,7 +2434,7 @@ export default function AddToCart() {
 
                             {/* Price Summary */}
                             <div className="bg-gray-50 p-4 rounded-lg border">
-                              <div className="flex items-center justify-between mb-2">
+                              {/* <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-600">
                                   Base Price:
                                 </span>
@@ -2446,7 +2446,7 @@ export default function AddToCart() {
                                     0
                                   ).toFixed(2)}
                                 </span>
-                              </div>
+                              </div> */}
 
                               {/* Show variant and option price additions */}
                               {productForm.watch() &&
@@ -2533,7 +2533,8 @@ export default function AddToCart() {
                                     )}
                                   </div>
                                 )}
-                              <div className="border-t pt-2 mb-2">
+                              {/* <div className="border-t pt-2 mb-2"> */}
+                              <div>
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-gray-600">
                                     Item Price:
@@ -2547,7 +2548,7 @@ export default function AddToCart() {
                                     Quantity:
                                   </span>
                                   <span className="font-medium">
-                                    {productForm.watch("inventory.quantity") ||
+                                    {productForm.watch("quantity") ||
                                       1}
                                   </span>
                                 </div>
@@ -3332,7 +3333,7 @@ export default function AddToCart() {
 
                           {/* Price Summary */}
                           <div className="bg-gray-50 p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-2">
+                            {/* <div className="flex items-center justify-between mb-2">
                               <span className="text-gray-600">Base Price:</span>
                               <span className="font-medium">
                                 $
@@ -3342,7 +3343,7 @@ export default function AddToCart() {
                                   0
                                 ).toFixed(2)}
                               </span>
-                            </div>
+                            </div> */}
 
                             {/* Show variant and option price additions */}
                             {productForm.watch() &&
@@ -3430,7 +3431,8 @@ export default function AddToCart() {
                                 </div>
                               )}
 
-                            <div className="border-t pt-2 mb-2">
+                            {/* <div className="border-t pt-2 mb-2"> */}
+                            <div>
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-600">
                                   Item Price:
@@ -3442,7 +3444,7 @@ export default function AddToCart() {
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-600">Quantity:</span>
                                 <span className="font-medium">
-                                  {productForm.watch("inventory.quantity") || 1}
+                                  {productForm.watch("quantity") || 1}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between font-bold">
