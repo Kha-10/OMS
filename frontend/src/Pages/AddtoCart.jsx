@@ -78,7 +78,18 @@ const createFormSchema = (product) => {
       const parsed = typeof val === "string" ? parseFloat(val) : val;
       return isNaN(parsed) ? 0 : parsed;
     }, z.number({ invalid_type_error: "Quantity must be a number" }).min(1, "Quantity must be at least 1")),
-    variantId: z.string().min(1, "Product variant is required"),
+    // variantId: z.string().min(1, "Product variant is required"),
+    variantId: z
+      .string()
+      .optional()
+      .superRefine((val, ctx) => {
+        if (product.variants?.length > 0 && (!val || val.trim() === "")) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Product variant is required",
+          });
+        }
+      }),
     totalPrice: z.number().optional(),
     options: z
       .array(
@@ -416,7 +427,7 @@ export default function AddToCart() {
     const res = await axios(`/api/cart/${cartId}`);
     if (res.status === 200) {
       console.log(res.data.items);
-      setCart([...cart, ...res.data.items]);
+      setCart([...res.data.items]);
     }
   };
 
@@ -463,7 +474,9 @@ export default function AddToCart() {
         imgUrls: selectedProduct?.imgUrls,
         ...formData,
         productId: selectedProduct._id,
-        productName: `${selectedProduct.name} - ${variant.name}`,
+        productName: variant?.name
+          ? `${selectedProduct.name} - ${variant.name}`
+          : selectedProduct.name,
         photo: selectedProduct?.photo,
         productinventory: selectedProduct?.inventory?.quantity,
       },
@@ -1615,7 +1628,7 @@ export default function AddToCart() {
                                     </div>
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-1">
-                                        {product.variants[0].price ? (
+                                        {product.variants[0]?.price ? (
                                           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
                                             ${product.variants[0].price}
                                           </Badge>
@@ -3489,7 +3502,7 @@ export default function AddToCart() {
 
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1">
-                                    {product.variants[0].price ? (
+                                    {product.variants[0]?.price ? (
                                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs font-semibold">
                                         ${product.variants[0].price}
                                       </Badge>
