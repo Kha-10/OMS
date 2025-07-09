@@ -140,6 +140,45 @@ const CartController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
+  removeItem: async (req, res) => {
+    try {
+      const { cartId, productId, variantId } = req.params;
+
+      const cartKey = `cart:cartId:${cartId}`;
+      const cartData = await redisClient.get(cartKey);
+      if (!cartData) return res.status(404).json({ msg: "Cart not found" });
+
+      const cart = JSON.parse(cartData);
+      const initialLength = cart.items.length;
+
+      // Filter out the matching item
+      cart.items = cart.items.filter((item) => {
+        const productMatch = item.productId === productId;
+        const variantMatch = variantId
+          ? item.variantId === variantId
+          : !item.variantId;
+        return !(productMatch && variantMatch);
+      });
+
+      if (cart.items.length === initialLength) {
+        return res.status(404).json({ msg: "Item not found in cart" });
+      }
+
+      if (cart.items.length === 0) {
+        // Remove entire cart from Redis
+        await redisClient.del(cartKey);
+        return res.status(200).json({ success: true, cartDeleted: true });
+      }
+
+      // Otherwise, update Redis with new cart
+      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+
+      return res.status(200).json({ success: true, cart });
+    } catch (error) {
+      console.error("Error removing cart item:", error);
+      return res.status(500).json({ msg: "Internal server error" });
+    }
+  },
 };
 
 module.exports = CartController;

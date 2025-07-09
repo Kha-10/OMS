@@ -10,9 +10,14 @@ router.get("/:cartId", CartController.show);
 router.post("", CartController.store);
 
 router.patch(
-    "/:cartId",
-    // RoleMiddleware(["admin", "superadmin"]),
-    CartController.upate
-  );
+  "/:cartId",
+  // RoleMiddleware(["admin", "superadmin"]),
+  CartController.upate
+);
+
+router.delete(
+  "/:cartId/item/:productId/:variantId?",
+  CartController.removeItem
+);
 
 module.exports = router;

@@ -623,8 +623,37 @@ export default function AddToCart() {
     }
   };
 
-  const removeFromCart = (itemId) => {
-    setCart(cart.filter((item) => item.id !== itemId));
+  const removeFromCart = async (productId, variantId) => {
+    const cartId = sessionStorage.getItem("adminCartId");
+    if (!cartId) throw new Error("Missing adminCartId");
+
+    try {
+      const endpoint = `/api/cart/${cartId}/item/${productId}/${
+        variantId ?? ""
+      }`;
+      const res = await axios.delete(endpoint);
+
+      if (res.status === 200) {
+        if (res.data.cartDeleted) {
+          // Entire cart was removed
+          sessionStorage.removeItem("adminCartId");
+          setCart([]); // Reset cart state
+        } else {
+          // Just one item removed
+          setCart((prev) =>
+            prev.filter((item) =>
+              variantId
+                ? !(
+                    item.productId === productId && item.variantId === variantId
+                  )
+                : item.productId !== productId
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to remove cart item:", error);
+    }
   };
 
   const handleCustomerSelect = (customerId) => {
@@ -750,7 +779,7 @@ export default function AddToCart() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => removeFromCart(item.id)}
+            onClick={() => removeFromCart(item.productId, item.variantId)}
             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
           >
             <Trash2 className="h-4 w-4" />
@@ -813,18 +842,6 @@ export default function AddToCart() {
                   <div className="w-full">
                     <p className="font-semibold">{option.name}</p>
                     <div className="flex-1">
-                      {/* {option.answers.length > 0 &&
-                        option.answers.map((answer, i) => (
-                          <span key={i} className="font-medium">
-                            {answer}:
-                          </span>
-                        ))}
-                      {option.prices > 0 &&
-                        option.prices.map((price, i) => (
-                          <span key={i} className="ml-1 text-green-600">
-                            (+${price.toFixed(2)} each)
-                          </span>
-                        ))} */}
                       {option.answers.map((answer, i) => (
                         <div
                           key={i}
@@ -1262,7 +1279,7 @@ export default function AddToCart() {
                 <div className="space-y-6">
                   {/* Cart Items */}
                   <div className="space-y-4">
-                    {cart.map((item,i) => (
+                    {cart.map((item, i) => (
                       <Card key={i} className="border">
                         <CardContent className="p-4">
                           {renderCartItemDetails(item)}
