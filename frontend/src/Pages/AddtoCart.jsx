@@ -1862,7 +1862,16 @@ export default function AddToCart() {
                                       name="quantity"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Quantity</FormLabel>
+                                          <div className="flex items-center justify-between">
+                                            <FormLabel>Quantity</FormLabel>
+                                            <span className="text-gray-500 text-sm">
+                                              {selectedProduct?.cartMinimumEnabled &&
+                                                `min ${selectedProduct?.cartMinimum}`}
+                                              ,{" "}
+                                              {selectedProduct?.cartMaximumEnabled &&
+                                                `max ${selectedProduct?.cartMaximum}`}
+                                            </span>
+                                          </div>
                                           <FormControl>
                                             <Input
                                               className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
@@ -2795,7 +2804,16 @@ export default function AddToCart() {
                                     name="quantity"
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Quantity</FormLabel>
+                                        <div className="flex items-center justify-between">
+                                          <FormLabel>Quantity</FormLabel>
+                                          <span className="text-gray-500 text-sm">
+                                            {selectedProduct?.cartMinimumEnabled &&
+                                              `min ${selectedProduct?.cartMinimum}`}
+                                            ,{" "}
+                                            {selectedProduct?.cartMaximumEnabled &&
+                                              `max ${selectedProduct?.cartMaximum}`}
+                                          </span>
+                                        </div>
                                         <FormControl>
                                           <Input
                                             className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
