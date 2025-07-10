@@ -778,8 +778,8 @@ export default function AddToCart() {
           <span className="font-medium">
             Base item Quantity:{" "}
             <p className="text-sm text-red-500">
-                ${item.basePrice?.toFixed(2)} each
-              </p>
+              ${item.basePrice?.toFixed(2)} each
+            </p>
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -1042,7 +1042,7 @@ export default function AddToCart() {
                         Select Customer (or enter details below)
                       </Label>
                       <Select onValueChange={handleCustomerSelect}>
-                        <SelectTrigger>
+                        <SelectTrigger className="border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0">
                           <SelectValue placeholder="Choose existing customer" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1070,6 +1070,7 @@ export default function AddToCart() {
                           <FormLabel>Name *</FormLabel>
                           <FormControl>
                             <Input
+                              className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
                               placeholder="Customer name"
                               {...field}
                               onChange={(e) => {
@@ -1090,6 +1091,7 @@ export default function AddToCart() {
                           <FormLabel>Phone *</FormLabel>
                           <FormControl>
                             <Input
+                              className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
                               placeholder="+1 (555) 123-4567"
                               {...field}
                               onChange={(e) => {
@@ -1128,7 +1130,7 @@ export default function AddToCart() {
                             }
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0">
                             <SelectValue placeholder="Select delivery address" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1165,6 +1167,7 @@ export default function AddToCart() {
                                   <FormLabel>Street</FormLabel>
                                   <FormControl>
                                     <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
                                       placeholder="123 Main St"
                                       {...field}
                                     />
@@ -1179,7 +1182,11 @@ export default function AddToCart() {
                                 <FormItem>
                                   <FormLabel>City</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="New York" {...field} />
+                                    <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                                      placeholder="New York"
+                                      {...field}
+                                    />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -1191,7 +1198,11 @@ export default function AddToCart() {
                                 <FormItem>
                                   <FormLabel>State</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="NY" {...field} />
+                                    <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                                      placeholder="NY"
+                                      {...field}
+                                    />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -1203,7 +1214,11 @@ export default function AddToCart() {
                                 <FormItem>
                                   <FormLabel>ZIP Code</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="10001" {...field} />
+                                    <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                                      placeholder="10001"
+                                      {...field}
+                                    />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -1215,7 +1230,11 @@ export default function AddToCart() {
                                 <FormItem>
                                   <FormLabel>Condo Name</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="Plum" {...field} />
+                                    <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                                      placeholder="Plum"
+                                      {...field}
+                                    />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -1228,6 +1247,7 @@ export default function AddToCart() {
                                   <FormLabel>Building Unit</FormLabel>
                                   <FormControl>
                                     <Input
+                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
                                       placeholder="A,B or 1,2"
                                       {...field}
                                     />
@@ -3711,7 +3731,8 @@ export default function AddToCart() {
           </div>
         )}
       </div>
-      <DevTool control={productForm.control} />
+      {/* <DevTool control={productForm.control} /> */}
+      <DevTool control={customerForm.control} />
     </div>
   );
 }
