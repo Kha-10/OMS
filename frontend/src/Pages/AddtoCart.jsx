@@ -1845,6 +1845,58 @@ export default function AddToCart() {
                               </div>
                             )}
 
+                            {selectedProduct.options.length === 0 && (
+                              <FormField
+                                control={productForm.control}
+                                name="quantity"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem>
+                                      <div className="flex items-center justify-between">
+                                        <FormLabel>Quantity</FormLabel>
+                                        <span className="text-gray-500 text-sm">
+                                          {selectedProduct?.cartMinimumEnabled &&
+                                            `min ${selectedProduct?.cartMinimum}`}
+                                          ,{" "}
+                                          {selectedProduct?.cartMaximumEnabled &&
+                                            `max ${selectedProduct?.cartMaximum}`}
+                                        </span>
+                                      </div>
+                                      <FormControl>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                              field.onChange(field.value - 1)
+                                            }
+                                            disabled={field.value <= 1}
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </Button>
+                                          <span className="text-sm w-8 text-center">
+                                            {field.value}
+                                          </span>
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                              field.onChange(field.value + 1)
+                                            }
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  );
+                                }}
+                              />
+                            )}
+
                             {/* Options */}
                             {selectedProduct.options.length > 0 && (
                               <>
@@ -1873,26 +1925,36 @@ export default function AddToCart() {
                                             </span>
                                           </div>
                                           <FormControl>
-                                            <Input
-                                              className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
-                                              type="number"
-                                              min={1}
-                                              {...field}
-                                              value={
-                                                field.value === undefined ||
-                                                field.value === null
-                                                  ? ""
-                                                  : field.value
-                                              }
-                                              onChange={(e) => {
-                                                const value = e.target.value;
-                                                field.onChange(
-                                                  value === ""
-                                                    ? ""
-                                                    : Number(value)
-                                                );
-                                              }}
-                                            />
+                                            <div className="flex items-center gap-1">
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                  field.onChange(
+                                                    field.value - 1
+                                                  )
+                                                }
+                                                disabled={field.value <= 1}
+                                              >
+                                                <Minus className="h-3 w-3" />
+                                              </Button>
+                                              <span className="text-sm w-8 text-center">
+                                                {field.value}
+                                              </span>
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                  field.onChange(
+                                                    field.value + 1
+                                                  )
+                                                }
+                                              >
+                                                <Plus className="h-3 w-3" />
+                                              </Button>
+                                            </div>
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -2548,8 +2610,7 @@ export default function AddToCart() {
                                     Quantity:
                                   </span>
                                   <span className="font-medium">
-                                    {productForm.watch("quantity") ||
-                                      1}
+                                    {productForm.watch("quantity") || 1}
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between font-bold">
@@ -2788,6 +2849,58 @@ export default function AddToCart() {
                             </div>
                           )}
 
+                          {selectedProduct.options.length === 0 && (
+                            <FormField
+                              control={productForm.control}
+                              name="quantity"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem>
+                                    <div className="flex items-center justify-between">
+                                      <FormLabel>Quantity</FormLabel>
+                                      <span className="text-gray-500 text-sm">
+                                        {selectedProduct?.cartMinimumEnabled &&
+                                          `min ${selectedProduct?.cartMinimum}`}
+                                        ,{" "}
+                                        {selectedProduct?.cartMaximumEnabled &&
+                                          `max ${selectedProduct?.cartMaximum}`}
+                                      </span>
+                                    </div>
+                                    <FormControl>
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() =>
+                                            field.onChange(field.value - 1)
+                                          }
+                                          disabled={field.value <= 1}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                        <span className="text-sm w-8 text-center">
+                                          {field.value}
+                                        </span>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() =>
+                                            field.onChange(field.value + 1)
+                                          }
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          )}
+
                           {/* Options */}
                           {selectedProduct.options.length > 0 && (
                             <>
@@ -2816,26 +2929,32 @@ export default function AddToCart() {
                                           </span>
                                         </div>
                                         <FormControl>
-                                          <Input
-                                            className="focus-visible:b vring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
-                                            type="number"
-                                            placeholder="1"
-                                            {...field}
-                                            value={
-                                              field.value === undefined ||
-                                              field.value === null
-                                                ? ""
-                                                : field.value
-                                            }
-                                            onChange={(e) => {
-                                              const value = e.target.value;
-                                              field.onChange(
-                                                value === ""
-                                                  ? ""
-                                                  : Number(value)
-                                              );
-                                            }}
-                                          />
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() =>
+                                                field.onChange(field.value - 1)
+                                              }
+                                              disabled={field.value <= 1}
+                                            >
+                                              <Minus className="h-3 w-3" />
+                                            </Button>
+                                            <span className="text-sm w-8 text-center">
+                                              {field.value}
+                                            </span>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() =>
+                                                field.onChange(field.value + 1)
+                                              }
+                                            >
+                                              <Plus className="h-3 w-3" />
+                                            </Button>
+                                          </div>
                                         </FormControl>
                                         <FormMessage />
                                       </FormItem>
