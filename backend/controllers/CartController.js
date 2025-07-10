@@ -1,5 +1,4 @@
 const redisClient = require("../config/redisClient");
-const calculateCartItemPrice = require("../helpers/calculateCartItemPrice");
 
 const CartController = {
   show: async (req, res) => {
@@ -86,7 +85,7 @@ const CartController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  upate: async (req, res) => {
+  update: async (req, res) => {
     try {
       const { cartId } = req.params;
       const {
@@ -108,29 +107,30 @@ const CartController = {
       );
       if (!item) return res.status(404).json({ msg: "Item not found" });
 
-      // Case 1: update item quantity
+      // Update quantity
       if (typeof quantity === "number") {
         item.quantity = quantity;
       }
 
-      // Case 2: update specific option quantity
+      // Update specific option quantity
       if (optionName && optionValue && typeof optionQuantity === "number") {
         const option = item.options.find((o) => o.name === optionName);
         if (!option) return res.status(404).json({ msg: "Option not found" });
 
         const index = option.answers.findIndex((a) => a === optionValue);
         if (index === -1)
-          return res.status(404).json({ msg: "Answer not found in option" });
+          return res.status(404).json({ msg: "Answer not found" });
 
         option.quantities[index] = optionQuantity;
       }
 
-      // Recalculate price
-      item.totalPrice = calculateCartItemPrice(
-        item.basePrice,
-        item.options,
-        item.quantity
-      );
+      // ✅ Recalculate totalPrice: only basePrice * quantity + option prices once
+      const optionExtra =
+        item.options?.reduce((acc, option) => {
+          return acc + option.prices.reduce((sum, p) => sum + p, 0);
+        }, 0) || 0;
+
+      item.totalPrice = item.basePrice * item.quantity + optionExtra;
 
       await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
 

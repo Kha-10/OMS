@@ -352,6 +352,7 @@ export default function AddToCart() {
   // Calculate final total with adjustments
   const calculateFinalTotal = () => {
     let total = calculateCartSubtotal();
+    console.log("total", total);
 
     pricingAdjustments.forEach((adjustment) => {
       if (adjustment.isPercentage) {
@@ -506,26 +507,25 @@ export default function AddToCart() {
   const updateCartItemQuantity = async (productId, variantId, newQuantity) => {
     if (newQuantity < 1) return;
 
-    setCart((prevCart) => {
-      const updatedItems = prevCart.map((item) => {
-        if (item.productId === productId && item.variantId === variantId) {
-          const updatedTotalPrice = calculateCartItemPrice(
-            item.basePrice,
-            item.options,
-            newQuantity
-          );
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.productId !== productId && item.variantId === variantId)
+          return item;
 
-          return {
-            ...item,
-            quantity: newQuantity,
-            totalPrice: updatedTotalPrice,
-          };
-        }
-        return item;
-      });
+        const optionsExtra =
+          item.options?.reduce((acc, option) => {
+            return acc + option.prices.reduce((sum, p) => sum + p, 0);
+          }, 0) || 0;
 
-      return updatedItems;
-    });
+        const newTotalPrice = item.basePrice * newQuantity + optionsExtra;
+
+        return {
+          ...item,
+          quantity: newQuantity,
+          totalPrice: newTotalPrice,
+        };
+      })
+    );
 
     try {
       const cartId = sessionStorage.getItem("adminCartId");
@@ -541,22 +541,6 @@ export default function AddToCart() {
     }
   };
 
-  const calculateCartItemPrice = (basePrice, options = [], quantity = 1) => {
-    let optionTotal = 0;
-
-    for (const option of options) {
-      const { prices = [], quantities = [] } = option;
-
-      for (let i = 0; i < prices.length; i++) {
-        const price = prices[i] || 0;
-        const qty = quantities[i] || 0;
-        optionTotal += price * qty;
-      }
-    }
-
-    return (basePrice + optionTotal) * quantity;
-  };
-
   const updateCartItemOptionQuantity = async (
     productId,
     variantId,
@@ -566,12 +550,11 @@ export default function AddToCart() {
   ) => {
     if (newQuantity < 1) return;
 
-    // Optimistically update UI
+    // Optimistic UI update
     setCart((prevCart) => {
-      const updatedItems = prevCart.map((item) => {
-        if (item.productId !== productId || item.variantId !== variantId) {
+      return prevCart.map((item) => {
+        if (item.productId !== productId || item.variantId !== variantId)
           return item;
-        }
 
         const updatedOptions = item.options.map((option) => {
           if (option.name !== optionName) return option;
@@ -581,32 +564,36 @@ export default function AddToCart() {
           );
           if (answerIndex === -1) return option;
 
-          const updatedQuantities = [...option.quantities];
-          updatedQuantities[answerIndex] = newQuantity;
+          // Update quantity
+          const newQuantities = [...option.quantities];
+          const prevQuantity = option.quantities[answerIndex] || 0;
+          newQuantities[answerIndex] = newQuantity;
+
+          const pricePerUnit = option.prices[answerIndex] || 0;
+          const delta = (newQuantity - prevQuantity) * pricePerUnit;
 
           return {
             ...option,
-            quantities: updatedQuantities,
+            quantities: newQuantities,
           };
         });
 
-        const updatedTotalPrice = calculateCartItemPrice(
-          item.basePrice,
-          updatedOptions,
-          item.quantity
-        );
+        // Only update totalPrice based on the delta (don't recalculate everything)
+        const changedOption = item.options.find((o) => o.name === optionName);
+        const idx = changedOption?.answers.findIndex((a) => a === answerValue);
+        const unitPrice = changedOption?.prices?.[idx] || 0;
+        const oldQty = changedOption?.quantities?.[idx] || 0;
+        const deltaPrice = (newQuantity - oldQty) * unitPrice;
 
         return {
           ...item,
           options: updatedOptions,
-          totalPrice: updatedTotalPrice,
+          totalPrice: item.totalPrice + deltaPrice,
         };
       });
-
-      return updatedItems;
     });
 
-    // Persist change to Redis
+    // Persist to Redis (backend will still recalc just in case)
     try {
       const cartId = sessionStorage.getItem("adminCartId");
       if (!cartId) throw new Error("Missing adminCartId");
@@ -769,11 +756,11 @@ export default function AddToCart() {
             <h4 className="font-medium text-lg">{item.productName}</h4>
             <div className="mt-1">
               <p className="text-base font-bold">
-                ${item.totalPrice?.toFixed(2)}
+                Total - ${item.totalPrice?.toFixed(2)}
               </p>
-              <p className="text-sm text-gray-600">
+              {/* <p className="text-sm text-gray-600">
                 ${item.basePrice?.toFixed(2)} each
-              </p>
+              </p> */}
             </div>
           </div>
           <Button
@@ -788,7 +775,12 @@ export default function AddToCart() {
 
         {/* Main quantity control */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <span className="font-medium">Main Quantity:</span>
+          <span className="font-medium">
+            Base item Quantity:{" "}
+            <p className="text-sm text-red-500">
+                ${item.basePrice?.toFixed(2)} each
+              </p>
+          </span>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

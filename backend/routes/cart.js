@@ -12,7 +12,7 @@ router.post("", CartController.store);
 router.patch(
   "/:cartId",
   // RoleMiddleware(["admin", "superadmin"]),
-  CartController.upate
+  CartController.update
 );
 
 router.delete(
