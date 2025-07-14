@@ -36,7 +36,7 @@ const NewCustomer = () => {
       },
     },
   });
-
+ 
   useEffect(() => {
     if (id) {
       form.setValue("name", customers.name);

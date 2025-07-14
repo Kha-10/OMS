@@ -252,7 +252,6 @@ export default function AddToCart() {
   const [selectedCategory, setSelectedCategory] = useState({ name: "all" });
   const [pricingAdjustments, setPricingAdjustments] = useState([]);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
-  const [useNewShippingAddress, setUseNewShippingAddress] = useState(false);
 
   // Add orderNotes state after the useNewShippingAddress state
   const [orderNotes, setOrderNotes] = useState([]);
@@ -274,7 +273,13 @@ export default function AddToCart() {
       customerId: "",
       name: "",
       phone: "",
-      deliveryAddressId: "",
+      email: "",
+      deliveryAddress: {
+        apartment: "",
+        city: "",
+        street: "",
+        zipCode: "",
+      },
     },
   });
 
@@ -304,7 +309,7 @@ export default function AddToCart() {
     }
   }, [selectedProduct]);
 
-  console.log(selectedProduct);
+  console.log("customersfromDb", customersfromDb);
 
   const calculateItemPrice = (product, formValues) => {
     let baseItemPrice = product.price || product.originalPrice || 0;
@@ -646,16 +651,29 @@ export default function AddToCart() {
   const handleCustomerSelect = (customerId) => {
     const customer = customersfromDb.find((c) => c._id === customerId);
     if (customer) {
-      console.log("customer",customer);
+      console.log("customer", customer);
       setSelectedCustomer(customer);
       setIsNewCustomer(false);
       customerForm.setValue("customerId", customer._id);
       customerForm.setValue("name", customer.name);
-      //   customerForm.setValue("email", customer.email);
-      customerForm.setValue("phone", customer.phoneNumber);
-
-      customerForm.setValue("deliveryAddressId", customer.condoName);
-      customerForm.setValue("buildingUnit", customer.condoUnit);
+      customerForm.setValue("email", customer.email);
+      customerForm.setValue("phone", customer.phone);
+      customerForm.setValue(
+        "deliveryAddress.street",
+        customer.deliveryAddress?.street
+      );
+      customerForm.setValue(
+        "deliveryAddress.city",
+        customer.deliveryAddress?.city
+      );
+      customerForm.setValue(
+        "deliveryAddress.apartment",
+        customer.deliveryAddress?.apartment
+      );
+      customerForm.setValue(
+        "deliveryAddress.zipCode",
+        customer.deliveryAddress?.zipCode
+      );
     }
   };
 
@@ -1037,28 +1055,100 @@ export default function AddToCart() {
               <Form {...customerForm}>
                 <div className="space-y-4">
                   {/* Customer Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                  <div className="space-y-4">
+                    {/* New vs Existing Customer Toggle */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                       <Label className="text-sm font-medium">
-                        Select Customer (or enter details below)
+                        Customer Type:
                       </Label>
-                      <Select onValueChange={handleCustomerSelect}>
-                        <SelectTrigger className="border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0">
-                          <SelectValue placeholder="Choose existing customer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customersfromDb.length > 0 &&
-                            customersfromDb.map((customer) => (
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="new-customer"
+                            name="customer-type"
+                            checked={isNewCustomer}
+                            onChange={() => {
+                              setIsNewCustomer(true);
+                              setSelectedCustomer(null);
+                              customerForm.reset({
+                                customerId: "",
+                                name: "",
+                                phone: "",
+                                email: "",
+                                deliveryAddress: {
+                                  apartment: "",
+                                  city: "",
+                                  street: "",
+                                  zipCode: "",
+                                },
+                              });
+                            }}
+                            className="w-4 h-4 text-blue-600"
+                          />
+                          <Label
+                            htmlFor="new-customer"
+                            className="text-sm cursor-pointer"
+                          >
+                            New Customer
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="existing-customer"
+                            name="customer-type"
+                            checked={!isNewCustomer}
+                            onChange={() => {
+                              setIsNewCustomer(false);
+                              customerForm.reset({
+                                customerId: "",
+                                name: "",
+                                phone: "",
+                                email: "",
+                                deliveryAddress: {
+                                  apartment: "",
+                                  city: "",
+                                  street: "",
+                                  zipCode: "",
+                                },
+                              });
+                            }}
+                            className="w-4 h-4 text-blue-600"
+                          />
+                          <Label
+                            htmlFor="existing-customer"
+                            className="text-sm cursor-pointer"
+                          >
+                            Existing Customer
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Existing Customer Dropdown - Only show when not new customer */}
+                    {!isNewCustomer && (
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Select Existing Customer
+                        </Label>
+                        <Select onValueChange={handleCustomerSelect}>
+                          <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 ring-offset-blue-500 focus:ring-transparent">
+                            <SelectValue placeholder="Choose existing customer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customersfromDb.map((customer) => (
                               <SelectItem
                                 key={customer._id}
                                 value={customer._id}
                               >
-                                {customer.name} ({customer.phoneNumber})
+                                {customer.name} ({customer.phone})
                               </SelectItem>
                             ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Customer Details */}
@@ -1068,11 +1158,38 @@ export default function AddToCart() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Name *</FormLabel>
+                          <FormLabel>
+                            Name <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
                             <Input
-                              className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                              className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               placeholder="Customer name"
+                              {...field}
+                              {...customerForm.register("name", {
+                                required: "Customer name is required",
+                              })}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                handleManualCustomerInput();
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={customerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email </FormLabel>
+                          <FormControl>
+                            <Input
+                              className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                              type="email"
+                              placeholder="customer@example.com"
                               {...field}
                               onChange={(e) => {
                                 field.onChange(e);
@@ -1092,9 +1209,12 @@ export default function AddToCart() {
                           <FormLabel>Phone *</FormLabel>
                           <FormControl>
                             <Input
-                              className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
+                              className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               placeholder="+1 (555) 123-4567"
                               {...field}
+                              {...customerForm.register("phone", {
+                                required: "Customer phone is required",
+                              })}
                               onChange={(e) => {
                                 field.onChange(e);
                                 handleManualCustomerInput();
@@ -1106,161 +1226,87 @@ export default function AddToCart() {
                       )}
                     />
                   </div>
-                  {/* Address Selection */}
-                  {selectedCustomer && !isNewCustomer && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Delivery Address
-                        </Label>
-                        <Select
-                          value={
-                            useNewShippingAddress
-                              ? "__new"
-                              : customerForm.getValues("deliveryAddressId") ||
-                                ""
-                          }
-                          onValueChange={(value) => {
-                            console.log("Selected:", value);
-                            if (value === "__new") {
-                              setUseNewShippingAddress(true);
-                              customerForm.setValue("deliveryAddressId", "");
-                            } else {
-                              setUseNewShippingAddress(false);
-                              customerForm.setValue("deliveryAddressId", value);
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0">
-                            <SelectValue placeholder="Select delivery address" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__new">
-                              + Add New Address
-                            </SelectItem>
-                            <Separator />
-                            {condoLists.map((condo, i) => (
-                              <SelectItem key={i} value={String(condo)}>
-                                {condo}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Delivery Address
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <FormField
+                          control={customerForm.control}
+                          name="deliveryAddress.street"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="123 Main St"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={customerForm.control}
+                          name="deliveryAddress.city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="New York"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={customerForm.control}
+                          name="deliveryAddress.apartment"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Apartment</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="Apartment,unit number"
+                                  {...field}
+                                  {...customerForm.register(
+                                    "deliveryAddress.apartment",
+                                    {
+                                      required: "Apartment unit is required",
+                                    }
+                                  )}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={customerForm.control}
+                          name="deliveryAddress.zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>ZIP Code</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="10001"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
-                  )}
-
-                  {/* New Address Forms */}
-                  {(isNewCustomer || useNewShippingAddress) && (
-                    <div className="space-y-4">
-                      {(isNewCustomer || useNewShippingAddress) && (
-                        <div>
-                          <h4 className="font-medium mb-2 flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            New Address
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.street"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Street</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="123 Main St"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.city"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>City</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="New York"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.state"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>State</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="NY"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.zipCode"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>ZIP Code</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="10001"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.condoName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Condo Name</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="Plum"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={customerForm.control}
-                              name="newDeliveryAddress.buildingUnit"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Building Unit</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className="w-full focus:ring-blue-500 focus:ring-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-input focus:ring-ring"
-                                      placeholder="A,B or 1,2"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  </div>
                 </div>
               </Form>
             </CardContent>
