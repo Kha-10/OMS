@@ -32,10 +32,10 @@ const Customercontroller = {
     }
   },
   store: async (req, res) => {
-    const { name, phoneNumber, address, condoName, condoUnit } = req.body;
+    const { name, phone, email, deliveryAddress } = req.body;
     console.log("req.body", req.body);
     try {
-      const existingCustomer = await Customer.findOne({ phoneNumber });
+      const existingCustomer = await Customer.findOne({ phone });
 
       if (existingCustomer) {
         return res.status(409).json({ msg: "Customer already exists" });
@@ -43,10 +43,9 @@ const Customercontroller = {
 
       const customer = await Customer.create({
         name,
-        phoneNumber,
-        address,
-        condoName,
-        condoUnit,
+        phone,
+        email,
+        deliveryAddress,
       });
       return res.json(customer);
     } catch (error) {

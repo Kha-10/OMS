@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, } from "react-hook-form";
 import {
   Form,
   FormField,
@@ -10,24 +10,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { DevTool } from "@hookform/devtools";
@@ -35,51 +17,35 @@ import { ToastContainer, toast } from "react-toastify";
 import { showToast } from "@/helper/showToast";
 import axios from "@/helper/axios";
 import useCustomers from "@/hooks/useCustomers";
-import { cn } from "@/lib/utils";
-import { condoLists } from "@/helper/constant";
 
 const NewCustomer = () => {
-  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
-  const [showCondoError, setShowCondoError] = useState(false);
-  const [showUnitError, setShowUnitError] = useState(false);
-
   const { id } = useParams();
 
-  const { data : customers = [], isPending: isLoading } = useCustomers({ id });
+  const { data: customers = [], isPending: isLoading } = useCustomers({ id });
 
   const form = useForm({
     defaultValues: {
       name: "",
-      phoneNumber: "",
-      address: "",
-      condoName: "",
-      condoUnit: "",
+      email: "",
+      phone: "",
+      deliveryAddress: {
+        street: "",
+        apartment: "",
+        city: "",
+        zipCode: "",
+      },
     },
   });
-
-  const watchAddress = form.watch("address");
-  const watchCondo = form.watch("condoName");
-  const watchUnit = form.watch("condoUnit");
-
-  const saveAddress = () => {
-    setShowCondoError(!watchCondo);
-    setShowUnitError(!watchUnit);
-
-    if (watchCondo && watchUnit) {
-      form.setValue("address", `${watchCondo}, Unit ${watchUnit}`, {
-        shouldValidate: true,
-      });
-      setAddressDialogOpen(false);
-    }
-  };
 
   useEffect(() => {
     if (id) {
       form.setValue("name", customers.name);
-      form.setValue("phoneNumber", customers.phoneNumber);
-      form.setValue("condoName", customers.condoName);
-      form.setValue("condoUnit", customers.condoUnit);
-      form.setValue("address", customers.address);
+      form.setValue("email", customers.email);
+      form.setValue("phone", customers.phone);
+      form.setValue("deliveryAddress.street", customers?.deliveryAddress?.street);
+      form.setValue("deliveryAddress.apartment", customers?.deliveryAddress?.apartment);
+      form.setValue("deliveryAddress.city", customers?.deliveryAddress?.city);
+      form.setValue("deliveryAddress.zipCode", customers?.deliveryAddress?.zipCode);
     }
   }, [customers]);
 
@@ -133,7 +99,7 @@ const NewCustomer = () => {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-4"
               >
-                <div className="bg-white p-4 border rounded-lg space-y-3">
+                <div className="bg-white p-4 border rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="name"
@@ -144,12 +110,15 @@ const NewCustomer = () => {
                         </FormLabel>
                         <FormControl>
                           <Input
+                            placeholder="Customer name"
                             {...field}
-                            placeholder="Name"
-                            autoComplete="off"
                             {...form.register("name", {
                               required: "Customer name is required",
                             })}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleManualCustomerInput();
+                            }}
                             className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />
                         </FormControl>
@@ -157,23 +126,47 @@ const NewCustomer = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
-                    name="phoneNumber"
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="customer@example.com"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleManualCustomerInput();
+                            }}
+                            className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Phone Number <span className="text-red-500">*</span>
+                          Phone <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
+                            placeholder="+1 (555) 123-4567"
                             {...field}
-                            placeholder="Phone Number"
-                            autoComplete="off"
-                            {...form.register("phoneNumber", {
-                              required: "Customer phone Number is required",
+                            {...form.register("phone", {
+                              required: "Phone number is required",
                             })}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleManualCustomerInput();
+                            }}
                             className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />
                         </FormControl>
@@ -181,36 +174,92 @@ const NewCustomer = () => {
                       </FormItem>
                     )}
                   />
-
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="address"
-                      className={cn(
-                        form.formState.errors.address && "text-destructive"
-                      )}
-                    >
-                      Address <span className="text-red-500">*</span>
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAddressDialogOpen(true)}
-                      className="w-full justify-start text-gray-500 font-normal"
-                    >
-                      <MapPin className="mr-2 h-5 w-5 text-gray-400" />
-                      {watchAddress ? watchAddress : "Enter address"}
-                    </Button>
-                    <input
-                      type="hidden"
-                      {...form.register("address", {
-                        required: "Address is required",
-                      })}
-                    />
-                    {form.formState.errors.address && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.address.message}
-                      </p>
-                    )}
+                  <div className="space-y-4 md:col-span-3">
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Delivery Address
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="deliveryAddress.street"
+                          render={({ field }) => (
+                            <FormItem className="w-full">
+                              <FormLabel>Street</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="123 Main St"
+                                  {...field}
+                                  // {...form.register("deliveryAddress.street", {
+                                  //   required: "street is required",
+                                  // })}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="deliveryAddress.city"
+                          render={({ field }) => (
+                            <FormItem className="w-full">
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="New York"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="deliveryAddress.apartment"
+                          render={({ field }) => (
+                            <FormItem className="w-full">
+                              <FormLabel>Apartment</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="Apartment,unit number"
+                                  {...field}
+                                  {...form.register(
+                                    "deliveryAddress.apartment",
+                                    {
+                                      required: "Apartment unit is required",
+                                    }
+                                  )}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="deliveryAddress.zipCode"
+                          render={({ field }) => (
+                            <FormItem className="w-full">
+                              <FormLabel>ZIP Code</FormLabel>
+                              <FormControl>
+                                <Input
+                                  className="w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                  placeholder="10001"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -220,7 +269,7 @@ const NewCustomer = () => {
                 >
                   Save
                 </Button>
-                <Dialog
+                {/* <Dialog
                   open={addressDialogOpen}
                   onOpenChange={setAddressDialogOpen}
                 >
@@ -319,7 +368,7 @@ const NewCustomer = () => {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-                </Dialog>
+                </Dialog> */}
               </form>
             </Form>
           </div>

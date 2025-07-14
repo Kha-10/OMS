@@ -227,7 +227,7 @@ export default function CustomerProfile() {
               <div>
                 <div className="text-gray-500 mb-1">Phone</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-blue-600">{data?.phoneNumber}</span>
+                  <span className="text-blue-600">{data?.phone}</span>
                   <Button
                     variant="ghost"
                     size="icon"

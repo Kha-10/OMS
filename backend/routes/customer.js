@@ -17,8 +17,8 @@ router.post(
   "",
   [
     body("name").notEmpty(),
-    body("phoneNumber").notEmpty(),
-    body("address").notEmpty(),
+    body("phone").notEmpty(),
+    body("deliveryAddress").notEmpty(),
   ],
   // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,

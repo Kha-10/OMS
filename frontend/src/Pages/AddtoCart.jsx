@@ -646,6 +646,7 @@ export default function AddToCart() {
   const handleCustomerSelect = (customerId) => {
     const customer = customersfromDb.find((c) => c._id === customerId);
     if (customer) {
+      console.log("customer",customer);
       setSelectedCustomer(customer);
       setIsNewCustomer(false);
       customerForm.setValue("customerId", customer._id);

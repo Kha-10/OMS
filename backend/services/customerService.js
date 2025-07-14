@@ -7,7 +7,6 @@ const buildQuery = (queryParams) => {
   if (queryParams.search) {
     query.$or = [
       { name: { $regex: queryParams.search, $options: "i" } },
-      // { phoneNumber: { $regex: queryParams.search, $options: "i" } },
     ];
   }
 
@@ -64,27 +63,6 @@ const deleteCustomers = async (ids) => {
     }
 
     await Customer.deleteMany({ _id: { $in: ids } }).session(session);
-
-    // await Promise.all([
-    //   Category.updateMany(
-    //     { products: { $in: ids } },
-    //     { $pull: { products: { $in: ids } } }
-    //   ).session(session),
-
-    //   Order.updateMany(
-    //     { "items.productId": { $in: ids } },
-    //     {
-    //       $set: {
-    //         "items.$[elem].productId": null,
-    //         "items.$[elem]._id": null,
-    //       },
-    //     },
-    //     {
-    //       arrayFilters: [{ "elem.productId": { $in: ids } }],
-    //       session,
-    //     }
-    //   ),
-    // ]);
 
     await session.commitTransaction();
     session.endSession();

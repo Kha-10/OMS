@@ -9,23 +9,24 @@ const CustomerSchema = new schema(
       required: true,
       trim: true,
     },
-    phoneNumber: {
+    phone: {
       type: String,
       required: true,
       unique: true,
     },
-    address: {
+    email: {
       type: String,
       required: true,
+      unique: true,
     },
-    condoName: {
-      type: String,
+    deliveryAddress: {
+      type: {
+        street: { type: String},
+        apartment: { type: String, required: true },
+        city: { type: String },
+        zipCode: { type: String },
+      },
       required: true,
-      trim: true,
-    },
-    condoUnit: {
-      type: String,
-      trim: true,
     },
     totalSpent: {
       type: Number,

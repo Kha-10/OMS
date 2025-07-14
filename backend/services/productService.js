@@ -35,9 +35,9 @@ const buildQuery = (queryParams) => {
 
   if (queryParams.search) {
     query.$or = [
-      { name: { $regex: queryParams.search, $options: "i" } },
-      { sku: { $regex: queryParams.search, $options: "i" } },
-      { "variants.name": { $regex: queryParams.search, $options: "i" } },
+      { name: { $regex: `^${queryParams.search}` } },
+      { sku: { $regex: `^${queryParams.search}` } },
+      { "variants.name": { $regex: `^${queryParams.search}` } },
     ];
   }
 
@@ -62,6 +62,7 @@ const fetchProductsFromDB = async (queryParams) => {
 
   const [products, totalProducts, allProductsCount] = await Promise.all([
     Product.find(query)
+      .collation({ locale: "en", strength: 2 })
       .populate("categories")
       .sort(sort)
       .skip(skip)
@@ -71,6 +72,26 @@ const fetchProductsFromDB = async (queryParams) => {
   ]);
 
   return { products, totalProducts, allProductsCount, page, limit };
+};
+
+const fetchProductsExplain = async (queryParams) => {
+  const query = buildQuery(queryParams);
+  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
+  const page = Number(queryParams.page) || 1;
+  const limit = Number(queryParams.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  // Base query WITHOUT populate, but with collation, sort, skip, limit
+  const baseQuery = Product.find(query)
+    .collation({ locale: "en", strength: 2 })
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  const explain = await baseQuery.explain("executionStats");
+
+  console.log("Execution stats:", JSON.stringify(explain, null, 2));
+  return explain;
 };
 
 const generateCacheKey = (queryParams) => {
@@ -87,6 +108,7 @@ const generateCacheKey = (queryParams) => {
 };
 
 const findProducts = async (queryParams) => {
+  await fetchProductsExplain(queryParams);
   const cacheKey = generateCacheKey(queryParams);
   let cachedProducts = await getCachedProducts(cacheKey);
   console.log("cachedProducts", cachedProducts);

@@ -34,9 +34,7 @@ export default function CustomerList({
   onPageChange,
   onPageSizeChange,
 }) {
-  const {
-    deleteMutation,
-  } = useCustomerActions(onSelectCustomers);
+  const { deleteMutation } = useCustomerActions(onSelectCustomers);
 
   const handleDelete = () => {
     deleteMutation.mutate(selectedCustomers);
@@ -102,12 +100,6 @@ export default function CustomerList({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      {/* <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={handleDuplicate}
-                      >
-                        Duplicate
-                      </DropdownMenuItem> */}
                       <DropdownMenuItem
                         className="text-red-500 focus:text-red-500"
                         onClick={handleDelete}
@@ -130,22 +122,27 @@ export default function CustomerList({
           {!!customers &&
             customers.map((customer) => (
               <tr key={customer._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 w-2/3">
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={selectedCustomers.includes(customer._id)}
                       onCheckedChange={() => toggleSelectProduct(customer._id)}
                       className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
                     />
-                    <Link to={`/customers/${customer._id}`}>
-                      <div className="flex items-center gap-5">
-                        <p>{customer.name}</p>
-                        <p className="text-sm text-gray-400">{customer.address}</p>
-                        <p className="text-sm text-gray-400">
-                          {customer.phoneNumber}
-                        </p>
-                      </div>
+                    <Link
+                      to={`/customers/${customer._id}`}
+                      className="block w-full"
+                    >
+                      <p className="font-medium">{customer.name}</p>
                     </Link>
+                  </div>
+                </td>
+                <td className="px-6 py-4 w-1/3">
+                  <div className="flex items-center justify-end space-x-6">
+                    <p className="text-sm text-gray-400">
+                      {customer.deliveryAddress.apartment}
+                    </p>
+                    <p className="text-sm text-gray-400">{customer.phone}</p>
                   </div>
                 </td>
               </tr>
