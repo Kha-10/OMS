@@ -35,9 +35,9 @@ const buildQuery = (queryParams) => {
 
   if (queryParams.search) {
     query.$or = [
-      { name: { $regex: `^${queryParams.search}` } },
-      { sku: { $regex: `^${queryParams.search}` } },
-      { "variants.name": { $regex: `^${queryParams.search}` } },
+      { name: { $regex: `^${queryParams.search}`, $options: "i" } },
+      { sku: { $regex: `^${queryParams.search}` }, $options: "i" },
+      { "variants.name": { $regex: `^${queryParams.search}`, $options: "i" } },
     ];
   }
 
@@ -69,17 +69,6 @@ const fetchProductsFromDB = async (queryParams) => {
   if (queryParams.search) {
     findQuery.collation({ locale: "en", strength: 2 });
   }
-
-  // const [products, totalProducts, allProductsCount] = await Promise.all([
-  //   Product.find(query)
-  //     // .collation({ locale: "en", strength: 2 })
-  //     .populate("categories")
-  //     .sort(sort)
-  //     .skip(skip)
-  //     .limit(limit),
-  //   Product.countDocuments(query),
-  //   Product.countDocuments({}),
-  // ]);
 
   const [products, totalProducts, allProductsCount] = await Promise.all([
     findQuery,

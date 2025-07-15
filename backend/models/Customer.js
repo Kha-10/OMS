@@ -21,7 +21,7 @@ const CustomerSchema = new schema(
     },
     deliveryAddress: {
       type: {
-        street: { type: String},
+        street: { type: String },
         apartment: { type: String, required: true },
         city: { type: String },
         zipCode: { type: String },
@@ -35,5 +35,5 @@ const CustomerSchema = new schema(
   },
   { timestamps: true }
 );
-
+CustomerSchema.index({ name: 1 });
 module.exports = mongoose.model("Customer", CustomerSchema);
