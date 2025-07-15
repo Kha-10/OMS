@@ -60,13 +60,29 @@ const fetchProductsFromDB = async (queryParams) => {
   const limit = Number(queryParams.limit) || 10;
   const skip = (page - 1) * limit;
 
+  const findQuery = Product.find(query)
+    .populate("categories")
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  if (queryParams.search) {
+    findQuery.collation({ locale: "en", strength: 2 });
+  }
+
+  // const [products, totalProducts, allProductsCount] = await Promise.all([
+  //   Product.find(query)
+  //     // .collation({ locale: "en", strength: 2 })
+  //     .populate("categories")
+  //     .sort(sort)
+  //     .skip(skip)
+  //     .limit(limit),
+  //   Product.countDocuments(query),
+  //   Product.countDocuments({}),
+  // ]);
+
   const [products, totalProducts, allProductsCount] = await Promise.all([
-    Product.find(query)
-      .collation({ locale: "en", strength: 2 })
-      .populate("categories")
-      .sort(sort)
-      .skip(skip)
-      .limit(limit),
+    findQuery,
     Product.countDocuments(query),
     Product.countDocuments({}),
   ]);
@@ -83,7 +99,7 @@ const fetchProductsExplain = async (queryParams) => {
 
   // Base query WITHOUT populate, but with collation, sort, skip, limit
   const baseQuery = Product.find(query)
-    .collation({ locale: "en", strength: 2 })
+    // .collation({ locale: "en", strength: 2 })
     .sort(sort)
     .skip(skip)
     .limit(limit);

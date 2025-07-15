@@ -126,10 +126,17 @@ const productSchema = new schema(
   },
   { timestamps: true }
 );
+
 // For filter + sort
-productSchema.index({ visibility: 1, categories: 1, updatedAt: -1 });
-productSchema.index({ visibility: 1, categories: 1, name: 1 });
-productSchema.index({ visibility: 1, categories: 1, createdAt: 1 });
+productSchema.index(
+  { visibility: 1, categories: 1, updatedAt: 1 },
+);
+productSchema.index(
+  { visibility: 1, categories: 1, name: 1 },
+);
+productSchema.index(
+  { visibility: 1, categories: 1, createdAt: 1 },
+);
 
 // For regex (collation-aware)
 productSchema.index({ name: 1 }, { collation: { locale: "en", strength: 2 } });
