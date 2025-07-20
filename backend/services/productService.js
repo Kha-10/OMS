@@ -79,25 +79,25 @@ const fetchProductsFromDB = async (queryParams) => {
   return { products, totalProducts, allProductsCount, page, limit };
 };
 
-const fetchProductsExplain = async (queryParams) => {
-  const query = buildQuery(queryParams);
-  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
+// const fetchProductsExplain = async (queryParams) => {
+//   const query = buildQuery(queryParams);
+//   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
+//   const page = Number(queryParams.page) || 1;
+//   const limit = Number(queryParams.limit) || 10;
+//   const skip = (page - 1) * limit;
 
-  // Base query WITHOUT populate, but with collation, sort, skip, limit
-  const baseQuery = Product.find(query)
-    // .collation({ locale: "en", strength: 2 })
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
+//   // Base query WITHOUT populate, but with collation, sort, skip, limit
+//   const baseQuery = Product.find(query)
+//     // .collation({ locale: "en", strength: 2 })
+//     .sort(sort)
+//     .skip(skip)
+//     .limit(limit);
 
-  const explain = await baseQuery.explain("executionStats");
+//   const explain = await baseQuery.explain("executionStats");
 
-  console.log("Execution stats:", JSON.stringify(explain, null, 2));
-  return explain;
-};
+//   console.log("Execution stats:", JSON.stringify(explain, null, 2));
+//   return explain;
+// };
 
 const generateCacheKey = (queryParams) => {
   let cacheKey = `products:page${queryParams.page}:limit${queryParams.limit}`;
@@ -113,7 +113,7 @@ const generateCacheKey = (queryParams) => {
 };
 
 const findProducts = async (queryParams) => {
-  await fetchProductsExplain(queryParams);
+  // await fetchProductsExplain(queryParams);
   const cacheKey = generateCacheKey(queryParams);
   let cachedProducts = await getCachedProducts(cacheKey);
   console.log("cachedProducts", cachedProducts);

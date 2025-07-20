@@ -1,4 +1,5 @@
 const redisClient = require("../config/redisClient");
+const { v4: uuidv4 } = require("uuid");
 
 const CartController = {
   show: async (req, res) => {
@@ -60,6 +61,7 @@ const CartController = {
         cart.items[index].basePrice += basePrice;
       } else {
         cart.items.push({
+          id: uuidv4(),
           productId,
           variantId,
           productName,

@@ -309,8 +309,6 @@ export default function AddToCart() {
     }
   }, [selectedProduct]);
 
-  console.log("customersfromDb", customersfromDb);
-
   const calculateItemPrice = (product, formValues) => {
     let baseItemPrice = product.price || product.originalPrice || 0;
 
@@ -495,6 +493,7 @@ export default function AddToCart() {
       const res = await axios.post("/api/cart", cartItem);
       console.log("res", res);
       if (res.status === 200) {
+        console.log("i did");
         setCart([...res.data.cart.items]);
         setSelectedProduct(null);
         setCurrentView("cart");
@@ -737,12 +736,12 @@ export default function AddToCart() {
   const onSearchChange = (e) => {
     debouncedSearch(e.target.value);
   };
-
+  console.log("orderNotes", orderNotes);
   // Complete order function
-  const completeOrder = async () => {
-    const customerData = customerForm.getValues();
+  const completeOrder = customerForm.handleSubmit(async (customerData) => {
     const orderData = {
       customer: customerData,
+      status: "pending",
       cartItems: cart,
       pricing: {
         subtotal: calculateCartSubtotal(),
@@ -755,7 +754,6 @@ export default function AddToCart() {
     try {
       console.log("Completing order:", orderData);
 
-      // Reset everything after successful order
       setCart([]);
       setPricingAdjustments([]);
       setOrderNotes([]);
@@ -764,7 +762,7 @@ export default function AddToCart() {
     } catch (error) {
       console.error("Failed to complete order:", error);
     }
-  };
+  });
 
   const renderCartItemDetails = (item) => {
     console.log(item);
@@ -1000,11 +998,6 @@ export default function AddToCart() {
               <Button
                 variant={currentView === "cart" ? "default" : "outline"}
                 onClick={() => setCurrentView("cart")}
-                // className={`relative transition-all duration-300 ${
-                //   cartButtonAnimation
-                //     ? "scale-110 bg-green-100 border-green-300"
-                //     : ""
-                // }`}
                 className={`relative transition-all duration-300
                 ${
                   currentView === "cart"
@@ -1312,7 +1305,7 @@ export default function AddToCart() {
             </CardContent>
           </Card>
         )}
-
+        {console.log("cart",cart)}
         {/* Cart Page */}
         {currentView === "cart" && (
           <Card className="border-0 shadow-lg mb-6">
@@ -1338,8 +1331,8 @@ export default function AddToCart() {
                 <div className="space-y-6">
                   {/* Cart Items */}
                   <div className="space-y-4">
-                    {cart.map((item, i) => (
-                      <Card key={i} className="border">
+                    {cart.map((item) => (
+                      <Card key={item.id} className="border">
                         <CardContent className="p-4">
                           {renderCartItemDetails(item)}
                         </CardContent>
@@ -1402,7 +1395,7 @@ export default function AddToCart() {
                               e.target.value
                             )
                           }
-                          className="flex-1"
+                          className="flex-1 w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                         />
                         <Input
                           type="number"
@@ -1415,7 +1408,7 @@ export default function AddToCart() {
                               Number.parseFloat(e.target.value) || 0
                             )
                           }
-                          className="w-24"
+                          className="w-24 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                         />
                         <Select
                           value={
@@ -1429,7 +1422,7 @@ export default function AddToCart() {
                             )
                           }
                         >
-                          <SelectTrigger className="w-20">
+                          <SelectTrigger className="w-20 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 ring-offset-blue-500 focus:ring-transparent">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1510,12 +1503,13 @@ export default function AddToCart() {
                           placeholder="Add internal note..."
                           value={newNote}
                           onChange={(e) => setNewNote(e.target.value)}
-                          className="flex-1"
+                          className="flex-1 w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                         />
                         <Button
                           type="button"
                           onClick={addOrderNote}
                           disabled={!newNote.trim()}
+                          className="bg-blue-500"
                         >
                           Add Note
                         </Button>

@@ -21,7 +21,8 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.14",
     "redis": "^4.7.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "dev": "nodemon server.js"
