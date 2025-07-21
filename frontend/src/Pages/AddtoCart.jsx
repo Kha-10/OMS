@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,10 +42,11 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
-import { condoLists } from "@/helper/constant";
 import useCustomers from "@/hooks/useCustomers";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
+import { ToastContainer, toast } from "react-toastify";
+import { errorToast, showToast } from "@/helper/showToast";
 import { v4 as uuidv4 } from "uuid";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
@@ -267,6 +268,8 @@ export default function AddToCart() {
     useProducts({ categories: selectedCategory._id, searchQuery });
   const { data: { data: categoriesfromDb = [] } = {} } = useCategories({});
 
+  const containerRef = useRef(null);
+
   const customerForm = useForm({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -422,6 +425,7 @@ export default function AddToCart() {
   }
 
   function clearCartId() {
+    console.log('clearCartId');
     sessionStorage.removeItem("adminCartId");
   }
   console.log("cart", cart);
@@ -736,13 +740,24 @@ export default function AddToCart() {
   const onSearchChange = (e) => {
     debouncedSearch(e.target.value);
   };
-  console.log("orderNotes", orderNotes);
+
+  const onComplete = (complete) => {
+    console.log("complete",complete);
+    if (complete) {
+      containerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   // Complete order function
   const completeOrder = customerForm.handleSubmit(async (customerData) => {
     const orderData = {
       customer: customerData,
-      status: "pending",
-      cartItems: cart,
+      cartId,
+      orderStatus: "pending",
+      items: cart,
       pricing: {
         subtotal: calculateCartSubtotal(),
         adjustments: pricingAdjustments,
@@ -751,16 +766,31 @@ export default function AddToCart() {
       notes: orderNotes,
     };
 
+    const toastId = toast.loading("Adding order...", {
+      position: "top-center",
+    });
+
     try {
       console.log("Completing order:", orderData);
-
+      let res = await axios.post("/api/orders", orderData);
+      console.log("res",res);
+      if (res.status === 200) {
+        showToast(
+          toastId,
+          // id ? "Order updated successfully" : "Order added successfully"
+           "Order added successfully"
+        );
+        clearCartId()
+        onComplete("complete");
+      }
       setCart([]);
       setPricingAdjustments([]);
       setOrderNotes([]);
       setCurrentView("products");
-      alert("Order completed successfully!");
+      // alert("Order completed successfully!");
     } catch (error) {
-      console.error("Failed to complete order:", error);
+      console.error("Error handling order:", error.response?.data.msg);
+      showToast(toastId, error.response?.data.msg, "error");
     }
   });
 
@@ -971,7 +1001,10 @@ export default function AddToCart() {
   const isDisabled = isBelowMinimum || isSoldOut;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div
+      ref={containerRef}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+    >
       <div className="container mx-auto p-4 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
@@ -1305,7 +1338,7 @@ export default function AddToCart() {
             </CardContent>
           </Card>
         )}
-        {console.log("cart",cart)}
+        {console.log("cart", cart)}
         {/* Cart Page */}
         {currentView === "cart" && (
           <Card className="border-0 shadow-lg mb-6">
@@ -3773,7 +3806,8 @@ export default function AddToCart() {
         )}
       </div>
       {/* <DevTool control={productForm.control} /> */}
-      <DevTool control={customerForm.control} />
+      {/* <DevTool control={customerForm.control} /> */}
+      <ToastContainer />
     </div>
   );
 }

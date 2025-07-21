@@ -13,15 +13,21 @@ const router = express.Router();
 
 router.get("", OrdersController.index);
 
+// router.post(
+//   "",
+//   // [
+//   //   body("name").notEmpty(),
+//   //   body("categories")
+//   //     .isArray({ min: 1 })
+//   //     .withMessage("Category must be a non-empty array"),
+//   // ],
+//   // RoleMiddleware(["tenant", "superadmin"]),
+//   handleErrorMessage,
+//   OrdersController.store
+// );
+
 router.post(
   "",
-  [
-    body("name").notEmpty(),
-    body("categories")
-      .isArray({ min: 1 })
-      .withMessage("Category must be a non-empty array"),
-  ],
-  // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
   OrdersController.store
 );
@@ -40,15 +46,15 @@ router.patch(
   OrdersController.update
 );
 
-router.post(
-  "/:id/upload",
-  [
-    upload.array("photo"),
-    validatePhotoUpload
-  ],
-  // RoleMiddleware(["admin", "superadmin"]),
-  handleErrorMessage,
-  OrdersController.upload
-);
+// router.post(
+//   "/:id/upload",
+//   [
+//     upload.array("photo"),
+//     validatePhotoUpload
+//   ],
+//   // RoleMiddleware(["admin", "superadmin"]),
+//   handleErrorMessage,
+//   OrdersController.upload
+// );
 
 module.exports = router;

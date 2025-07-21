@@ -14,6 +14,8 @@ const userRoutes = require("./routes/users");
 
 const customerRoutes = require("./routes/customer");
 
+const orderRoutes = require("./routes/orders");
+
 const mongoose = require("mongoose");
 
 const cors = require("cors");
@@ -91,6 +93,8 @@ app.use("/api/categories", authMiddleware, categoryRoutes);
 app.use("/api/cart", authMiddleware, cartRoutes);
 
 app.use("/api/customers", authMiddleware, customerRoutes);
+
+app.use("/api/orders", authMiddleware, orderRoutes);
 
 app.use("/api/users", userRoutes);
 

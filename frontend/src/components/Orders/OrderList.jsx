@@ -237,16 +237,16 @@ export default function OrderList({
                   {order.customer.name}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {order.totalAmount.toLocaleString("en-US", {
+                  {order.pricing?.finalTotal.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                   })}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {format(order.date, "dd MMMM yyyy, h:mm a")}
+                  {format(order.createdAt, "dd MMMM yyyy, h:mm a")}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <div className="flex space-x-2">
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={order.orderStatus} />
                     <StatusBadge status={order.paymentStatus} />
                     <StatusBadge status={order.fulfillmentStatus} />
                   </div>

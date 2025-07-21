@@ -35,12 +35,12 @@ const buildQuery = (queryParams) => {
 
   if (queryParams.search) {
     query.$or = [
-      { name: { $regex: `^${queryParams.search}`, $options: "i" } },
-      { sku: { $regex: `^${queryParams.search}` }, $options: "i" },
-      { "variants.name": { $regex: `^${queryParams.search}`, $options: "i" } },
+      { name: { $regex: queryParams.search, $options: "i" } },
+      { sku: { $regex: queryParams.search, $options: "i" } },
+      { "variants.name": { $regex: queryParams.search, $options: "i" } },
     ];
   }
-
+  
   return query;
 };
 

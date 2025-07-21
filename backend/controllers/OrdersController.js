@@ -1,8 +1,10 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const Counter = require("../models/Counter");
+const Customer = require("../models/Customer");
 const mongoose = require("mongoose");
 const clearProductCache = require("../helpers/clearProductCache");
+const clearCartCache = require("../helpers/clearCartCache");
 const resetCounters = require("../helpers/reset");
 const orderService = require("../services/orderService");
 const handler = require("../helpers/handler");
@@ -14,7 +16,12 @@ function sanitizeOrderItem(item) {
     quantity: item.quantity,
     cartMaximum: item.cartMaximum,
     cartMinimum: item.cartMinimum,
-    inventory: typeof item.inventory === 'number' ? item.inventory : (item.inventory && typeof item.inventory.quantity === 'number' ? item.inventory.quantity : undefined),
+    inventory:
+      typeof item.inventory === "number"
+        ? item.inventory
+        : item.inventory && typeof item.inventory.quantity === "number"
+        ? item.inventory.quantity
+        : undefined,
     name: item.name,
     price: item.price,
     trackQuantityEnabled: item.trackQuantityEnabled,
@@ -46,28 +53,17 @@ const OrdersController = {
         },
       };
 
-      return handler.handleResponse(res, { status: 200, message: response });
+      return res.json(response);
     } catch (error) {
-      return handler.handleError(res, error);
+      return res.status(500).json({ msg: "internal server error" });
     }
   },
   store: async (req, res) => {
-    const {
-      customerId,
-      remark,
-      servicePrice,
-      cleanedItems,
-      cartMaximum,
-      cartMinimum,
-      inventory,
-      totalAmount,
-    } = req.body;
+    const { customer, cartId, items, notes, orderStatus, pricing } = req.body;
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // Call this function when you want to reset the counters
-      // resetCounters();
-
+      console.log("req.body", req.body);
       const orderCounter = await Counter.findOneAndUpdate(
         { id: "orderNumber" },
         { $inc: { seq: 1 } },
@@ -85,8 +81,8 @@ const OrdersController = {
       const orderNumber = orderCounter.seq;
       const invoiceNumber = invoiceCounter.seq;
 
-      for (const item of cleanedItems) {
-        const product = await Product.findById(item._id).session(session);
+      for (const item of items) {
+        const product = await Product.findById(item.productId).session(session);
 
         if (!product) {
           throw new Error("Product not found");
@@ -106,17 +102,26 @@ const OrdersController = {
         }
       }
 
+      const existingCustomer = await Customer.findById(
+        customer.customerId
+      ).session(session);
+      if (existingCustomer) {
+        existingCustomer.totalSpent += pricing.finalTotal;
+        existingCustomer.name = customer.name;
+        existingCustomer.email = customer.email;
+        existingCustomer.phone = customer.phone;
+
+        await existingCustomer.save({ session });
+      }
+
       const [order] = await Order.create(
         [
           {
-            customer: customerId,
-            remark,
-            servicePrice,
-            items: cleanedItems,
-            cartMaximum,
-            cartMinimum,
-            inventory,
-            totalAmount,
+            customer,
+            items,
+            notes,
+            orderStatus,
+            pricing,
             orderNumber,
             invoiceNumber,
           },
@@ -128,13 +133,14 @@ const OrdersController = {
       session.endSession();
 
       await clearProductCache();
+      await clearCartCache(`cart:cartId:${cartId}`);
 
-      return handler.handleResponse(res, { status: 200, message: order });
+      return res.json(order);
     } catch (error) {
       console.error("Error creating order:", error);
       await session.abortTransaction();
       session.endSession();
-      return handler.handleError(res, error);
+      return res.status(500).json({ msg: "internal server error" });
     }
   },
   show: async (req, res) => {
@@ -150,7 +156,7 @@ const OrdersController = {
       const enhancedOrders = orderService.enhanceProductImages(order);
       return res.json(enhancedOrders);
     } catch (error) {
-      return res.status(500).json({ msg: "Internet Server Error" });
+      return res.status(500).json({ msg: "internal Server Error" });
     }
   },
   destroy: async (req, res) => {
@@ -317,7 +323,7 @@ const OrdersController = {
       shouldRestock,
       shouldDeduct,
     } = req.body;
-  
+
     // Validation
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return handler.handleResponse(res, {
@@ -410,7 +416,10 @@ const OrdersController = {
 
       // 1. Add new items and deduct inventory
       for (const item of newItems) {
-        if ((shouldDeduct || item.trackQuantityEnabled) && item.trackQuantityEnabled) {
+        if (
+          (shouldDeduct || item.trackQuantityEnabled) &&
+          item.trackQuantityEnabled
+        ) {
           bulkOps.push({
             updateOne: {
               filter: { _id: item._id, trackQuantityEnabled: true },
@@ -468,9 +477,12 @@ const OrdersController = {
       console.log("finalItems", finalItems);
 
       // 5. Update order
-      const sanitizedItems = (removedItems.length > 0 || increaseQuantity.length > 0 || decreaseQuantity.length > 0)
-        ? cleanedItems.map(sanitizeOrderItem)
-        : finalItems.map(sanitizeOrderItem);
+      const sanitizedItems =
+        removedItems.length > 0 ||
+        increaseQuantity.length > 0 ||
+        decreaseQuantity.length > 0
+          ? cleanedItems.map(sanitizeOrderItem)
+          : finalItems.map(sanitizeOrderItem);
       await Order.findByIdAndUpdate(id, {
         totalAmount,
         items: sanitizedItems,
