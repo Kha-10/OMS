@@ -460,17 +460,23 @@ export default function OrderDetailsPage() {
                           </div>
                         ))}
 
-                      <div className="flex flex-col sm:flex-row sm:items-center">
+                      <div className="flex flex-col sm:flex-row sm:items-start">
                         <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
                           Notes
                         </div>
-                        {orders?.notes?.length > 0
-                          ? orders.notes.map((note) => (
-                              <div key={note._id} className="text-gray-400">
-                                {note.content}
-                              </div>
-                            ))
-                          : "-"}
+
+                        <div className="flex flex-col gap-1 text-gray-400 font-light">
+                          {orders?.notes?.length > 0
+                            ? orders.notes.map((note) => (
+                                <div
+                                  key={note._id}
+                                  className="flex flex-col gap-1"
+                                >
+                                  <span>{note.content}</span>
+                                </div>
+                              ))
+                            : "-"}
+                        </div>
                       </div>
                     </div>
 
