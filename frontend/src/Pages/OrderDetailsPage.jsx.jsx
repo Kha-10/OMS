@@ -39,6 +39,14 @@ export default function OrderDetailsPage() {
     navigate("/orders")
   );
 
+  const total = orders?.items?.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  const totalQuantity = orders?.items?.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  console.log("orders", orders);
   const changeStatus = (status) => {
     const orderIdsWithTracking = orders?.items
       ?.filter((item) => item.trackQuantityEnabled && item.productId !== null)
@@ -95,7 +103,7 @@ export default function OrderDetailsPage() {
               onClick={() => window.history.back()}
             />
             <h1 className="text-xl font-bold">
-              #{orders.orderNumber} {orders.customerName}
+              #{orders.orderNumber} {orders?.customer?.name}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -152,9 +160,12 @@ export default function OrderDetailsPage() {
                       <ExternalLink className="w-4 h-4 text-gray-400" />
                     </Link>
                   </div>
-                  {orders?.date && (
+                  {orders?.createdAt && (
                     <p className="text-gray-500 text-sm">
-                      {format(new Date(orders.date), "dd MMMM yyyy, h:mm a")}
+                      {format(
+                        new Date(orders.createdAt),
+                        "dd MMMM yyyy, h:mm a"
+                      )}
                     </p>
                   )}
                 </div>
@@ -162,7 +173,7 @@ export default function OrderDetailsPage() {
                   <div className="relative w-full sm:w-auto">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <StatusButton status={orders?.status} />
+                        <StatusButton status={orders?.orderStatus} />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
@@ -227,51 +238,55 @@ export default function OrderDetailsPage() {
                   {/* Items list */}
                   {orders?.items?.length > 0 &&
                     orders?.items.map((item, i) => (
-                      <div key={i} className="p-3 sm:p-4">
+                      <div key={item._id} className="p-3 sm:p-4">
                         <div className="flex flex-col sm:flex-row justify-between mb-2 gap-2 sm:gap-0">
                           <div>
-                            {item.productId ? (
+                            {item.productId && (
                               <Link
                                 to={`/products/${item.productId}`}
                                 className="text-blue-500"
                               >
-                                {item.name}{" "}
-                                {item.selectedVariant.length > 0 && (
+                                {item.productName}{" "}
+                                {/* {item.selectedVariant.length > 0 && (
                                   <span>{item.selectedVariant[0].name}</span>
-                                )}
+                                )} */}
                               </Link>
-                            ) : (
-                              <span className="text-gray-700">
-                                {item.name}{" "}
-                                {item.selectedVariant.length > 0 && (
-                                  <span>{item.selectedVariant[0].name}</span>
-                                )}
-                              </span>
                             )}
 
                             <p className="text-gray-600">
-                              ${item.price.toFixed(2)} × {item.quantity}
+                              ${item.basePrice} × {item.quantity}
                             </p>
-                            {item?.selectedOptions?.length > 0 && (
-                              <div className="mt-1">
-                                <p className="text-gray-600">• Add on:</p>
-                                <p className="text-gray-600 ml-4">
-                                  {item.selectedOptions.map(
-                                    (addon, i) =>
-                                      `${addon.name} $${addon.amount.toFixed(
-                                        2
-                                      )} (1)${
-                                        i < item.selectedOptions.length - 1
-                                          ? ", "
-                                          : ""
-                                      }`
-                                  )}
-                                </p>
-                              </div>
-                            )}
+                            {item?.options?.length > 0 &&
+                              item.options.map((opt) => {
+                                return (
+                                  <div
+                                    key={opt._id}
+                                    className="mt-1 flex items-center space-x-2"
+                                  >
+                                    <p className="text-gray-400 text-sm font-light">
+                                      • {opt.name}:
+                                    </p>
+                                    <p className="text-gray-400 text-sm font-light ml-4">
+                                      {opt.answers.map((ans, i) => (
+                                        <span key={i}>{ans}</span>
+                                      ))}
+                                    </p>
+                                    <p className="text-gray-400 text-sm font-light ml-4">
+                                      {opt.prices.map((price, i) => (
+                                        <span key={i}>(${price})</span>
+                                      ))}
+                                    </p>
+                                    <p className="text-gray-400 text-sm font-light ml-4">
+                                      {opt.quantities.map((quantity, i) => (
+                                        <span key={i}>({quantity})</span>
+                                      ))}
+                                    </p>
+                                  </div>
+                                );
+                              })}
                           </div>
                           <p className="font-medium">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ${item.totalPrice.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -279,15 +294,31 @@ export default function OrderDetailsPage() {
 
                   <div className="border-t border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
-                      <p>Items total ({orders?.items?.length})</p>
-                      <p>{orders.totalAmount?.toFixed(2)}</p>
+                      <p>Items total ({totalQuantity})</p>
+                      <p>${total?.toFixed(2)}</p>
                     </div>
+                    {orders?.pricing?.adjustments.map((adj, index) => {
+                      const subtotal = orders?.pricing?.subtotal || 0;
+                      const amount = adj.isPercentage
+                        ? (subtotal * adj.value) / 100
+                        : adj.value;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between text-sm font-normal"
+                        >
+                          <p>{adj.name}</p>
+                          <p>${amount.toFixed(2)}</p>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="border-t border-dashed  border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
                       <p>Subtotal</p>
-                      <p>{orders.totalAmount?.toFixed(2)}</p>
+                      <p>${orders?.pricing?.subtotal?.toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -295,7 +326,7 @@ export default function OrderDetailsPage() {
                     <div className="flex justify-between mb-2">
                       <p className="font-bold">Total</p>
                       <p className="font-bold">
-                        {orders.totalAmount?.toFixed(2)}
+                        {orders?.pricing?.finalTotal?.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -411,24 +442,35 @@ export default function OrderDetailsPage() {
                           Phone
                         </div>
                         <div className="text-blue-500">
-                          {orders.customer?.phoneNumber}
+                          {orders.customer?.phone}
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center">
-                        <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
-                          Service
-                        </div>
-                        <div>{orders.servicePrice}</div>
-                      </div>
+                      {orders?.pricing?.adjustments
+                        .filter((adj) => adj.type === "fee")
+                        .map((adj) => (
+                          <div
+                            key={adj.__id}
+                            className="flex flex-col sm:flex-row sm:items-center"
+                          >
+                            <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
+                              {adj.name}
+                            </div>
+                            ${adj.value.toFixed(2)}
+                          </div>
+                        ))}
 
                       <div className="flex flex-col sm:flex-row sm:items-center">
                         <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
-                          Remark
+                          Notes
                         </div>
-                        <div className="text-gray-400">
-                          {orders.remark ? orders.remark : "-"}
-                        </div>
+                        {orders?.notes?.length > 0
+                          ? orders.notes.map((note) => (
+                              <div key={note._id} className="text-gray-400">
+                                {note.content}
+                              </div>
+                            ))
+                          : "-"}
                       </div>
                     </div>
 
@@ -517,7 +559,6 @@ export default function OrderDetailsPage() {
               </div>
 
               <div className="col-span-1">
-                {/* Customer info */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
                   <div className="p-3 sm:p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -527,7 +568,7 @@ export default function OrderDetailsPage() {
                       <div>
                         <p className="font-medium">{orders.customer?.name}</p>
                         <p className="text-gray-500 text-sm">
-                          {orders.customer?.phoneNumber}
+                          {orders.customer?.phone}
                         </p>
                       </div>
                     </div>

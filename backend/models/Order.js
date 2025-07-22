@@ -131,12 +131,13 @@ const PricingAdjustmentSchema = new mongoose.Schema({
 
 const OrderSchema = new mongoose.Schema(
   {
-    customer: {
-      customerId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      email: String,
-      phone: String,
-    },
+    // customer: {
+    //   customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
+    //   name: String,
+    //   email: String,
+    //   phone: String,
+    // },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
     items: [ItemSchema],
     notes: [NoteSchema],
     pricing: {

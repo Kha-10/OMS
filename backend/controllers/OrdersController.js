@@ -117,7 +117,7 @@ const OrdersController = {
       const [order] = await Order.create(
         [
           {
-            customer,
+            customer : customer.customerId,
             items,
             notes,
             orderStatus,
