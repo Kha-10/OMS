@@ -756,7 +756,7 @@ export default function AddToCart() {
     const orderData = {
       customer: customerData,
       cartId,
-      orderStatus: "pending",
+      orderStatus: "Pending",
       items: cart,
       pricing: {
         subtotal: calculateCartSubtotal(),
@@ -1338,7 +1338,7 @@ export default function AddToCart() {
             </CardContent>
           </Card>
         )}
-        {console.log("cart", cart)}
+
         {/* Cart Page */}
         {currentView === "cart" && (
           <Card className="border-0 shadow-lg mb-6">
@@ -2715,7 +2715,7 @@ export default function AddToCart() {
                               disabled={isDisabled}
                               className={`w-full ${
                                 isSoldOut
-                                  ? "bg-gray-400"
+                                  ? "bg-blue-400"
                                   : "bg-blue-600 hover:bg-blue-700"
                               }`}
                             >
@@ -3668,7 +3668,7 @@ export default function AddToCart() {
                               disabled={isDisabled}
                               className={`w-full ${
                                 isSoldOut
-                                  ? "bg-gray-400"
+                                  ? "bg-blue-400"
                                   : "bg-blue-600 hover:bg-blue-700"
                               }`}
                             >
