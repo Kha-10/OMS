@@ -140,7 +140,9 @@ const OrdersController = {
       console.error("Error creating order:", error);
       await session.abortTransaction();
       session.endSession();
-      return res.status(500).json({ msg: "internal server error" });
+      return res
+        .status(500)
+        .json({ msg: error.message || "internal server error" });
     }
   },
   show: async (req, res) => {
