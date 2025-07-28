@@ -107,6 +107,7 @@ const OptionSchema = new mongoose.Schema({
 const ItemSchema = new mongoose.Schema({
   id: String,
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+  trackQuantityEnabled: { type: Boolean },
   productName: String,
   variantId: { type: String, default: "" },
   basePrice: Number,
@@ -137,7 +138,23 @@ const OrderSchema = new mongoose.Schema(
     //   email: String,
     //   phone: String,
     // },
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+    },
+    manualCustomer: {
+      name: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      deliveryAddress: {
+        type: {
+          street: { type: String },
+          apartment: { type: String },
+          city: { type: String },
+          zipCode: { type: String },
+        },
+      },
+      email: { type: String },
+    },
     items: [ItemSchema],
     notes: [NoteSchema],
     pricing: {

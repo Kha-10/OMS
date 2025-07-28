@@ -49,6 +49,14 @@ router.post(
   ProductsController.store
 );
 
+router.post(
+  "/:id/upload",
+  [upload.array("photo"), validatePhotoUpload],
+  // RoleMiddleware(["admin", "superadmin"]),
+  handleErrorMessage,
+  ProductsController.upload
+);
+
 router.get("/:id", ProductsController.show);
 
 router.delete(
@@ -67,14 +75,6 @@ router.patch(
   "/:id",
   // RoleMiddleware(["admin", "superadmin"]),
   ProductsController.update
-);
-
-router.post(
-  "/:id/upload",
-  [upload.array("photo"), validatePhotoUpload],
-  // RoleMiddleware(["admin", "superadmin"]),
-  handleErrorMessage,
-  ProductsController.upload
 );
 
 module.exports = router;

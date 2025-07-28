@@ -4,6 +4,10 @@ const Order = require("../models/Order");
 const mongoose = require("mongoose");
 const productService = require("../services/productService");
 const clearProductCache = require("../helpers/clearProductCache");
+const clearCartCache = require("../helpers/clearCartCache");
+const clearOrderCache = require("../helpers/clearOrderCache");
+const redisClient = require("../config/redisClient");
+const updateInventoryQuantities = require("../services/inventoryService");
 
 const ProductsController = {
   index: async (req, res) => {
@@ -159,8 +163,9 @@ const ProductsController = {
         id
       );
       const updatedProduct = await productService.updateProduct(id, req.body);
-
       await clearProductCache();
+      await await clearCartCache(`cart:*`);
+      await clearOrderCache();
       return res.json(updatedProduct);
     } catch (error) {
       console.error("Error updating product:", error);

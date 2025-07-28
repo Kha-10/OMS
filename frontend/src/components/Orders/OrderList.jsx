@@ -234,7 +234,7 @@ export default function OrderList({
                   <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {order?.customer?.name}
+                  {order?.customer? order?.customer?.name : order?.manualCustomer?.name}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                   {order.pricing?.finalTotal.toLocaleString("en-US", {

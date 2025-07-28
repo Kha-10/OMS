@@ -39,6 +39,8 @@ import {
   Percent,
   Edit,
   Trash2,
+  Undo2,
+  ArrowLeftIcon,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -46,8 +48,10 @@ import useCustomers from "@/hooks/useCustomers";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
 import { ToastContainer, toast } from "react-toastify";
-import { errorToast, showToast } from "@/helper/showToast";
+import { showToast } from "@/helper/showToast";
+import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import useOrders from "@/hooks/useOrders";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
 
@@ -263,6 +267,18 @@ export default function AddToCart() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
 
+  const { id } = useParams();
+  // const { data = {}, isPending } = useOrders(
+  //   { id },
+  //   {
+  //     enabled: !!id,
+  //   }
+  // );
+  // const orders = data.order || [];
+  // const cartData = data.cart || [];
+  // console.log("orders", orders);
+  // console.log("cartData", cartData);
+
   const { data: { data: customersfromDb = [] } = {} } = useCustomers({});
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =
     useProducts({ categories: selectedCategory._id, searchQuery });
@@ -311,6 +327,108 @@ export default function AddToCart() {
       productForm.reset(defaultValuesFromProduct(selectedProduct));
     }
   }, [selectedProduct]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    // if (orders.length > 0 || orders.customer || orders.manualCustomer) {
+    //   customerForm.setValue("customerId", orders?.customer?._id);
+    //   customerForm.setValue("name", orders?.customer?.name);
+    //   customerForm.setValue("email", orders?.customer?.email);
+    //   customerForm.setValue("phone", orders?.customer?.phone);
+    //   customerForm.setValue(
+    //     "deliveryAddress",
+    //     orders?.customer?.deliveryAddress
+    //   );
+    //   customerForm.setValue(
+    //     "deliveryAddress.apartment",
+    //     orders?.customer?.deliveryAddress?.apartment
+    //   );
+    //   customerForm.setValue(
+    //     "deliveryAddress.city",
+    //     orders?.customer?.deliveryAddress?.city
+    //   );
+    //   customerForm.setValue(
+    //     "deliveryAddress.street",
+    //     orders?.customer?.deliveryAddress?.street
+    //   );
+    //   customerForm.setValue(
+    //     "deliveryAddress.zipCode",
+    //     orders?.customer?.deliveryAddress?.zipCode
+    //   );
+    //   setCart([...cartData.items]);
+    //   sessionStorage.setItem("adminCartId", cartData.id);
+    //   setSelectedProduct(null);
+    //   setCurrentView("cart");
+    //   productForm.reset();
+
+    //   setCartButtonAnimation(true);
+    //   setTimeout(() => setCartButtonAnimation(false), 1000);
+    //   window.scrollTo({ top: 0, behavior: "smooth" });
+    // }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadOrder();
+    }
+  }, [id]);
+
+  const loadOrder = async () => {
+    let orderId = id;
+    const res = await axios(`/api/orders/${orderId}/load-as-cart`);
+    if (res.status === 200) {
+      console.log("resloadOrder", res.data.cart);
+      const orderDetails = res.data.cart.order;
+      sessionStorage.setItem("adminCartId", res.data.cart.id);
+      setCart([...orderDetails.items]);
+      customerForm.setValue("customerId", orderDetails?.customer?._id);
+      customerForm.setValue(
+        "name",
+        orderDetails?.customer?.name || orderDetails?.manualCustomer?.name
+      );
+      customerForm.setValue(
+        "email",
+        orderDetails?.customer?.email || orderDetails?.manualCustomer?.email
+      );
+      customerForm.setValue(
+        "phone",
+        orderDetails?.customer?.phone || orderDetails?.manualCustomer?.phone
+      );
+      customerForm.setValue(
+        "deliveryAddress",
+        orderDetails?.customer?.deliveryAddress ||
+          orderDetails?.manualCustomer?.deliveryAddress
+      );
+      customerForm.setValue(
+        "deliveryAddress.apartment",
+        orderDetails?.customer?.deliveryAddress?.apartment ||
+          orderDetails?.manualCustomer?.deliveryAddress?.apartment
+      );
+      customerForm.setValue(
+        "deliveryAddress.city",
+        orderDetails?.customer?.deliveryAddress?.city ||
+          orderDetails?.manualCustomer?.deliveryAddress?.city
+      );
+      customerForm.setValue(
+        "deliveryAddress.street",
+        orderDetails?.customer?.deliveryAddress?.street ||
+          orderDetails?.manualCustomer?.deliveryAddress?.street
+      );
+      customerForm.setValue(
+        "deliveryAddress.zipCode",
+        orderDetails?.customer?.deliveryAddress?.zipCode ||
+          orderDetails?.manualCustomer?.deliveryAddress?.zipCode
+      );
+      setSelectedProduct(null);
+      setCurrentView("cart");
+      productForm.reset();
+
+      setCartButtonAnimation(true);
+      setTimeout(() => setCartButtonAnimation(false), 1000);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const calculateItemPrice = (product, formValues) => {
     let baseItemPrice = product.price || product.originalPrice || 0;
@@ -415,35 +533,46 @@ export default function AddToCart() {
     setOrderNotes(orderNotes.filter((note) => note.id !== id));
   };
 
-  function getOrCreateCartId() {
-    let cartId = sessionStorage.getItem("adminCartId");
+  function getOrCreateIdempotencyKey() {
+    let cartId = sessionStorage.getItem("idempotencyKey");
     if (!cartId) {
       cartId = uuidv4();
-      sessionStorage.setItem("adminCartId", cartId);
+      sessionStorage.setItem("idempotencyKey", cartId);
     }
     return cartId;
   }
 
-  function clearCartId() {
-    console.log('clearCartId');
+  function clearAll() {
     sessionStorage.removeItem("adminCartId");
+    sessionStorage.removeItem("idempotencyKey");
   }
   console.log("cart", cart);
   const cartId = sessionStorage.getItem("adminCartId");
 
-  const fetchCart = async () => {
-    const res = await axios(`/api/cart/${cartId}`);
-    if (res.status === 200) {
-      console.log(res.data.items);
-      setCart([...res.data.items]);
-    }
-  };
+  // const fetchCart = async () => {
+  //   const res = await axios(`/api/cart/${cartId}`);
+  //   if (res.status === 200) {
+  //     console.log("fetchCart", res.data);
+  //     if (id) {
+  //       setCart([...res.data.order.items]);
+  //     } else {
+  //       setCart([...res.data.items]);
+  //     }
+  //     setSelectedProduct(null);
+  //     setCurrentView("cart");
+  //     productForm.reset();
 
-  useEffect(() => {
-    if (cartId) {
-      fetchCart();
-    }
-  }, [cartId]);
+  //     setCartButtonAnimation(true);
+  //     setTimeout(() => setCartButtonAnimation(false), 1000);
+  //     window.scrollTo({ top: 0, behavior: "smooth" });
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (cartId) {
+  //     fetchCart();
+  //   }
+  // }, [cartId]);
 
   const addToCart = async (formData) => {
     if (!selectedProduct) return;
@@ -471,7 +600,8 @@ export default function AddToCart() {
       selectedProduct.originalPrice ??
       0;
 
-    const cartId = getOrCreateCartId();
+    // const cartId = getOrCreateCartId();
+    let cartId = sessionStorage.getItem("adminCartId");
 
     const cartItem = {
       cartId,
@@ -482,6 +612,7 @@ export default function AddToCart() {
         imgUrls: selectedProduct?.imgUrls,
         ...formData,
         productId: selectedProduct._id,
+        trackQuantityEnabled: selectedProduct.trackQuantityEnabled,
         productName: variant?.name
           ? `${selectedProduct.name} - ${variant.name}`
           : selectedProduct.name,
@@ -497,8 +628,10 @@ export default function AddToCart() {
       const res = await axios.post("/api/cart", cartItem);
       console.log("res", res);
       if (res.status === 200) {
+        const data = id ? res.data.cart.order?.items : res.data.cart.items;
         console.log("i did");
-        setCart([...res.data.cart.items]);
+        sessionStorage.setItem("adminCartId", res.data.cart.id);
+        setCart([...data]);
         setSelectedProduct(null);
         setCurrentView("cart");
         productForm.reset();
@@ -629,9 +762,10 @@ export default function AddToCart() {
       const res = await axios.delete(endpoint);
 
       if (res.status === 200) {
+        console.log(res);
         if (res.data.cartDeleted) {
-          // Entire cart was removed
-          sessionStorage.removeItem("adminCartId");
+          // // Entire cart was removed
+          // sessionStorage.removeItem("adminCartId");
           setCart([]); // Reset cart state
         } else {
           // Just one item removed
@@ -742,7 +876,6 @@ export default function AddToCart() {
   };
 
   const onComplete = (complete) => {
-    console.log("complete",complete);
     if (complete) {
       containerRef.current.scrollIntoView({
         behavior: "smooth",
@@ -751,8 +884,12 @@ export default function AddToCart() {
     }
   };
 
-  // Complete order function
-  const completeOrder = customerForm.handleSubmit(async (customerData) => {
+  const completeOrder = customerForm.handleSubmit(async (data) => {
+    const customerData = customerForm.watch();
+    const isEdit = Boolean(id);
+    const toastId =
+      !isEdit && toast.loading("Adding order...", { position: "top-center" });
+
     const orderData = {
       customer: customerData,
       cartId,
@@ -766,31 +903,63 @@ export default function AddToCart() {
       notes: orderNotes,
     };
 
-    const toastId = toast.loading("Adding order...", {
-      position: "top-center",
-    });
-
     try {
-      console.log("Completing order:", orderData);
-      let res = await axios.post("/api/orders", orderData);
-      console.log("res",res);
+      const endpoint = isEdit ? `/api/orders/${id}/edit` : "/api/orders";
+      const headers = {};
+
+      if (!isEdit) {
+        headers["Idempotency-Key"] = getOrCreateIdempotencyKey();
+      }
+
+      const res = await axios.post(endpoint, orderData, { headers });
+
       if (res.status === 200) {
-        showToast(
-          toastId,
-          // id ? "Order updated successfully" : "Order added successfully"
-           "Order added successfully"
-        );
-        clearCartId()
+        const { needRestockAndDeduct } = res.data;
+
+        if (!needRestockAndDeduct) {
+          showToast(
+            toastId,
+            isEdit ? "Order updated successfully" : "Order added successfully"
+          );
+        } else {
+          const confirmRestockAndDeduct = confirm(
+            "Some items track inventory and have increased quantity or are newly added. Do you want to deduct inventory?"
+          );
+
+          if (confirmRestockAndDeduct) {
+            try {
+              let res = await axios.post(`/api/orders/${id}/update`, orderData);
+              if (res.status === 200) {
+                toast.success("Inventory updated", {
+                  position: "top-center",
+                });
+              }
+            } catch (invErr) {
+              console.error("Inventory sync failed:", invErr);
+              toast.error("Failed to update inventory", {
+                position: "top-center",
+              });
+            }
+          }
+        }
+
+        // Reset everything after successful order handling
+        clearAll();
+        setCart([]);
+        setPricingAdjustments([]);
+        setOrderNotes([]);
+        setCurrentView("products");
         onComplete("complete");
       }
-      setCart([]);
-      setPricingAdjustments([]);
-      setOrderNotes([]);
-      setCurrentView("products");
-      // alert("Order completed successfully!");
     } catch (error) {
-      console.error("Error handling order:", error.response?.data.msg);
-      showToast(toastId, error.response?.data.msg, "error");
+      console.error("Error handling order:", error);
+      showToast(
+        toastId,
+        error.response?.data?.msg ||
+          error.response?.data?.error ||
+          "Something went wrong",
+        "error"
+      );
     }
   });
 
@@ -861,14 +1030,15 @@ export default function AddToCart() {
             >
               <Plus className="h-4 w-4" />
             </Button>
-            {item.quantity > item.productinventory && (
-              <span className="text-red-500">sold out</span>
-            )}
+            {item.trackQuantityEnabled &&
+              item.quantity > item.productinventory && (
+                <span className="text-red-500">sold out</span>
+              )}
           </div>
         </div>
 
         {/* Options with quantities */}
-        {item.options.length > 0 && (
+        {item?.options?.length > 0 && (
           <div className="space-y-2">
             <h5 className="font-medium">Selected Options:</h5>
 
@@ -983,6 +1153,15 @@ export default function AddToCart() {
     );
   };
 
+  const handleDiscard = async () => {
+    const cartId = sessionStorage.getItem("adminCartId");
+    const res = await axios.delete(`/api/orders/${cartId}/discard`);
+    if (res.status === 200) {
+      sessionStorage.removeItem("adminCartId");
+      window.history.back();
+    }
+  };
+
   const variants = productForm.watch("variantId");
   const selectedVariant = selectedProduct?.variants.find(
     (v) => v._id === variants
@@ -995,10 +1174,11 @@ export default function AddToCart() {
   const isAboveMaximum =
     selectedProduct?.cartMaximumEnabled &&
     quantity > selectedProduct?.cartMaximum;
-  const isOutOfStock = quantity > selectedProduct?.inventory?.quantity;
+  const isOutOfStock =
+    selectedProduct?.trackQuantityEnabled &&
+    quantity > selectedProduct?.inventory?.quantity;
   const isSoldOut = isAboveMaximum || isOutOfStock;
-
-  const isDisabled = isBelowMinimum || isSoldOut;
+  const isDisabled = isBelowMinimum && isSoldOut;
 
   return (
     <div
@@ -1066,6 +1246,17 @@ export default function AddToCart() {
           <p className="text-gray-600">
             Create orders for customers with product configuration
           </p>
+          {currentView === "cart" && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2"
+              onClick={handleDiscard}
+            >
+              <Undo2 className="w-4 h-4 mr-2" />
+              Discard
+            </Button>
+          )}
         </div>
 
         {/* Customer Selection Section */}
@@ -3806,7 +3997,7 @@ export default function AddToCart() {
         )}
       </div>
       {/* <DevTool control={productForm.control} /> */}
-      {/* <DevTool control={customerForm.control} /> */}
+      <DevTool control={customerForm.control} />
       <ToastContainer />
     </div>
   );

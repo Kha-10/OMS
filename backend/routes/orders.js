@@ -3,37 +3,34 @@ const OrdersController = require("../controllers/OrdersController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
-const validatePhotoUpload = require ("../middlewares/validatePhotoUpload")
-const multer = require("multer");
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const idempotencyCheck = require("../middlewares/idempotencyCheck");
+const lockOrderMiddleware = require("../middlewares/lockOrder");
 
 const router = express.Router();
 
 router.get("", OrdersController.index);
-
-// router.post(
-//   "",
-//   // [
-//   //   body("name").notEmpty(),
-//   //   body("categories")
-//   //     .isArray({ min: 1 })
-//   //     .withMessage("Category must be a non-empty array"),
-//   // ],
-//   // RoleMiddleware(["tenant", "superadmin"]),
-//   handleErrorMessage,
-//   OrdersController.store
-// );
-
 router.post(
-  "",
+  "/:id/edit",
   handleErrorMessage,
-  OrdersController.store
+  lockOrderMiddleware,
+  OrdersController.singleOrderedit
 );
+router.post(
+  "/:id/update",
+  // lockOrderMiddleware,
+  OrdersController.updateOrder
+);
+// router.post("/restock",OrdersController.syncProducts);
+router.post("", handleErrorMessage, idempotencyCheck, OrdersController.store);
 
+router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
 router.get("/:id", OrdersController.show);
 
+router.delete(
+  "/:cartId/discard",
+  handleErrorMessage,
+  OrdersController.discardCart
+);
 router.delete(
   "/:id",
   // RoleMiddleware(["admin", "superadmin"]),

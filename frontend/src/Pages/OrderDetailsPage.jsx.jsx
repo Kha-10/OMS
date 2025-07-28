@@ -23,7 +23,6 @@ import { useParams, Link } from "react-router-dom";
 import useOrders from "@/hooks/useOrders";
 import { format, parseISO } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
-import StatusButton from "@/components/StatusButton";
 import useOrderActions from "@/hooks/useOrderActions";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -33,7 +32,14 @@ export default function OrderDetailsPage() {
   const { tenant } = useSelector((state) => state.tenants);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: orders = [], isPending } = useOrders({ id });
+  const { data, isPending } = useOrders(
+    { id },
+    {
+      enabled: !!id,
+    }
+  );
+  const orders = data;
+  console.log("orders", orders);
 
   const { updateStatusMutation, deleteMutation } = useOrderActions(null, () =>
     navigate("/orders")
@@ -46,7 +52,6 @@ export default function OrderDetailsPage() {
     0
   );
 
-  console.log("orders", orders);
   const changeStatus = (status) => {
     const orderIdsWithTracking = orders?.items
       ?.filter((item) => item.trackQuantityEnabled && item.productId !== null)
@@ -103,7 +108,7 @@ export default function OrderDetailsPage() {
               onClick={() => window.history.back()}
             />
             <h1 className="text-xl font-bold">
-              #{orders.orderNumber} {orders?.customer?.name}
+              #{orders?.orderNumber} {orders?.customer?.name}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -126,7 +131,7 @@ export default function OrderDetailsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="cursor-pointer">
                   <DropdownMenuItem
-                    onClick={() => navigate(`/checkout/${orders._id}`)}
+                    onClick={() => navigate(`/addToCart/${orders._id}`)}
                     className="flex items-center w-full text-left text-sm text-gray-500 hover:bg-gray-100"
                   >
                     <Edit className="mr-3 h-4 w-4" />
@@ -154,9 +159,9 @@ export default function OrderDetailsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-medium">
-                      #{orders.orderNumber}
+                      #{orders?.orderNumber}
                     </h2>
-                    <Link to={`/${tenant.name}/orders/${orders._id}`}>
+                    <Link to={`/${tenant.name}/orders/${orders?._id}`}>
                       <ExternalLink className="w-4 h-4 text-gray-400" />
                     </Link>
                   </div>
@@ -173,53 +178,33 @@ export default function OrderDetailsPage() {
                   <div className="relative w-full sm:w-auto">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <StatusButton status={orders?.orderStatus} />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="bg-gray-200 hover:bg-gray-200 text-gray-700 border-gray-300"
+                        >
+                          {orders?.orderStatus}{" "}
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            changeStatus({
-                              orderStatus: "Pending",
-                              paymentStatus: orders?.paymentStatus,
-                              fulfillmentStatus: orders?.fulfillmentStatus,
-                            })
-                          }
-                        >
-                          Pending
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            changeStatus({
-                              orderStatus: "Confirmed",
-                              paymentStatus: orders?.paymentStatus,
-                              fulfillmentStatus: orders?.fulfillmentStatus,
-                            })
-                          }
-                        >
-                          Confirmed
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            changeStatus({
-                              orderStatus: "Completed",
-                              paymentStatus: orders?.paymentStatus,
-                              fulfillmentStatus: orders?.fulfillmentStatus,
-                            })
-                          }
-                        >
-                          Completed
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            changeStatus({
-                              orderStatus: "Cancelled",
-                              paymentStatus: orders?.paymentStatus,
-                              fulfillmentStatus: orders?.fulfillmentStatus,
-                            })
-                          }
-                        >
-                          Cancelled
-                        </DropdownMenuItem>
+
+                      <DropdownMenuContent align="end" className="z-50">
+                        {["Pending", "Confirmed", "Completed", "Cancelled"].map(
+                          (status) => (
+                            <DropdownMenuItem
+                              key={status}
+                              onClick={() =>
+                                changeStatus({
+                                  orderStatus: status,
+                                  paymentStatus: orders?.paymentStatus,
+                                  fulfillmentStatus: orders?.fulfillmentStatus,
+                                })
+                              }
+                            >
+                              {status}
+                            </DropdownMenuItem>
+                          )
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -433,7 +418,10 @@ export default function OrderDetailsPage() {
                           Name
                         </div>
                         <div className="font-medium">
-                          {orders.customer?.name}
+                          {/* {orders?.customer?.name} */}
+                          {orders?.customer
+                            ? orders?.customer?.name
+                            : orders?.manualCustomer?.name}
                         </div>
                       </div>
 
@@ -442,7 +430,10 @@ export default function OrderDetailsPage() {
                           Phone
                         </div>
                         <div className="text-blue-500">
-                          {orders.customer?.phone}
+                          {/* {orders?.customer?.phone} */}
+                          {orders?.customer
+                            ? orders?.customer?.phone
+                            : orders?.manualCustomer?.phone}
                         </div>
                       </div>
 
@@ -564,41 +555,46 @@ export default function OrderDetailsPage() {
                 </div>
               </div>
 
-              <div className="col-span-1">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
-                  <div className="p-3 sm:p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 bg-gray-200 flex items-center justify-center">
-                        <CircleUser className="h-5 w-5 text-gray-500" />
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{orders.customer?.name}</p>
-                        <p className="text-gray-500 text-sm">
-                          {orders.customer?.phone}
+              {orders?.customer?.name && (
+                <div className="col-span-1">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
+                    <div className="p-3 sm:p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 bg-gray-200 flex items-center justify-center">
+                          <CircleUser className="h-5 w-5 text-gray-500" />
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {" "}
+                            {orders?.customer?.name}
+                          </p>
+                          <p className="text-gray-500 text-sm">
+                            {orders?.customer?.phone}
+                          </p>
+                        </div>
+                      </div>
+                      <Link to={`/customers/${orders?.customer?._id}`}>
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      </Link>
+                    </div>
+
+                    <div className="border-t border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
+                      <div className="flex justify-between mb-2">
+                        <p className="text-gray-500">Member since</p>
+                        <p className="text-sm">
+                          {" "}
+                          {orders?.customer?.createdAt
+                            ? format(
+                                parseISO(orders.customer.createdAt),
+                                "dd MMMM yyyy, h:mm a"
+                              )
+                            : ""}
                         </p>
                       </div>
                     </div>
-                    <Link to={`/customers/${orders.customer?._id}`}>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </Link>
-                  </div>
-
-                  <div className="border-t border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
-                    <div className="flex justify-between mb-2">
-                      <p className="text-gray-500">Member since</p>
-                      <p className="text-sm">
-                        {" "}
-                        {orders?.customer?.createdAt
-                          ? format(
-                              parseISO(orders.customer.createdAt),
-                              "dd MMMM yyyy, h:mm a"
-                            )
-                          : ""}
-                      </p>
-                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

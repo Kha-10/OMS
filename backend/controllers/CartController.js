@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require("uuid");
 const CartController = {
   show: async (req, res) => {
     const { cartId } = req.params;
-    console.log("cartId", cartId);
     try {
       const cartKey = `cart:cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
@@ -12,7 +11,7 @@ const CartController = {
       if (!cartData) {
         return res.status(404).json({ msg: "Cart not found or expired" });
       }
-
+      console.log("cartData", cartData);
       const cart = JSON.parse(cartData);
       return res.json(cart);
     } catch (error) {
@@ -22,12 +21,13 @@ const CartController = {
   },
   store: async (req, res) => {
     try {
-      const {
+      let {
         cartId,
         basePrice,
         totalPrice,
         items: {
           productId,
+          trackQuantityEnabled,
           variantId,
           productName,
           photo,
@@ -40,29 +40,23 @@ const CartController = {
           options,
         },
       } = req.body;
+
+      if (!cartId) {
+        cartId = uuidv4();
+      }
       const cartKey = `cart:cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
 
-      const cart = cartData
-        ? JSON.parse(cartData)
-        : {
-            id: cartId,
-            items: [],
-            createdAt: Date.now(),
-          };
-
-      const index = cart.items.findIndex(
-        (i) => i.productId === productId && i.variantId === variantId
-      );
-
-      if (index > -1) {
-        cart.items[index].quantity += quantity;
-        cart.items[index].totalPrice += totalPrice;
-        cart.items[index].basePrice += basePrice;
-      } else {
-        cart.items.push({
+      let cart;
+      if (cartData) {
+        // Existing cart -> push new item
+        cart = JSON.parse(cartData);
+        const items = cart.order?.items || cart.items || [];
+        console.log("cartpush", cart);
+        items.push({
           id: uuidv4(),
           productId,
+          trackQuantityEnabled,
           variantId,
           productName,
           photo,
@@ -76,6 +70,31 @@ const CartController = {
           basePrice,
           totalPrice,
         });
+      } else {
+        // New cart
+        cart = {
+          id: cartId,
+          items: [
+            {
+              id: uuidv4(),
+              productId,
+              trackQuantityEnabled,
+              variantId,
+              productName,
+              photo,
+              imgUrls,
+              categories,
+              productinventory,
+              cartMaximum,
+              cartMinimum,
+              quantity,
+              options,
+              basePrice,
+              totalPrice,
+            },
+          ],
+          createdAt: Date.now(),
+        };
       }
 
       // Save to Redis with TTL
@@ -98,25 +117,31 @@ const CartController = {
         optionValue,
         optionQuantity,
       } = req.body;
-
+      console.log("req.body", req.body);
       const cartKey = `cart:cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 
       const cart = JSON.parse(cartData);
-      const item = cart.items.find(
+      console.log("cart", cart);
+      const items = cart.order?.items || cart.items || [];
+      const foundItem = items.find(
         (i) => i.productId === productId && i.variantId === variantId
       );
-      if (!item) return res.status(404).json({ msg: "Item not found" });
+
+      //   const item = cart.order.items.find(
+      //     (i) => i.productId === productId && i.variantId === variantId
+      //   );
+      if (!foundItem) return res.status(404).json({ msg: "Item not found" });
 
       // Update quantity
       if (typeof quantity === "number") {
-        item.quantity = quantity;
+        foundItem.quantity = quantity;
       }
 
       // Update specific option quantity
       if (optionName && optionValue && typeof optionQuantity === "number") {
-        const option = item.options.find((o) => o.name === optionName);
+        const option = foundItem.options.find((o) => o.name === optionName);
         if (!option) return res.status(404).json({ msg: "Option not found" });
 
         const index = option.answers.findIndex((a) => a === optionValue);
@@ -128,11 +153,12 @@ const CartController = {
 
       // ✅ Recalculate totalPrice: only basePrice * quantity + option prices once
       const optionExtra =
-        item.options?.reduce((acc, option) => {
+        foundItem.options?.reduce((acc, option) => {
           return acc + option.prices.reduce((sum, p) => sum + p, 0);
         }, 0) || 0;
 
-      item.totalPrice = item.basePrice * item.quantity + optionExtra;
+      foundItem.totalPrice =
+        foundItem.basePrice * foundItem.quantity + optionExtra;
 
       await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
 
@@ -151,10 +177,11 @@ const CartController = {
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 
       const cart = JSON.parse(cartData);
-      const initialLength = cart.items.length;
-
+      console.log("UPDATE", cart);
+      const items = cart.order?.items || cart.items || [];
+      const initialLength = items.length;
       // Filter out the matching item
-      cart.items = cart.items.filter((item) => {
+      cart.items = items.filter((item) => {
         const productMatch = item.productId === productId;
         const variantMatch = variantId
           ? item.variantId === variantId
@@ -168,7 +195,7 @@ const CartController = {
 
       if (cart.items.length === 0) {
         // Remove entire cart from Redis
-        await redisClient.del(cartKey);
+        // await redisClient.del(cartKey);
         return res.status(200).json({ success: true, cartDeleted: true });
       }
 

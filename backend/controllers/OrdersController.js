@@ -8,30 +8,8 @@ const clearCartCache = require("../helpers/clearCartCache");
 const resetCounters = require("../helpers/reset");
 const orderService = require("../services/orderService");
 const handler = require("../helpers/handler");
-
-// Helper to sanitize order items for Order schema
-function sanitizeOrderItem(item) {
-  return {
-    productId: item.productId || item._id,
-    quantity: item.quantity,
-    cartMaximum: item.cartMaximum,
-    cartMinimum: item.cartMinimum,
-    inventory:
-      typeof item.inventory === "number"
-        ? item.inventory
-        : item.inventory && typeof item.inventory.quantity === "number"
-        ? item.inventory.quantity
-        : undefined,
-    name: item.name,
-    price: item.price,
-    trackQuantityEnabled: item.trackQuantityEnabled,
-    selectedOptions: item.selectedOptions,
-    selectedVariant: item.selectedVariant,
-    selectedNumberOption: item.selectedNumberOption,
-    photo: item.photo,
-    imgUrls: item.imgUrls,
-  };
-}
+const { v4: uuidv4 } = require("uuid");
+const redisClient = require("../config/redisClient");
 
 const OrdersController = {
   index: async (req, res) => {
@@ -60,10 +38,40 @@ const OrdersController = {
   },
   store: async (req, res) => {
     const { customer, cartId, items, notes, orderStatus, pricing } = req.body;
+    const idempotencyKey = req.idempotencyKey;
+    const cartLockKey = `lock:cart:${cartId}`;
+    const isLocked = await redisClient.get(cartLockKey);
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      console.log("req.body", req.body);
+      let customerId = null;
+      let manualCustomer = null;
+
+      if (
+        customer.customerId &&
+        mongoose.Types.ObjectId.isValid(customer.customerId)
+      ) {
+        customerId = customer.customerId;
+      } else {
+        manualCustomer = {
+          name: customer.name?.trim() || "",
+          phone: customer.phone?.trim() || "",
+          email: customer.email,
+          deliveryAddress: customer.deliveryAddress,
+        };
+      }
+
+      if (!customerId && !manualCustomer) {
+        return res.status(400).json({ error: "Customer info is required." });
+      }
+
+      if (isLocked) {
+        return res
+          .status(409)
+          .json({ msg: "Cart is currently being processed" });
+      }
+      await redisClient.setEx(cartLockKey, 30, "locked");
+
       const orderCounter = await Counter.findOneAndUpdate(
         { id: "orderNumber" },
         { $inc: { seq: 1 } },
@@ -102,14 +110,14 @@ const OrdersController = {
         }
       }
 
-      const existingCustomer = await Customer.findById(
-        customer.customerId
-      ).session(session);
+      const existingCustomer = await Customer.findById(customerId).session(
+        session
+      );
       if (existingCustomer) {
-        existingCustomer.totalSpent += pricing.finalTotal;
         existingCustomer.name = customer.name;
         existingCustomer.email = customer.email;
         existingCustomer.phone = customer.phone;
+        existingCustomer.deliveryAddress = customer.deliveryAddress;
 
         await existingCustomer.save({ session });
       }
@@ -117,7 +125,8 @@ const OrdersController = {
       const [order] = await Order.create(
         [
           {
-            customer : customer.customerId,
+            customer: customerId,
+            manualCustomer,
             items,
             notes,
             orderStatus,
@@ -129,17 +138,36 @@ const OrdersController = {
         { session }
       );
 
+      await redisClient.setEx(
+        `idemp:${idempotencyKey}`,
+        3600,
+        JSON.stringify({
+          status: "completed",
+          orderId: order._id,
+        })
+      );
+
       await session.commitTransaction();
       session.endSession();
 
       await clearProductCache();
       await clearCartCache(`cart:cartId:${cartId}`);
+      await redisClient.del(cartLockKey);
 
       return res.json(order);
     } catch (error) {
       console.error("Error creating order:", error);
       await session.abortTransaction();
       session.endSession();
+      await redisClient.setEx(
+        `idemp:${idempotencyKey}`,
+        600,
+        JSON.stringify({
+          status: "failed",
+          error: error.message,
+        })
+      );
+      await redisClient.del(cartLockKey);
       return res
         .status(500)
         .json({ msg: error.message || "internal server error" });
@@ -147,18 +175,51 @@ const OrdersController = {
   },
   show: async (req, res) => {
     try {
-      let id = req.params.id;
+      const id = req.params.id;
+      // Validate MongoDB ObjectId
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid id" });
+        return res.status(400).json({ msg: "Invalid order ID" });
       }
-      let order = await Order.findById(id).populate("customer");
-      if (!order) {
-        return res.status(404).json({ msg: "order not found" });
-      }
-      const enhancedOrders = orderService.enhanceProductImages(order);
-      return res.json(enhancedOrders);
+
+      // Get from DB
+      const order = await Order.findById(id).populate("customer");
+      if (!order) return res.status(404).json({ msg: "Order not found" });
+
+      const updatedItems = await Promise.all(
+        order.items.map(async (item) => {
+          const latestProduct = await Product.findById(item.productId);
+
+          if (!latestProduct) return item;
+
+          return {
+            ...item.toObject(),
+            trackQuantityEnabled: latestProduct.trackQuantityEnabled,
+            price: latestProduct.price,
+            productName: latestProduct.name,
+            productinventory: item.quantity + latestProduct.inventory.quantity,
+            cartMinimum: latestProduct.cartMinimumEnabled
+              ? latestProduct.cartMinimum
+              : 0,
+            cartMaximum: latestProduct.cartMaximumEnabled
+              ? latestProduct.cartMaximum
+              : 0,
+            imgUrls: latestProduct.imgUrls || [],
+            photo: latestProduct.photo || [],
+            options: latestProduct.options || [],
+            categories: latestProduct.categories || [],
+          };
+        })
+      );
+      console.log("updatedItems", updatedItems);
+      order.items = updatedItems;
+      await order.save();
+
+      const enhancedOrder = orderService.enhanceProductImages(order);
+
+      return res.json(enhancedOrder);
     } catch (error) {
-      return res.status(500).json({ msg: "internal Server Error" });
+      console.error("Order show error:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
   destroy: async (req, res) => {
@@ -498,6 +559,182 @@ const OrdersController = {
       console.error("Error updating order:", error);
       return handler.handleError(res, error);
     }
+  },
+  loadOrderAsCart: async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      // Validate ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        return res.status(400).json({ msg: "Invalid order ID" });
+      }
+
+      let order = await Order.findById(orderId).populate("customer");
+      if (!order) return res.status(404).json({ msg: "Order not found" });
+
+      const updatedItems = await Promise.all(
+        order.items.map(async (item) => {
+          const latestProduct = await Product.findById(item.productId);
+
+          if (!latestProduct) return item;
+
+          return {
+            ...item.toObject(),
+            trackQuantityEnabled: latestProduct.trackQuantityEnabled,
+            price: latestProduct.price,
+            productName: latestProduct.name,
+            productinventory: item.quantity + latestProduct.inventory.quantity,
+            cartMinimum: latestProduct.cartMinimumEnabled
+              ? latestProduct.cartMinimum
+              : 0,
+            cartMaximum: latestProduct.cartMaximumEnabled
+              ? latestProduct.cartMaximum
+              : 0,
+            imgUrls: latestProduct.imgUrls || [],
+            photo: latestProduct.photo || [],
+            options: latestProduct.options || [],
+            categories: latestProduct.categories || [],
+          };
+        })
+      );
+
+      order.items = updatedItems;
+      await order.save();
+
+      const cartId = order._id; // Reuse same cart for this order
+      const cartKey = `cart:cartId:${cartId}`;
+
+      // Prepare cart object
+      const cart = {
+        id: cartId,
+        order,
+        createdAt: Date.now(),
+      };
+
+      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+
+      return res.status(200).json({ cart });
+    } catch (error) {
+      console.error("Failed to load order as cart:", error);
+      return res.status(500).json({ msg: "Internal server error" });
+    }
+  },
+  discardCart: async (req, res) => {
+    try {
+      const cartId = req.params.cartId;
+      const cartKey = `cart:cartId:${cartId}`;
+      const cartData = await redisClient.get(cartKey);
+
+      if (cartData) {
+        await clearCartCache(`cart:cartId:${cartId}`);
+      } else return res.status(404).json({ msg: "Cart not found" });
+
+      return res.status(200).json({ msg: "Successfully Discarded" });
+    } catch (error) {
+      console.error("Failed to load order as cart:", error);
+      return res.status(500).json({ msg: "Internal server error" });
+    }
+  },
+  singleOrderedit: async (req, res) => {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ msg: "Invalid order ID" });
+    }
+
+    try {
+      const order = await Order.findById(id);
+      if (!order) return res.status(404).json({ msg: "Order not found" });
+
+      const originalItems = order.items;
+      let needRestockAndDeduct = false;
+      for (const originalItem of originalItems) {
+        if (originalItem.trackQuantityEnabled) {
+          needRestockAndDeduct = true;
+          break;
+        }
+      }
+
+      // const updatedOrder = await Order.findByIdAndUpdate(
+      //   id,
+      //   {
+      //     $set: {
+      //       ...updatedData,
+      //       customer: updatedData.customer?.customerId,
+      //     },
+      //   },
+      //   { new: true, runValidators: true }
+      // );
+
+      res.status(200).json({
+        msg: "Order updated successfully",
+        // updatedOrder,
+        needRestockAndDeduct,
+      });
+    } catch (error) {
+      console.error("Order edit failed:", error);
+      res.status(500).json({ msg: error.message || "Internal server error" });
+    } finally {
+      if (req.lockKey) {
+        await redisClient.del(req.lockKey);
+      }
+    }
+  },
+  updateOrder: async (req, res) => {
+    const orderId = req.params.id;
+    const newItems = req.body.items;
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    console.log("orderId", orderId);
+    console.log("newItems", newItems);
+    try {
+      // 1. Get original order
+      const originalOrder = await Order.findById(orderId).lean();
+      if (!originalOrder) {
+        return res.status(400).json({ msg: "Order not found" });
+      }
+      let product;
+      // 2. Restore previous quantities
+      for (const item of originalOrder.items) {
+        product = await Product.updateOne(
+          { _id: item.productId, trackQuantityEnabled: true },
+          { $inc: { "inventory.quantity": item.quantity } },
+          { session }
+        );
+      }
+
+      // 3. Deduct new quantities
+      for (const item of newItems) {
+        product = await Product.updateOne(
+          { _id: item.productId, trackQuantityEnabled: true },
+          { $inc: { "inventory.quantity": -item.quantity } },
+          { session }
+        );
+      }
+      console.log("product",product);
+      // 4. Update the order document
+      await Order.updateOne(
+        { _id: orderId },
+        { $set: { items: newItems } },
+        { session }
+      );
+
+      await clearProductCache();
+      await session.commitTransaction();
+      session.endSession();
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Order edit failed:", error);
+      res.status(500).json({ msg: error.message || "Internal server error" });
+      await session.abortTransaction();
+      session.endSession();
+    }
+    // finally {
+    //   if (req.lockKey) {
+    //     await redisClient.del(req.lockKey);
+    //   }
+    // }
   },
 };
 

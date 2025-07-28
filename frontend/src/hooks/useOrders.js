@@ -25,23 +25,27 @@ const fetchOrders = async ({ queryKey }) => {
         paymentStatus ? `&paymentStatus=${paymentStatus}` : ""
       }${fulfillmentStatus ? `&fulfillmentStatus=${fulfillmentStatus}` : ""}`;
   const res = await axios.get(url);
-
+  console.log("res", res.data);
   return res.data;
 };
 
-const useOrders = ({
-  id,
-  page,
-  pageSize,
-  sortBy,
-  sortDirection,
-  searchQuery,
-  status,
-  paymentStatus,
-  fulfillmentStatus,
-}) => {
+const useOrders = (
+  {
+    id,
+    page,
+    pageSize,
+    sortBy,
+    sortDirection,
+    searchQuery,
+    status,
+    paymentStatus,
+    fulfillmentStatus,
+  },
+  options = {}
+) => {
+  const isSingle = !!id;
   return useQuery({
-    queryKey: id
+    queryKey: isSingle
       ? ["orders", { id }]
       : [
           "orders",
@@ -57,10 +61,12 @@ const useOrders = ({
           },
         ],
     queryFn: fetchOrders,
+    enabled: isSingle ? !!id : true,
     keepPreviousData: true,
     onError: (error) => {
       console.error("Error fetching orders:", error);
     },
+    ...options,
   });
 };
 
