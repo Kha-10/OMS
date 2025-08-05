@@ -101,7 +101,7 @@ export default function OrderDetailsPage() {
     <div className="flex h-screen bg-gray-50">
       <div className="flex-1 flex flex-col">
         {/* Top navigation */}
-        <header className="max-w-5xl md:px-6 xl:px-0 px-4 py-3 flex items-center justify-between xl:ml-[46px] relative">
+        <header className="max-w-5xl md:px-6 xl:px-0 px-4  flex items-center justify-between xl:ml-[46px] relative">
           <div className="flex items-center gap-2">
             <ChevronLeft
               className="w-5 h-5 text-gray-500 cursor-pointer"
@@ -151,65 +151,15 @@ export default function OrderDetailsPage() {
         </header>
 
         {/* Main content */}
-        <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+        <div className="flex-1 overflow-auto">
           <div className="w-full max-w-5xl mx-auto">
             {/* Order header */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
-              <div className="p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-medium">
-                      #{orders?.orderNumber}
-                    </h2>
-                    <Link to={`/${tenant.name}/orders/${orders?._id}`}>
-                      <ExternalLink className="w-4 h-4 text-gray-400" />
-                    </Link>
-                  </div>
-                  {orders?.createdAt && (
-                    <p className="text-gray-500 text-sm">
-                      {format(
-                        new Date(orders.createdAt),
-                        "dd MMMM yyyy, h:mm a"
-                      )}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="relative w-full sm:w-auto">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="bg-gray-200 hover:bg-gray-200 text-gray-700 border-gray-300"
-                        >
-                          {orders?.orderStatus}{" "}
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end" className="z-50">
-                        {["Pending", "Confirmed", "Completed", "Cancelled"].map(
-                          (status) => (
-                            <DropdownMenuItem
-                              key={status}
-                              onClick={() =>
-                                changeStatus({
-                                  orderStatus: status,
-                                  paymentStatus: orders?.paymentStatus,
-                                  fulfillmentStatus: orders?.fulfillmentStatus,
-                                })
-                              }
-                            >
-                              {status}
-                            </DropdownMenuItem>
-                          )
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </div>
+            <div className="p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
+              {orders?.createdAt && (
+                <p className="text-gray-500 text-sm">
+                  {format(new Date(orders.createdAt), "dd MMMM yyyy, h:mm a")}
+                </p>
+              )}
             </div>
 
             {/* Order details */}
@@ -217,8 +167,47 @@ export default function OrderDetailsPage() {
               <div className="col-span-1 lg:col-span-2">
                 {/* Items */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
-                  <div className="p-3 sm:p-4">
+                  <div className="p-3 sm:p-4 flex items-center justify-between">
                     <h3 className="font-medium">Items</h3>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="relative w-full sm:w-auto">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="bg-gray-200 hover:bg-gray-200 text-gray-700 border-gray-300"
+                            >
+                              {orders?.orderStatus}{" "}
+                              <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="end" className="z-50">
+                            {[
+                              "Pending",
+                              "Confirmed",
+                              "Completed",
+                              "Cancelled",
+                            ].map((status) => (
+                              <DropdownMenuItem
+                                key={status}
+                                onClick={() =>
+                                  changeStatus({
+                                    orderStatus: status,
+                                    paymentStatus: orders?.paymentStatus,
+                                    fulfillmentStatus:
+                                      orders?.fulfillmentStatus,
+                                  })
+                                }
+                              >
+                                {status}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                   </div>
                   {/* Items list */}
                   {orders?.items?.length > 0 &&
