@@ -3,14 +3,14 @@ const redisClient = require("../config/redisClient");
 
 const idempotencyCheck = async (req, res, next) => {
   const idempotencyKey = req.headers["idempotency-key"];
-
+  console.log("idempotencyKey", idempotencyKey);
   if (!idempotencyKey) {
     return res.status(400).json({ error: "Idempotency key required" });
   }
 
   try {
     const redisData = await redisClient.get(`idemp:${idempotencyKey}`);
-
+    console.log("redisData", redisData);
     if (redisData) {
       const parsed = JSON.parse(redisData);
       if (parsed.status === "completed") {

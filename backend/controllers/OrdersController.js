@@ -42,7 +42,7 @@ const OrdersController = {
     const cartLockKey = `lock:cart:${cartId}`;
     const isLocked = await redisClient.get(cartLockKey);
     const session = await mongoose.startSession();
-    session.startTransaction();
+    session.startTransaction(); 
     try {
       let customerId = null;
       let manualCustomer = null;
