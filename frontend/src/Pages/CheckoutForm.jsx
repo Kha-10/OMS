@@ -612,9 +612,6 @@ export default function CheckoutForm() {
             newData.shouldDeduct = true;
           }
         }
-        console.log("requiresInventoryAction", requiresInventoryAction);
-        console.log("decreaseQuantity", decreaseQuantity);
-        console.log("removedItems", removedItems);
         // Confirm inventory restocks (decreased or removed)
         if (
           requiresInventoryAction &&

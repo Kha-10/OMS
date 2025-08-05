@@ -420,6 +420,8 @@ export default function AddToCart() {
         orderDetails?.customer?.deliveryAddress?.zipCode ||
           orderDetails?.manualCustomer?.deliveryAddress?.zipCode
       );
+      setOrderNotes([...orderDetails?.notes]);
+      setPricingAdjustments([...orderDetails?.pricing?.adjustments]);
       setSelectedProduct(null);
       setCurrentView("cart");
       productForm.reset();
@@ -902,7 +904,7 @@ export default function AddToCart() {
       },
       notes: orderNotes,
     };
-
+    console.log("orderData", orderData);
     try {
       const endpoint = isEdit ? `/api/orders/${id}/edit` : "/api/orders";
       const headers = {};
@@ -1710,8 +1712,9 @@ export default function AddToCart() {
                               </div>
                               <p className="text-sm mt-1">{note.content}</p>
                               <div className="text-xs text-gray-500 mt-2">
-                                {note.createdAt.toLocaleDateString()} at{" "}
-                                {note.createdAt.toLocaleTimeString()}
+                                {new Date(note.createdAt).toLocaleDateString()}{" "}
+                                at{" "}
+                                {new Date(note.createdAt).toLocaleTimeString()}
                               </div>
                             </div>
                           ))}

@@ -42,7 +42,7 @@ const OrdersController = {
     const cartLockKey = `lock:cart:${cartId}`;
     const isLocked = await redisClient.get(cartLockKey);
     const session = await mongoose.startSession();
-    session.startTransaction(); 
+    session.startTransaction();
     try {
       let customerId = null;
       let manualCustomer = null;
@@ -684,6 +684,8 @@ const OrdersController = {
   updateOrder: async (req, res) => {
     const orderId = req.params.id;
     const newItems = req.body.items;
+    const notes = req.body.notes;
+    const pricing = req.body.pricing;
     const session = await mongoose.startSession();
     session.startTransaction();
     console.log("orderId", orderId);
@@ -712,11 +714,11 @@ const OrdersController = {
           { session }
         );
       }
-      console.log("product",product);
+      console.log("product", product);
       // 4. Update the order document
       await Order.updateOne(
         { _id: orderId },
-        { $set: { items: newItems } },
+        { $set: { items: newItems, notes, pricing } },
         { session }
       );
 
@@ -730,11 +732,6 @@ const OrdersController = {
       await session.abortTransaction();
       session.endSession();
     }
-    // finally {
-    //   if (req.lockKey) {
-    //     await redisClient.del(req.lockKey);
-    //   }
-    // }
   },
 };
 
