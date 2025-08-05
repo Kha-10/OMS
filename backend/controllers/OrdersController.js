@@ -8,7 +8,6 @@ const clearCartCache = require("../helpers/clearCartCache");
 const resetCounters = require("../helpers/reset");
 const orderService = require("../services/orderService");
 const handler = require("../helpers/handler");
-const { v4: uuidv4 } = require("uuid");
 const redisClient = require("../config/redisClient");
 
 const OrdersController = {
@@ -447,14 +446,12 @@ const OrdersController = {
 
       session.endSession();
 
-      return handler.handleResponse(res, {
-        status: 200,
+      return res.json({
         message: `Successfully updated ${results.success.length} orders. Failed: ${results.failed.length}.`,
-        data: results,
       });
     } catch (error) {
       session.endSession();
-      return handler.handleError(res, error);
+      res.status(500).json({ msg: error.message || "Internal server error" });
     }
   },
   edit: async (req, res) => {
@@ -686,10 +683,10 @@ const OrdersController = {
     const newItems = req.body.items;
     const notes = req.body.notes;
     const pricing = req.body.pricing;
+    const orderStatus = req.body.orderStatus;
+    console.log("body", req.body);
     const session = await mongoose.startSession();
     session.startTransaction();
-    console.log("orderId", orderId);
-    console.log("newItems", newItems);
     try {
       // 1. Get original order
       const originalOrder = await Order.findById(orderId).lean();
@@ -714,10 +711,16 @@ const OrdersController = {
           { session }
         );
       }
-      console.log("product", product);
       // 4. Update the order document
       await Order.updateOne(
-        { _id: orderId },
+        {
+          _id: orderId,
+          orderStatus: { $ne: "Completed" },
+          paymentStatus: { $nin: ["Paid", "Refunded"] },
+          fulfillmentStatus: {
+            $nin: ["Fulfilled", "Ready", "Out For Delivery"],
+          },
+        },
         { $set: { items: newItems, notes, pricing } },
         { session }
       );
