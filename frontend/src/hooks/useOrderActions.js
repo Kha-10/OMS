@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
-// import { errorToast, successToast } from "@/helper/showToast";
+import { errorToast, successToast } from "@/helper/showToast";
 
 const updateSingleOrderStatus = async (id, status) => {
   const res = await axios.patch(`/api/orders/${id}`, { ...status });
@@ -8,8 +8,7 @@ const updateSingleOrderStatus = async (id, status) => {
 };
 
 const updateBulkOrdersStatus = async (orderIds, status) => {
-  console.log("two");
-  const res = await axios.patch("/api/orders/bulk-update", {
+  const res = await axios.post("/api/orders/bulk-update", {
     orderIds,
     ...status,
   });
@@ -33,12 +32,12 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ selectedOrders, data }) => {
+    mutationFn: async ({ selectedOrders, activeStatus }) => {
       console.log("selectedOrders", selectedOrders);
-      console.log("data", data);
+      console.log("data", activeStatus);
       if (Array.isArray(selectedOrders) && selectedOrders.length > 0) {
         console.log("Using bulk update for:", selectedOrders);
-        return await updateBulkOrdersStatus(selectedOrders, data);
+        return await updateBulkOrdersStatus(selectedOrders, activeStatus);
       } else if (selectedOrders && typeof selectedOrders === "object") {
         console.log("Using single update for:", selectedOrders);
         const orderId = selectedOrders._id;
@@ -56,12 +55,12 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
         successToast(`Successfully updated ${count} orders`);
         onSelectOrders([]);
       } else {
-        // successToast("Order status updated successfully");
+        successToast("Order status updated successfully");
       }
     },
     onError: (error) => {
       console.error("Updating order status failed:", error);
-      // errorToast(error.response.data.message);
+      errorToast(error.response.data.message);
     },
   });
 
@@ -88,12 +87,12 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
         queryClient.invalidateQueries(["orders"]);
       } else {
         onSingleDeleteSuccess?.();
-        // successToast("Order deleted successfully");
+        successToast("Order deleted successfully");
       }
     },
     onError: (error) => {
       console.error("Deleting orders failed:", error);
-      // errorToast(error.response.data.message);
+      errorToast(error.response.data.message);
     },
   });
   return { updateStatusMutation, deleteMutation };

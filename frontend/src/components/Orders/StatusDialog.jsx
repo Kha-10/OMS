@@ -22,6 +22,7 @@ export default function StatusDialog({
   initialFulfillmentStatus = "Unfulfilled",
 }) {
   const [activeTab, setActiveTab] = useState("status");
+  const [activeStatus, setActiveStatus] = useState({});
   const [orderStatus, setOrderStatus] = useState(initialOrderStatus);
   const [paymentStatus, setPaymentStatus] = useState(initialPaymentStatus);
   const [fulfillmentStatus, setFulfillmentStatus] = useState(
@@ -92,11 +93,11 @@ export default function StatusDialog({
   ];
 
   const handleSave = () => {
-    const data = {
-      orderStatus,
-      paymentStatus,
-      fulfillmentStatus,
-    };
+    // const data = {
+    //   orderStatus,
+    //   paymentStatus,
+    //   fulfillmentStatus,
+    // };
 
     const ordersWithTracking = selectedOrders
       .map((id) => orders.find((order) => order._id === id))
@@ -107,28 +108,30 @@ export default function StatusDialog({
       );
 
     const requiresInventoryAction = ordersWithTracking.length > 0;
+    updateStatusMutation.mutate({ selectedOrders, activeStatus });
+    onOpenChange(false);
 
-    if (data.orderStatus === "Cancelled") {
-      if (requiresInventoryAction) {
-        const shouldRestock = confirm("Restock the inventory?");
-        if (shouldRestock) {
-          data.shouldRestock = true;
-        }
-      }
+    // if (data.orderStatus === "Cancelled") {
+    //   if (requiresInventoryAction) {
+    //     const shouldRestock = confirm("Restock the inventory?");
+    //     if (shouldRestock) {
+    //       data.shouldRestock = true;
+    //     }
+    //   }
 
-      updateStatusMutation.mutate({ selectedOrders, data });
-      onOpenChange(false);
-    } else {
-      if (requiresInventoryAction) {
-        const shouldDeduct = confirm("Deduct the inventory?");
-        if (shouldDeduct) {
-          data.shouldDeduct = true;
-        }
-      }
+    //   updateStatusMutation.mutate({ selectedOrders, data });
+    //   onOpenChange(false);
+    // } else {
+    //   if (requiresInventoryAction) {
+    //     const shouldDeduct = confirm("Deduct the inventory?");
+    //     if (shouldDeduct) {
+    //       data.shouldDeduct = true;
+    //     }
+    //   }
 
-      updateStatusMutation.mutate({ selectedOrders, data });
-      onOpenChange(false);
-    }
+    //   updateStatusMutation.mutate({ selectedOrders, data });
+    //   onOpenChange(false);
+    // }
   };
 
   return (
@@ -149,7 +152,13 @@ export default function StatusDialog({
           <TabsContent value="status" className="pt-4">
             <div className="space-y-4">
               <div className="font-medium">Status</div>
-              <RadioGroup value={orderStatus} onValueChange={setOrderStatus}>
+              <RadioGroup
+                value={orderStatus}
+                onValueChange={(value) => {
+                  setOrderStatus(value);
+                  setActiveStatus({ orderStatus: value });
+                }}
+              >
                 {orderStatusOptions.map(({ label, id }) => (
                   <div
                     key={id}
@@ -188,7 +197,10 @@ export default function StatusDialog({
               <div className="font-medium">Payment Status</div>
               <RadioGroup
                 value={paymentStatus}
-                onValueChange={setPaymentStatus}
+                onValueChange={(value) => {
+                  setPaymentStatus(value);
+                  setActiveStatus({ paymentStatus: value });
+                }}
               >
                 {paymentStatusOptions.map(({ label, id }) => (
                   <div
@@ -228,7 +240,10 @@ export default function StatusDialog({
               <div className="font-medium">Fulfillment Status</div>
               <RadioGroup
                 value={fulfillmentStatus}
-                onValueChange={setFulfillmentStatus}
+                onValueChange={(value) => {
+                  setFulfillmentStatus(value);
+                  setActiveStatus({ fulfillmentStatus: value });
+                }}
               >
                 {fulfillmentStatusOptions.map(({ label, id }) => (
                   <div

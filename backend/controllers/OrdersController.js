@@ -377,37 +377,27 @@ const OrdersController = {
 
   // Bulk order update
   bulkUpdate: async (req, res) => {
-    const {
-      orderIds,
-      orderStatus,
-      paymentStatus,
-      fulfillmentStatus,
-      shouldRestock,
-      shouldDeduct,
-    } = req.body;
+    const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
+      req.body;
+    console.log("req.body", req.body);
 
-    // Validation
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: "Invalid or empty orderIds array",
-      });
+      res.status(400).json({ msg: "empty orderIds" });
     }
 
     const invalidIds = orderIds.filter(
       (id) => !mongoose.Types.ObjectId.isValid(id)
     );
     if (invalidIds.length > 0) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: `Invalid order IDs: ${invalidIds.join(", ")}`,
-      });
+      res
+        .status(400)
+        .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
     }
 
     const session = await mongoose.startSession();
 
     try {
-      let results;
+      // let results;
 
       await session.withTransaction(async () => {
         // Get all orders first
@@ -417,37 +407,17 @@ const OrdersController = {
           throw new Error("No orders found");
         }
 
-        // Handle inventory adjustments
-        if (shouldRestock) {
-          await orderService.restockBulkOrderItems(orders, session);
-        }
-
-        if (shouldDeduct) {
-          await orderService.deductBulkOrderItems(orders, session);
-        }
-
-        // Update orders
-        results = await orderService.updateBulkOrders(
-          orderIds,
-          {
-            status: orderStatus,
-            paymentStatus,
-            fulfillmentStatus,
-          },
-          session
+        await Order.updateMany(
+          { _id: { $in: orderIds } },
+          { $set: { orderStatus, paymentStatus, fulfillmentStatus } }
         );
-
-        if (results.success.length === 0) {
-          throw new Error("No orders could be updated");
-        }
-
-        await clearProductCache();
+        // await clearProductCache();
       });
 
       session.endSession();
 
       return res.json({
-        message: `Successfully updated ${results.success.length} orders. Failed: ${results.failed.length}.`,
+        message: `Order status has been Successfully updated.`,
       });
     } catch (error) {
       session.endSession();
@@ -683,8 +653,6 @@ const OrdersController = {
     const newItems = req.body.items;
     const notes = req.body.notes;
     const pricing = req.body.pricing;
-    const orderStatus = req.body.orderStatus;
-    console.log("body", req.body);
     const session = await mongoose.startSession();
     session.startTransaction();
     try {

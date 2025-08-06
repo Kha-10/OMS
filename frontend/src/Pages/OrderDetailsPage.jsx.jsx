@@ -58,25 +58,27 @@ export default function OrderDetailsPage() {
       .map((item) => item._id);
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    if (status.orderStatus === "Cancelled") {
-      if (requiresInventoryAction) {
-        const shouldRestock = confirm("Restock the inventory?");
-        if (shouldRestock) {
-          status.shouldRestock = true;
-        }
-      }
-      console.log(status);
-      updateStatusMutation.mutate({ selectedOrders: orders, data: status });
-    } else {
-      if (requiresInventoryAction) {
-        const shouldDeduct = confirm("Deduct the inventory?");
-        if (shouldDeduct) {
-          status.shouldDeduct = true;
-        }
-      }
-      console.log(status);
-      updateStatusMutation.mutate({ selectedOrders: orders, data: status });
-    }
+    console.log("requiresInventoryAction", requiresInventoryAction);
+    updateStatusMutation.mutate({ selectedOrders: orders, data: status });
+    // if (status.orderStatus === "Cancelled") {
+    //   if (requiresInventoryAction) {
+    //     const shouldRestock = confirm("Restock the inventory?");
+    //     if (shouldRestock) {
+    //       status.shouldRestock = true;
+    //     }
+    //   }
+    //   console.log(status);
+    //   updateStatusMutation.mutate({ selectedOrders: orders, data: status });
+    // } else {
+    //   if (requiresInventoryAction) {
+    //     const shouldDeduct = confirm("Deduct the inventory?");
+    //     if (shouldDeduct) {
+    //       status.shouldDeduct = true;
+    //     }
+    //   }
+    //   console.log(status);
+    //   updateStatusMutation.mutate({ selectedOrders: orders, data: status });
+    // }
   };
 
   const deleteOrders = () => {

@@ -20,7 +20,7 @@ router.post(
   // lockOrderMiddleware,
   OrdersController.updateOrder
 );
-// router.post("/restock",OrdersController.syncProducts);
+router.post("/bulk-update", OrdersController.bulkUpdate);
 router.post("", handleErrorMessage, idempotencyCheck, OrdersController.store);
 
 router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
