@@ -21,6 +21,10 @@ router.post(
   OrdersController.updateOrder
 );
 router.post("/bulk-update", OrdersController.bulkUpdate);
+router.post("/deduct", OrdersController.deduct);
+router.post("/restock", OrdersController.restock);
+router.post("/refund", OrdersController.refund);
+router.post("/pay", OrdersController.pay);
 router.post("", handleErrorMessage, idempotencyCheck, OrdersController.store);
 
 router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
@@ -36,22 +40,5 @@ router.delete(
   // RoleMiddleware(["admin", "superadmin"]),
   OrdersController.destroy
 );
-
-router.patch(
-  "/:id",
-  // RoleMiddleware(["admin", "superadmin"]),
-  OrdersController.update
-);
-
-// router.post(
-//   "/:id/upload",
-//   [
-//     upload.array("photo"),
-//     validatePhotoUpload
-//   ],
-//   // RoleMiddleware(["admin", "superadmin"]),
-//   handleErrorMessage,
-//   OrdersController.upload
-// );
 
 module.exports = router;

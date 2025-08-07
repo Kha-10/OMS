@@ -117,7 +117,7 @@ const NewCustomer = () => {
                             })}
                             onChange={(e) => {
                               field.onChange(e);
-                              handleManualCustomerInput();
+                              // handleManualCustomerInput();
                             }}
                             className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />
@@ -139,7 +139,7 @@ const NewCustomer = () => {
                             {...field}
                             onChange={(e) => {
                               field.onChange(e);
-                              handleManualCustomerInput();
+                              // handleManualCustomerInput();
                             }}
                             className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />
@@ -165,7 +165,7 @@ const NewCustomer = () => {
                             })}
                             onChange={(e) => {
                               field.onChange(e);
-                              handleManualCustomerInput();
+                              // handleManualCustomerInput();
                             }}
                             className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />

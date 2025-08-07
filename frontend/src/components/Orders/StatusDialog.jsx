@@ -10,6 +10,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useOrderActions from "@/hooks/useOrderActions";
+import axios from "@/helper/axios";
+import { ToastContainer, toast } from "react-toastify";
 
 export default function StatusDialog({
   orders,
@@ -92,12 +94,24 @@ export default function StatusDialog({
     },
   ];
 
-  const handleSave = () => {
-    // const data = {
-    //   orderStatus,
-    //   paymentStatus,
-    //   fulfillmentStatus,
-    // };
+  const handleSave = async () => {
+    const skipValues = [
+      "Pending",
+      "Completed",
+      "Confirmed",
+      "Paid",
+      "Unpaid",
+      "Confirming Payment",
+      "Partially Paid",
+      "Refunded",
+      "Unfulfilled",
+      "Fulfilled",
+      "Ready",
+      "Out For Delivery",
+    ];
+
+    const [key] = Object.keys(activeStatus); // "orderStatus" | "paymentStatus" | "fulfillmentStatus"
+    const newStatus = activeStatus[key];
 
     const ordersWithTracking = selectedOrders
       .map((id) => orders.find((order) => order._id === id))
@@ -107,31 +121,123 @@ export default function StatusDialog({
         )
       );
 
+    console.log("ordersWithTracking", ordersWithTracking);
     const requiresInventoryAction = ordersWithTracking.length > 0;
+
+    // Save status change first
     updateStatusMutation.mutate({ selectedOrders, activeStatus });
     onOpenChange(false);
 
-    // if (data.orderStatus === "Cancelled") {
-    //   if (requiresInventoryAction) {
-    //     const shouldRestock = confirm("Restock the inventory?");
-    //     if (shouldRestock) {
-    //       data.shouldRestock = true;
-    //     }
-    //   }
+    for (const order of ordersWithTracking) {
+      const oldStatus = order?.[key];
+      // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+      if (key === "orderStatus" && oldStatus === "Cancelled") {
+        if (requiresInventoryAction) {
+          const confirmDeduct = confirm("Deduct the inventory?");
+          if (confirmDeduct) {
+            console.log(`Called deduct API for order ${order._id}`);
+            try {
+              let res = await axios.post("/api/orders/deduct", order);
+              if (res.status === 200) {
+                toast.success("Successfully deducted", {
+                  position: "top-center",
+                });
+              }
+            } catch (invErr) {
+              console.error("Deduction failed:", invErr);
+              toast.error("Failed to deduct inventory", {
+                position: "top-center",
+              });
+            }
+          }
+        }
+        continue; // Skip deduct/refund when restocking
+      }
+      if (key === "orderStatus" && newStatus === "Cancelled") {
+        if (requiresInventoryAction) {
+          const confirmDeduct = confirm("Restock the inventory?");
+          if (confirmDeduct) {
+            console.log(`Called restock API for order ${order._id}`);
+            try {
+              let res = await axios.post("/api/orders/restock", order);
+              if (res.status === 200) {
+                toast.success("Successfully restocked", {
+                  position: "top-center",
+                });
+              }
+            } catch (invErr) {
+              console.error("Restock failed:", invErr);
+              toast.error("Failed to restock inventory", {
+                position: "top-center",
+              });
+            }
+          }
+        }
+        continue; // Skip deduct/refund when restocking
+      }
 
-    //   updateStatusMutation.mutate({ selectedOrders, data });
-    //   onOpenChange(false);
-    // } else {
-    //   if (requiresInventoryAction) {
-    //     const shouldDeduct = confirm("Deduct the inventory?");
-    //     if (shouldDeduct) {
-    //       data.shouldDeduct = true;
-    //     }
-    //   }
+      // ✅ 2. Refund if value is Refunded
+      if (key === "paymentStatus" && newStatus === "Refunded" && oldStatus === 'Paid') {
+        console.log(`Called refund API for order ${order._id}`);
+        // await callRefundAPI(order._id);
+        try {
+          let res = await axios.post("/api/orders/refund", order);
+          if (res.status === 200) {
+            toast.success("Successfully refunded", {
+              position: "top-center",
+            });
+          }
+        } catch (invErr) {
+          console.error("Restock failed:", invErr);
+          toast.error("Failed to refund", {
+            position: "top-center",
+          });
+        }
+        continue; // Skip deduct if refunding
+      }
+      if (key === "paymentStatus" && newStatus === "Paid") {
+        console.log(`Called pay API for order ${order._id}`);
+        // await callPayAPI(order._id);
+        try {
+          let res = await axios.post("/api/orders/pay", order);
+          if (res.status === 200) {
+            toast.success("Successfully Paid", {
+              position: "top-center",
+            });
+          }
+        } catch (invErr) {
+          console.error("Restock failed:", invErr);
+          toast.error("Failed to pay", {
+            position: "top-center",
+          });
+        }
+        continue; // Skip deduct if Paying
+      }
 
-    //   updateStatusMutation.mutate({ selectedOrders, data });
-    //   onOpenChange(false);
-    // }
+      if (key === "orderStatus") {
+        const shouldDeduct =
+          !skipValues.includes(oldStatus) && !skipValues.includes(newStatus);
+
+        if (requiresInventoryAction && shouldDeduct) {
+          const confirmDeduct = confirm("Deduct the inventory?");
+          if (confirmDeduct) {
+            try {
+              let res = await axios.post("/api/orders/deduct", order);
+              if (res.status === 200) {
+                toast.success("Successfully deducted", {
+                  position: "top-center",
+                });
+              }
+            } catch (invErr) {
+              console.error("Deduction failed:", invErr);
+              toast.error("Failed to deduct inventory", {
+                position: "top-center",
+              });
+            }
+          }
+        }
+      }
+    }
   };
 
   return (
@@ -278,6 +384,7 @@ export default function StatusDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+      <ToastContainer />
     </Dialog>
   );
 }

@@ -310,76 +310,10 @@ const OrdersController = {
       return handler.handleError(res, error);
     }
   },
-  // Single order update
-  update: async (req, res) => {
-    const { id } = req.params;
-    const {
-      orderStatus,
-      paymentStatus,
-      fulfillmentStatus,
-      shouldRestock,
-      shouldDeduct,
-    } = req.body;
-    console.log("orderStatus", req.body.orderStatus);
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: "Invalid id",
-      });
-    }
-
-    const session = await mongoose.startSession();
-
-    try {
-      let updatedOrder;
-
-      await session.withTransaction(async () => {
-        const order = await orderService.getOrderById(id, session);
-        if (!order) {
-          throw new Error("Order not found");
-        }
-
-        // Handle inventory adjustments
-        if (shouldRestock) {
-          await orderService.restockOrderItems(order, session);
-        }
-
-        if (shouldDeduct) {
-          await orderService.deductOrderItems(order, session);
-        }
-
-        // Update order
-        updatedOrder = await orderService.updateOrder(
-          id,
-          {
-            status: orderStatus,
-            paymentStatus,
-            fulfillmentStatus,
-          },
-          session
-        );
-
-        await clearProductCache();
-      });
-
-      session.endSession();
-
-      return handler.handleResponse(res, {
-        status: 200,
-        message: "Order updated successfully.",
-        data: updatedOrder,
-      });
-    } catch (error) {
-      session.endSession();
-      return handler.handleError(res, error);
-    }
-  },
-
   // Bulk order update
   bulkUpdate: async (req, res) => {
     const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
       req.body;
-    console.log("req.body", req.body);
 
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       res.status(400).json({ msg: "empty orderIds" });
@@ -397,11 +331,11 @@ const OrdersController = {
     const session = await mongoose.startSession();
 
     try {
-      // let results;
-
       await session.withTransaction(async () => {
         // Get all orders first
-        const orders = await orderService.getOrdersByIds(orderIds, session);
+        const orders = await Order.find({ _id: { $in: orderIds } }).session(
+          session
+        );
 
         if (orders.length === 0) {
           throw new Error("No orders found");
@@ -422,109 +356,6 @@ const OrdersController = {
     } catch (error) {
       session.endSession();
       res.status(500).json({ msg: error.message || "Internal server error" });
-    }
-  },
-  edit: async (req, res) => {
-    const { id } = req.params;
-    const {
-      orderItemsfromDb,
-      cleanedItems,
-      shouldDeduct,
-      shouldRestock,
-      totalAmount,
-      increaseQuantity,
-      decreaseQuantity,
-      removedItems,
-      newItems,
-    } = req.body;
-
-    try {
-      let finalItems = [];
-
-      // Prepare bulk operations for inventory updates
-      const bulkOps = [];
-
-      // 1. Add new items and deduct inventory
-      for (const item of newItems) {
-        if (
-          (shouldDeduct || item.trackQuantityEnabled) &&
-          item.trackQuantityEnabled
-        ) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: item._id, trackQuantityEnabled: true },
-              update: { $inc: { "inventory.quantity": -item.quantity } },
-            },
-          });
-        }
-        finalItems.push(...orderItemsfromDb, item);
-      }
-
-      // 2. Handle increased quantities
-      for (const item of increaseQuantity) {
-        if (shouldDeduct && item.trackQuantityEnabled) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: item._id, trackQuantityEnabled: true },
-              update: { $inc: { "inventory.quantity": -item.quantityDiff } },
-            },
-          });
-        }
-        finalItems.push(item.updatedItem); // item with updated quantity
-      }
-
-      // 3. Handle decreased quantities
-      for (const item of decreaseQuantity) {
-        if (shouldRestock && item.trackQuantityEnabled) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: item._id, trackQuantityEnabled: true },
-              update: { $inc: { "inventory.quantity": item.quantityDiff } },
-            },
-          });
-        }
-        finalItems.push(item.updatedItem); // item with updated quantity
-      }
-
-      // 4. Handle removed items
-      for (const item of removedItems) {
-        if (shouldRestock && item.trackQuantityEnabled) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: item._id, trackQuantityEnabled: true },
-              update: { $inc: { "inventory.quantity": item.quantity } },
-            },
-          });
-        }
-        // Don't push to finalItems
-      }
-
-      // Execute all inventory updates in one call
-      if (bulkOps.length > 0) {
-        await Product.bulkWrite(bulkOps);
-      }
-
-      console.log("finalItems", finalItems);
-
-      // 5. Update order
-      const sanitizedItems =
-        removedItems.length > 0 ||
-        increaseQuantity.length > 0 ||
-        decreaseQuantity.length > 0
-          ? cleanedItems.map(sanitizeOrderItem)
-          : finalItems.map(sanitizeOrderItem);
-      await Order.findByIdAndUpdate(id, {
-        totalAmount,
-        items: sanitizedItems,
-      });
-      await clearProductCache();
-      return handler.handleResponse(res, {
-        status: 200,
-        message: "Order updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating order:", error);
-      return handler.handleError(res, error);
     }
   },
   loadOrderAsCart: async (req, res) => {
@@ -604,7 +435,6 @@ const OrdersController = {
   },
   singleOrderedit: async (req, res) => {
     const { id } = req.params;
-    const updatedData = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ msg: "Invalid order ID" });
@@ -623,20 +453,8 @@ const OrdersController = {
         }
       }
 
-      // const updatedOrder = await Order.findByIdAndUpdate(
-      //   id,
-      //   {
-      //     $set: {
-      //       ...updatedData,
-      //       customer: updatedData.customer?.customerId,
-      //     },
-      //   },
-      //   { new: true, runValidators: true }
-      // );
-
       res.status(200).json({
         msg: "Order updated successfully",
-        // updatedOrder,
         needRestockAndDeduct,
       });
     } catch (error) {
@@ -683,11 +501,6 @@ const OrdersController = {
       await Order.updateOne(
         {
           _id: orderId,
-          orderStatus: { $ne: "Completed" },
-          paymentStatus: { $nin: ["Paid", "Refunded"] },
-          fulfillmentStatus: {
-            $nin: ["Fulfilled", "Ready", "Out For Delivery"],
-          },
         },
         { $set: { items: newItems, notes, pricing } },
         { session }
@@ -702,6 +515,180 @@ const OrdersController = {
       res.status(500).json({ msg: error.message || "Internal server error" });
       await session.abortTransaction();
       session.endSession();
+    }
+  },
+  deduct: async (req, res) => {
+    console.log("req.body", req.body);
+    const orderId = req.body._id;
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const originalOrder = await Order.findById(orderId).lean();
+
+      if (!originalOrder) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ msg: "Order not found" });
+      }
+
+      await Product.bulkWrite(
+        originalOrder.items.map((item) => ({
+          updateOne: {
+            filter: { _id: item.productId, trackQuantityEnabled: true },
+            update: { $inc: { "inventory.quantity": -item.quantity } },
+          },
+        })),
+        { session }
+      );
+
+      await clearProductCache();
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({ msg: "Inventory deducted successfully" });
+    } catch (error) {
+      console.error("Order deduct failed:", error);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
+    }
+  },
+  restock: async (req, res) => {
+    console.log("req.body", req.body);
+    const orderId = req.body._id;
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const originalOrder = await Order.findById(orderId).lean();
+
+      if (!originalOrder) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ msg: "Order not found" });
+      }
+
+      await Product.bulkWrite(
+        originalOrder.items.map((item) => ({
+          updateOne: {
+            filter: { _id: item.productId, trackQuantityEnabled: true },
+            update: { $inc: { "inventory.quantity": item.quantity } },
+          },
+        })),
+        { session }
+      );
+
+      await clearProductCache();
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({ msg: "Inventory restocked successfully" });
+    } catch (error) {
+      console.error("Order restock failed:", error);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
+    }
+  },
+  refund: async (req, res) => {
+    console.log("req.body", req.body);
+    const customerId = req.body.customer._id;
+    const totalSpent = req.body.pricing.finalTotal;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const customer = await Customer.findById(customerId).lean();
+
+      if (!customer) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ msg: "customer not found" });
+      }
+
+      // ✅ Fix: Proper bulkWrite syntax as array of operations
+      await Customer.bulkWrite(
+        [
+          {
+            updateOne: {
+              filter: { _id: customerId },
+              update: { $inc: { totalSpent: - totalSpent } },
+            },
+          },
+        ],
+        { session }
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({ msg: "Refund processed successfully" });
+    } catch (error) {
+      console.error("Refund failed:", error);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
+    }
+  },
+  pay: async (req, res) => {
+    console.log("req.body", req.body);
+    const customerId = req.body.customer._id;
+    const totalSpent = req.body.pricing.finalTotal;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const customer = await Customer.findById(customerId).lean();
+
+      if (!customer) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ msg: "customer not found" });
+      }
+
+      // ✅ Fix: Proper bulkWrite syntax as array of operations
+      await Customer.bulkWrite(
+        [
+          {
+            updateOne: {
+              filter: { _id: customerId },
+              update: { $inc: { totalSpent: totalSpent } },
+            },
+          },
+        ],
+        { session }
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({ msg: "Pay processed successfully" });
+    } catch (error) {
+      console.error("Pay failed:", error);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
     }
   },
 };
