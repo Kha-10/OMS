@@ -13,11 +13,11 @@ export const showToast = (toastId, message, type = "success") => {
 };
 
 export const successToast = (message) => {
-  console.log('gg');
   toast.success(message, {
     position: "top-center",
     autoClose: 3000,
     closeOnClick: true,
+    hideProgressBar: true,
     pauseOnHover: true,
     draggable: true,
   });
@@ -27,6 +27,7 @@ export const errorToast = (message) => {
   toast.error(message || "Something went wrong", {
     position: "top-center",
     autoClose: 4000,
+    hideProgressBar: true,
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,

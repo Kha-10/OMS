@@ -141,12 +141,18 @@ export default function StatusDialog({
               if (res.status === 200) {
                 toast.success("Successfully deducted", {
                   position: "top-center",
+                  autoClose: 5000,
+                  hideProgressBar: true,
+                  closeOnClick: true,
                 });
               }
             } catch (invErr) {
               console.error("Deduction failed:", invErr);
               toast.error("Failed to deduct inventory", {
                 position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
               });
             }
           }
@@ -163,12 +169,18 @@ export default function StatusDialog({
               if (res.status === 200) {
                 toast.success("Successfully restocked", {
                   position: "top-center",
+                  autoClose: 5000,
+                  hideProgressBar: true,
+                  closeOnClick: true,
                 });
               }
             } catch (invErr) {
               console.error("Restock failed:", invErr);
               toast.error("Failed to restock inventory", {
                 position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
               });
             }
           }
@@ -177,7 +189,11 @@ export default function StatusDialog({
       }
 
       // ✅ 2. Refund if value is Refunded
-      if (key === "paymentStatus" && newStatus === "Refunded" && oldStatus === 'Paid') {
+      if (
+        key === "paymentStatus" &&
+        newStatus === "Refunded" &&
+        oldStatus === "Paid"
+      ) {
         console.log(`Called refund API for order ${order._id}`);
         // await callRefundAPI(order._id);
         try {
@@ -185,12 +201,18 @@ export default function StatusDialog({
           if (res.status === 200) {
             toast.success("Successfully refunded", {
               position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
             });
           }
         } catch (invErr) {
           console.error("Restock failed:", invErr);
           toast.error("Failed to refund", {
             position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
           });
         }
         continue; // Skip deduct if refunding
@@ -203,12 +225,18 @@ export default function StatusDialog({
           if (res.status === 200) {
             toast.success("Successfully Paid", {
               position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
             });
           }
         } catch (invErr) {
           console.error("Restock failed:", invErr);
           toast.error("Failed to pay", {
             position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
           });
         }
         continue; // Skip deduct if Paying
@@ -226,12 +254,18 @@ export default function StatusDialog({
               if (res.status === 200) {
                 toast.success("Successfully deducted", {
                   position: "top-center",
+                  autoClose: 5000,
+                  hideProgressBar: true,
+                  closeOnClick: true,
                 });
               }
             } catch (invErr) {
               console.error("Deduction failed:", invErr);
               toast.error("Failed to deduct inventory", {
                 position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
               });
             }
           }
