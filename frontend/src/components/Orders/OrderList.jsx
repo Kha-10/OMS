@@ -20,6 +20,8 @@ import Pagination from "../Pagination";
 import { useNavigate } from "react-router-dom";
 import StatusBadge from "../StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
+import axios from "@/helper/axios";
+import { ToastContainer, toast } from "react-toastify";
 
 export default function OrderList({
   orders,
@@ -83,8 +85,7 @@ export default function OrderList({
     };
   }, [actionsMenuOpen]);
 
-  const deleteOrders = () => {
-    let data = {};
+  const deleteOrders = async () => {
     const shouldDelete = confirm(
       `Delete ${
         selectedOrders.length > 1
@@ -94,20 +95,46 @@ export default function OrderList({
     );
     if (!shouldDelete) return;
 
-    const hasNullProductId = selectedOrders.some((id) => {
-      const order = orders.find((o) => o._id === id);
-      return order?.items?.some((item) => item.productId === null);
-    });
+    const ordersWithTracking = selectedOrders
+      .map((id) => orders.find((order) => order._id === id))
+      .filter((order) =>
+        order?.items?.some(
+          (item) => item.trackQuantityEnabled && item.productId !== null
+        )
+      );
 
-    // Only ask to restock if all products are valid
-    if (!hasNullProductId) {
-      const shouldRestock = confirm("Restock the inventory?");
-      if (shouldRestock) {
-        data.shouldRestock = true;
+    const requiresInventoryAction = ordersWithTracking.length > 0;
+
+    deleteMutation.mutate({ selectedOrders, isBulkDelete: true });
+
+    for (const order of ordersWithTracking) {
+      // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+      if (requiresInventoryAction) {
+        const confirmRestock = confirm("Restock the inventory?");
+        if (confirmRestock) {
+          console.log(`Called restock API for order ${order._id}`);
+          try {
+            let res = await axios.post("/api/orders/restock", order);
+            if (res.status === 200) {
+              toast.success("Successfully restocked", {
+                position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+              });
+            }
+          } catch (invErr) {
+            console.error("Restock failed:", invErr);
+            toast.error("Failed to restock inventory", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+            });
+          }
+        }
       }
     }
-
-    deleteMutation.mutate({ selectedOrders, data });
   };
 
   const navigateToOrder = (id) => {
@@ -234,7 +261,9 @@ export default function OrderList({
                   <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {order?.customer? order?.customer?.name : order?.manualCustomer?.name}
+                  {order?.customer
+                    ? order?.customer?.name
+                    : order?.manualCustomer?.name}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                   {order.pricing?.finalTotal.toLocaleString("en-US", {
@@ -293,6 +322,7 @@ export default function OrderList({
           <p className="text-sm text-gray-500">No Orders found.</p>
         )}
       </div>
+      <ToastContainer />
     </div>
   );
 }

@@ -15,10 +15,9 @@ const deleteOrder = async (orderId, data) => {
   return res.data;
 };
 
-const bulkDeleteOrders = async (orderIds, data) => {
+const bulkDeleteOrders = async (orderIds) => {
   const res = await axios.post("/api/orders/bulk-delete", {
     orderIds,
-    ...data,
   });
   return res.data;
 };
@@ -53,29 +52,32 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async ({ selectedOrders, data }) => {
+    mutationFn: async ({ selectedOrders }) => {
       if (Array.isArray(selectedOrders) && selectedOrders.length > 0) {
         console.log("Using bulk delete for:", selectedOrders);
-        return await bulkDeleteOrders(selectedOrders, data);
-      } else if (selectedOrders && typeof selectedOrders === "object") {
-        console.log("Using single delete for:", selectedOrders);
-        const orderId = selectedOrders._id;
-        return await deleteOrder(orderId, data);
+        return await bulkDeleteOrders(selectedOrders);
       } else {
         throw new Error("No valid order(s) provided");
       }
     },
     onSuccess: (result, variables, context) => {
-      console.log("Delete operation successful:", result);
+      queryClient.invalidateQueries(["orders"]);
 
-      if (Array.isArray(variables?.selectedOrders)) {
+      // if (Array.isArray(variables?.selectedOrders)) {
+      //   const count = variables.selectedOrders.length;
+      //   successToast(`Successfully deleted ${count} orders`);
+      //   onSelectOrders([]);
+      //   queryClient.invalidateQueries(["orders"]);
+      // } else {
+      //   onSingleDeleteSuccess?.();
+      //   successToast("Order deleted successfully");
+      // }
+      if (variables?.isBulkDelete) {
         const count = variables.selectedOrders.length;
         successToast(`Successfully deleted ${count} orders`);
         onSelectOrders([]);
-        queryClient.invalidateQueries(["orders"]);
       } else {
-        onSingleDeleteSuccess?.();
-        successToast("Order deleted successfully");
+        successToast("Order status deleted successfully");
       }
     },
     onError: (error) => {

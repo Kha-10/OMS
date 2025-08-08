@@ -259,55 +259,48 @@ const OrdersController = {
     }
   },
   bulkDestroy: async (req, res) => {
-    const { orderIds, shouldRestock } = req.body;
+    const { orderIds } = req.body;
 
     // Validation
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: "Invalid or empty orderIds array",
-      });
+      return res.status(400).json({ msg: "empty orderIds" });
     }
 
     const invalidIds = orderIds.filter(
       (id) => !mongoose.Types.ObjectId.isValid(id)
     );
     if (invalidIds.length > 0) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: `Invalid order IDs: ${invalidIds.join(", ")}`,
-      });
+      return res
+        .status(400)
+        .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
     }
 
     const session = await mongoose.startSession();
 
     try {
-      let results;
-
       await session.withTransaction(async () => {
-        results = await orderService.removeBulkOrders(orderIds, session);
-
-        if (results.success.length === 0) {
-          throw new Error("No orders could be deleted");
+        const orders = await Order.find({ _id: { $in: orderIds } }).session(
+          session
+        );
+        console.log("orders", orders);
+        if (orders.length === 0) {
+          return res.status(404).json({ msg: `No orders found` });
         }
 
-        if (shouldRestock) {
-          await orderService.restockBulkOrderItems(results.orders, session);
-        }
-
-        await clearProductCache();
+        await Order.deleteMany({ _id: { $in: orderIds } });
       });
 
       session.endSession();
 
-      return handler.handleResponse(res, {
-        status: 200,
-        message: `Successfully deleted ${results.success.length} orders. Failed: ${results.failed.length}.`,
-        data: results,
+      return res.json({
+        message: `Order status has been Successfully deleted.`,
       });
     } catch (error) {
+      console.log("error", error);
       session.endSession();
-      return handler.handleError(res, error);
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
     }
   },
   // Bulk order update

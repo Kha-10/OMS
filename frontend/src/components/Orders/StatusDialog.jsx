@@ -125,7 +125,11 @@ export default function StatusDialog({
     const requiresInventoryAction = ordersWithTracking.length > 0;
 
     // Save status change first
-    updateStatusMutation.mutate({ selectedOrders, activeStatus,isBulkUpdate: true, });
+    updateStatusMutation.mutate({
+      selectedOrders,
+      activeStatus,
+      isBulkUpdate: true,
+    });
     onOpenChange(false);
 
     for (const order of ordersWithTracking) {
@@ -161,8 +165,8 @@ export default function StatusDialog({
       }
       if (key === "orderStatus" && newStatus === "Cancelled") {
         if (requiresInventoryAction) {
-          const confirmDeduct = confirm("Restock the inventory?");
-          if (confirmDeduct) {
+          const confirmRestock = confirm("Restock the inventory?");
+          if (confirmRestock) {
             console.log(`Called restock API for order ${order._id}`);
             try {
               let res = await axios.post("/api/orders/restock", order);

@@ -21,6 +21,7 @@ router.post(
   OrdersController.updateOrder
 );
 router.post("/bulk-update", OrdersController.bulkUpdate);
+router.post("/bulk-delete", OrdersController.bulkDestroy);
 router.post("/deduct", OrdersController.deduct);
 router.post("/restock", OrdersController.restock);
 router.post("/refund", OrdersController.refund);
