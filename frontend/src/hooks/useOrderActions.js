@@ -10,11 +10,6 @@ const updateBulkOrdersStatus = async (orderIds, status) => {
   return res.data;
 };
 
-const deleteOrder = async (orderId, data) => {
-  const res = await axios.delete(`/api/orders/${orderId}`, { data });
-  return res.data;
-};
-
 const bulkDeleteOrders = async (orderIds) => {
   const res = await axios.post("/api/orders/bulk-delete", {
     orderIds,
@@ -22,7 +17,7 @@ const bulkDeleteOrders = async (orderIds) => {
   return res.data;
 };
 
-const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
+const useOrderActions = (onSelectOrders) => {
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation({
@@ -61,23 +56,13 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
       }
     },
     onSuccess: (result, variables, context) => {
-      queryClient.invalidateQueries(["orders"]);
-
-      // if (Array.isArray(variables?.selectedOrders)) {
-      //   const count = variables.selectedOrders.length;
-      //   successToast(`Successfully deleted ${count} orders`);
-      //   onSelectOrders([]);
-      //   queryClient.invalidateQueries(["orders"]);
-      // } else {
-      //   onSingleDeleteSuccess?.();
-      //   successToast("Order deleted successfully");
-      // }
       if (variables?.isBulkDelete) {
         const count = variables.selectedOrders.length;
         successToast(`Successfully deleted ${count} orders`);
         onSelectOrders([]);
+        queryClient.invalidateQueries(["orders"]);
       } else {
-        successToast("Order status deleted successfully");
+        successToast("Order deleted successfully");
       }
     },
     onError: (error) => {

@@ -124,7 +124,6 @@ export default function OrderDetailsPage() {
                 hideProgressBar: true,
                 closeOnClick: true,
               });
-              navigate("/orders");
             }
           } catch (invErr) {
             console.error("Restock failed:", invErr);
@@ -228,7 +227,14 @@ export default function OrderDetailsPage() {
     );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    deleteMutation.mutate({ selectedOrders: [orders._id] });
+    deleteMutation.mutate(
+      { selectedOrders: [orders._id] },
+      {
+        onSuccess: () => {
+          navigate("/orders");
+        },
+      }
+    );
 
     // ✅ 1. Restock inventory if orderStatus becomes Cancelled
     if (requiresInventoryAction) {
