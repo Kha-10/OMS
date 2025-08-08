@@ -5,30 +5,6 @@ const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
 const clearProductCache = require("../helpers/clearProductCache");
 
 // GET
-const buildQuery = (queryParams) => {
-  let query = {};
-
-  if (queryParams.status) {
-    query.status = { $in: queryParams.status.split(",") };
-  }
-  if (queryParams.paymentStatus) {
-    query.paymentStatus = queryParams.paymentStatus;
-  }
-  if (queryParams.fulfillmentStatus) {
-    query.fulfillmentStatus = queryParams.fulfillmentStatus;
-  }
-
-  if (queryParams.search) {
-    query.$or = [
-      { orderNumber: { $regex: queryParams.search, $options: "i" } },
-      { customerName: { $regex: queryParams.search, $options: "i" } },
-      { "items.productName": { $regex: queryParams.search, $options: "i" } },
-    ];
-  }
-
-  return query;
-};
-
 const buildSort = (sortBy, sortDirection) => {
   const direction = sortDirection === "asc" ? 1 : -1;
   return sortBy === "amount"
@@ -38,9 +14,8 @@ const buildSort = (sortBy, sortDirection) => {
 
 const buildMatchStage = (queryParams) => {
   let match = {};
-
-  if (queryParams.status) {
-    match.status = { $in: queryParams.status.split(",") };
+  if (queryParams.orderStatus) {
+    match.orderStatus = { $in: queryParams.orderStatus.split(",") };
   }
   if (queryParams.paymentStatus) {
     match.paymentStatus = queryParams.paymentStatus;
@@ -138,7 +113,6 @@ const enhanceProductImages = (input) => {
 };
 
 const findOrders = async (queryParams) => {
-  console.log("queryParams", queryParams);
   const orderData = await fetchOrdersFromDB(queryParams);
   return orderData;
 };

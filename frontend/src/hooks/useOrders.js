@@ -11,7 +11,7 @@ const fetchOrders = async ({ queryKey }) => {
       sortBy,
       sortDirection,
       searchQuery,
-      status,
+      orderStatus,
       paymentStatus,
       fulfillmentStatus,
     },
@@ -21,7 +21,7 @@ const fetchOrders = async ({ queryKey }) => {
     ? `/api/orders/${id || ""}`
     : `/api/orders?page=${page}&limit=${pageSize}&sortBy=${sortBy}&sortDirection=${sortDirection}${
         searchQuery ? `&search=${searchQuery}` : ""
-      }${status ? `&status=${status}` : ""}${
+      }${orderStatus ? `&orderStatus=${orderStatus}` : ""}${
         paymentStatus ? `&paymentStatus=${paymentStatus}` : ""
       }${fulfillmentStatus ? `&fulfillmentStatus=${fulfillmentStatus}` : ""}`;
   const res = await axios.get(url);
@@ -37,7 +37,7 @@ const useOrders = (
     sortBy,
     sortDirection,
     searchQuery,
-    status,
+    orderStatus,
     paymentStatus,
     fulfillmentStatus,
   },
@@ -55,7 +55,7 @@ const useOrders = (
             sortBy,
             sortDirection,
             searchQuery,
-            status,
+            orderStatus,
             paymentStatus,
             fulfillmentStatus,
           },

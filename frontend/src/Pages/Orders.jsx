@@ -31,7 +31,7 @@ export default function OrdersPage() {
   const sortBy = params.get("sortBy") || "createdAt";
   const sortDirection = params.get("sortDirection") || "desc";
   const searchQuery = searchParams.get("search") || "";
-  const status = params.get("status") && params.get("status");
+  const orderStatus = params.get("orderStatus") && params.get("orderStatus");
   const paymentStatus =
     params.get("paymentStatus") && params.get("paymentStatus");
   const fulfillmentStatus =
@@ -43,7 +43,7 @@ export default function OrdersPage() {
     sortBy,
     sortDirection,
     searchQuery,
-    status,
+    orderStatus,
     paymentStatus,
     fulfillmentStatus,
   });
@@ -63,7 +63,7 @@ export default function OrdersPage() {
   };
 
   const clearAllFilters = () => {
-    params.delete("status");
+    params.delete("orderStatus");
     params.delete("paymentStatus");
     params.delete("fulfillmentStatus");
     setSearchParams(params);
@@ -91,7 +91,7 @@ export default function OrdersPage() {
   const handleFilterChange = (filters) => {
     const params = new URLSearchParams(searchParams); // start from current params
 
-    const filterKeys = ["status", "paymentStatus", "fulfillmentStatus"];
+    const filterKeys = ["orderStatus", "paymentStatus", "fulfillmentStatus"];
 
     filterKeys.forEach((key) => {
       const value = filters[key];
@@ -140,8 +140,8 @@ export default function OrdersPage() {
 
   const filterSections = [
     {
-      id: "status",
-      label: "Status",
+      id: "orderStatus",
+      label: "orderStatus",
       options: [
         { id: "Pending", label: "Pending" },
         { id: "Confirmed", label: "Confirmed" },
@@ -181,7 +181,7 @@ export default function OrdersPage() {
   ];
   const getFilterLabel = (type, values) => {
     const labelMap = {
-      status: "Status",
+      status: "orderStatus",
       paymentStatus: "Payment",
       fulfillmentStatus: "Fulfillment",
     };
