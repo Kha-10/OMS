@@ -279,7 +279,7 @@ export default function OrderDetailsPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-lg hidden sm:flex bg-gray-200 hover:bg-gray-200 text-gray-700">
+            {/* <div className="rounded-lg hidden sm:flex bg-gray-200 hover:bg-gray-200 text-gray-700">
               <Button
                 variant="ghost"
                 className="rounded-r-none border border-gray-200"
@@ -313,12 +313,47 @@ export default function OrderDetailsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div> */}
+            <div className="rounded-lg flex bg-gray-200 hover:bg-gray-200 text-gray-700">
+              <Button
+                variant="ghost"
+                className="rounded-r-none border border-gray-200"
+              >
+                <Printer className="w-4 h-4" />
+                <span className="hidden md:inline ml-2">Print</span>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="rounded-l-none rounded-r-md border border-gray-200"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/addToCart/${orders._id}`)}
+                    className="flex items-center w-full text-left text-sm text-gray-500 hover:bg-gray-100"
+                  >
+                    <Edit className="mr-3 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={deleteOrders}
+                    className="flex items-center w-full text-left text-sm text-red-500 hover:bg-gray-100"
+                  >
+                    <Trash2 className="mr-3 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
 
         {/* Main content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1">
           <div className="w-full max-w-5xl mx-auto">
             {/* Order header */}
             <div className="p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
@@ -335,8 +370,8 @@ export default function OrderDetailsPage() {
                 {/* Items */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
                   <div className="p-3 sm:p-4 flex items-center justify-between">
-                    <h3 className="font-medium">Items</h3>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="font-medium w-full">Items</div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto text-right">
                       <div className="relative w-full sm:w-auto">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -735,7 +770,7 @@ export default function OrderDetailsPage() {
                     </div>
 
                     <div className="border-t border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
-                      <div className="flex justify-between mb-2">
+                      <div className="flex justify-between items-center mb-2">
                         <p className="text-gray-500">Member since</p>
                         <p className="text-sm">
                           {" "}
