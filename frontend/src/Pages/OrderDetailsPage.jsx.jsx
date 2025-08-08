@@ -279,41 +279,6 @@ export default function OrderDetailsPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {/* <div className="rounded-lg hidden sm:flex bg-gray-200 hover:bg-gray-200 text-gray-700">
-              <Button
-                variant="ghost"
-                className="rounded-r-none border border-gray-200"
-              >
-                <Printer className="w-4 h-4" />
-                <span className="hidden md:inline ml-2">Print</span>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="rounded-l-none rounded-r-md border border-gray-200"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="cursor-pointer">
-                  <DropdownMenuItem
-                    onClick={() => navigate(`/addToCart/${orders._id}`)}
-                    className="flex items-center w-full text-left text-sm text-gray-500 hover:bg-gray-100"
-                  >
-                    <Edit className="mr-3 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={deleteOrders}
-                    className="flex items-center w-full text-left  text-sm text-red-500 hover:bg-gray-100"
-                  >
-                    <Trash2 className="mr-3 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div> */}
             <div className="rounded-lg flex bg-gray-200 hover:bg-gray-200 text-gray-700">
               <Button
                 variant="ghost"

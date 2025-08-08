@@ -22,7 +22,7 @@ const buildQuery = (queryParams) => {
     query.$or = [
       { orderNumber: { $regex: queryParams.search, $options: "i" } },
       { customerName: { $regex: queryParams.search, $options: "i" } },
-      { "items.name": { $regex: queryParams.search, $options: "i" } },
+      { "items.productName": { $regex: queryParams.search, $options: "i" } },
     ];
   }
 
@@ -36,17 +36,78 @@ const buildSort = (sortBy, sortDirection) => {
     : { createdAt: direction };
 };
 
+const buildMatchStage = (queryParams) => {
+  let match = {};
+
+  if (queryParams.status) {
+    match.status = { $in: queryParams.status.split(",") };
+  }
+  if (queryParams.paymentStatus) {
+    match.paymentStatus = queryParams.paymentStatus;
+  }
+  if (queryParams.fulfillmentStatus) {
+    match.fulfillmentStatus = queryParams.fulfillmentStatus;
+  }
+
+  if (queryParams.search) {
+    const regex = new RegExp(queryParams.search, "i");
+    match.$or = [
+      { orderNumber: regex },
+      { "customer.name": regex },
+      { "manualCustomer.name": regex },
+      { "items.productName": regex },
+    ];
+  }
+
+  return match;
+};
+
 const fetchOrdersFromDB = async (queryParams) => {
-  const query = buildQuery(queryParams);
   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
   const page = Number(queryParams.page) || 1;
   const limit = Number(queryParams.limit) || 10;
   const skip = (page - 1) * limit;
+  const matchStage = buildMatchStage(queryParams);
 
-  const [orders, totalOrders] = await Promise.all([
-    Order.find(query).populate("customer").sort(sort).skip(skip).limit(limit),
-    Order.countDocuments(query),
+  // const [orders, totalOrders] = await Promise.all([
+  //   Order.find(query).populate("customer").sort(sort).skip(skip).limit(limit),
+  //   Order.countDocuments(query),
+  // ]);
+  // return { orders, totalOrders, page, limit };
+
+  const [orders, totalOrdersData] = await Promise.all([
+    Order.aggregate([
+      {
+        $lookup: {
+          from: "customers", // collection name
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      { $match: matchStage },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+    ]),
+    Order.aggregate([
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      { $match: matchStage },
+      { $count: "count" },
+    ]),
   ]);
+
+  const totalOrders = totalOrdersData[0]?.count || 0;
+
   return { orders, totalOrders, page, limit };
 };
 
@@ -77,6 +138,7 @@ const enhanceProductImages = (input) => {
 };
 
 const findOrders = async (queryParams) => {
+  console.log("queryParams", queryParams);
   const orderData = await fetchOrdersFromDB(queryParams);
   return orderData;
 };
