@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Printer,
   MoreHorizontal,
-  ExternalLink,
   Edit,
   Trash2,
   MessageCircle,
@@ -52,33 +51,175 @@ export default function OrderDetailsPage() {
     0
   );
 
-  const changeStatus = (status) => {
-    const orderIdsWithTracking = orders?.items
-      ?.filter((item) => item.trackQuantityEnabled && item.productId !== null)
-      .map((item) => item._id);
+  const changeStatus = async (status) => {
+    const skipValues = [
+      "Pending",
+      "Completed",
+      "Confirmed",
+      "Paid",
+      "Unpaid",
+      "Confirming Payment",
+      "Partially Paid",
+      "Refunded",
+      "Unfulfilled",
+      "Fulfilled",
+      "Ready",
+      "Out For Delivery",
+    ];
+
+    const [key] = Object.keys(status); // "orderStatus" | "paymentStatus" | "fulfillmentStatus"
+    const newStatus = status[key];
+
+    const orderIdsWithTracking = orders?.items?.filter(
+      (item) => item.trackQuantityEnabled && item.productId !== null
+    );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    console.log("requiresInventoryAction", requiresInventoryAction);
-    updateStatusMutation.mutate({ selectedOrders: orders, data: status });
-    // if (status.orderStatus === "Cancelled") {
-    //   if (requiresInventoryAction) {
-    //     const shouldRestock = confirm("Restock the inventory?");
-    //     if (shouldRestock) {
-    //       status.shouldRestock = true;
-    //     }
-    //   }
-    //   console.log(status);
-    //   updateStatusMutation.mutate({ selectedOrders: orders, data: status });
-    // } else {
-    //   if (requiresInventoryAction) {
-    //     const shouldDeduct = confirm("Deduct the inventory?");
-    //     if (shouldDeduct) {
-    //       status.shouldDeduct = true;
-    //     }
-    //   }
-    //   console.log(status);
-    //   updateStatusMutation.mutate({ selectedOrders: orders, data: status });
-    // }
+    console.log("orderIdsWithTracking", orderIdsWithTracking);
+    console.log("status", status);
+    updateStatusMutation.mutate({
+      selectedOrders: [orders._id],
+      activeStatus: status,
+    });
+
+    const oldStatus = orders?.[key];
+    // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+    if (key === "orderStatus" && oldStatus === "Cancelled") {
+      if (requiresInventoryAction) {
+        const confirmDeduct = confirm("Deduct the inventory?");
+        if (confirmDeduct) {
+          console.log(`Called deduct API for order ${orders._id}`);
+          try {
+            let res = await axios.post("/api/orders/deduct", orders);
+            if (res.status === 200) {
+              toast.success("Successfully deducted", {
+                position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+              });
+            }
+          } catch (invErr) {
+            console.error("Deduction failed:", invErr);
+            toast.error("Failed to deduct inventory", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+            });
+          }
+        }
+      }
+    }
+    if (key === "orderStatus" && newStatus === "Cancelled") {
+      if (requiresInventoryAction) {
+        const confirmDeduct = confirm("Restock the inventory?");
+        if (confirmDeduct) {
+          console.log(`Called restock API for order ${orders._id}`);
+          try {
+            let res = await axios.post("/api/orders/restock", orders);
+            if (res.status === 200) {
+              toast.success("Successfully restocked", {
+                position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+              });
+            }
+          } catch (invErr) {
+            console.error("Restock failed:", invErr);
+            toast.error("Failed to restock inventory", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+            });
+          }
+        }
+      }
+    }
+
+    // ✅ 2. Refund if value is Refunded
+    if (
+      key === "paymentStatus" &&
+      newStatus === "Refunded" &&
+      oldStatus === "Paid"
+    ) {
+      console.log(`Called refund API for order ${orders._id}`);
+      // await callRefundAPI(order._id);
+      try {
+        let res = await axios.post("/api/orders/refund", orders);
+        if (res.status === 200) {
+          toast.success("Successfully refunded", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
+          });
+        }
+      } catch (invErr) {
+        console.error("Restock failed:", invErr);
+        toast.error("Failed to refund", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: true,
+        });
+      }
+    }
+    if (key === "paymentStatus" && newStatus === "Paid") {
+      console.log(`Called pay API for order ${orders._id}`);
+      // await callPayAPI(order._id);
+      try {
+        let res = await axios.post("/api/orders/pay", orders);
+        if (res.status === 200) {
+          toast.success("Successfully Paid", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
+          });
+        }
+      } catch (invErr) {
+        console.error("Restock failed:", invErr);
+        toast.error("Failed to pay", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: true,
+        });
+      }
+    }
+
+    if (key === "orderStatus") {
+      const shouldDeduct =
+        !skipValues.includes(oldStatus) && !skipValues.includes(newStatus);
+
+      if (requiresInventoryAction && shouldDeduct) {
+        const confirmDeduct = confirm("Deduct the inventory?");
+        if (confirmDeduct) {
+          try {
+            let res = await axios.post("/api/orders/deduct", orders);
+            if (res.status === 200) {
+              toast.success("Successfully deducted", {
+                position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+              });
+            }
+          } catch (invErr) {
+            console.error("Deduction failed:", invErr);
+            toast.error("Failed to deduct inventory", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+            });
+          }
+        }
+      }
+    }
   };
 
   const deleteOrders = () => {
@@ -100,7 +241,7 @@ export default function OrderDetailsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 p-6 md:p-0">
       <div className="flex-1 flex flex-col">
         {/* Top navigation */}
         <header className="max-w-5xl md:px-6 xl:px-0 px-4  flex items-center justify-between xl:ml-[46px] relative">
@@ -197,9 +338,9 @@ export default function OrderDetailsPage() {
                                 onClick={() =>
                                   changeStatus({
                                     orderStatus: status,
-                                    paymentStatus: orders?.paymentStatus,
-                                    fulfillmentStatus:
-                                      orders?.fulfillmentStatus,
+                                    // paymentStatus: orders?.paymentStatus,
+                                    // fulfillmentStatus:
+                                    //   orders?.fulfillmentStatus,
                                   })
                                 }
                               >
@@ -324,9 +465,9 @@ export default function OrderDetailsPage() {
                           onClick={() => {
                             if (orders?.paymentStatus !== "Paid") {
                               changeStatus({
-                                orderStatus: orders?.status,
+                                // orderStatus: orders?.status,
                                 paymentStatus: "Paid",
-                                fulfillmentStatus: orders?.fulfillmentStatus,
+                                // fulfillmentStatus: orders?.fulfillmentStatus,
                               });
                             }
                           }}
@@ -348,9 +489,9 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
+                                  // orderStatus: orders?.status,
                                   paymentStatus: "Unpaid",
-                                  fulfillmentStatus: orders?.fulfillmentStatus,
+                                  // fulfillmentStatus: orders?.fulfillmentStatus,
                                 });
                               }}
                             >
@@ -359,9 +500,9 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
+                                  // orderStatus: orders?.status,
                                   paymentStatus: "Paid",
-                                  fulfillmentStatus: orders?.fulfillmentStatus,
+                                  // fulfillmentStatus: orders?.fulfillmentStatus,
                                 });
                               }}
                             >
@@ -381,9 +522,9 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
+                                  // orderStatus: orders?.status,
                                   paymentStatus: "Refunded",
-                                  fulfillmentStatus: orders?.fulfillmentStatus,
+                                  // fulfillmentStatus: orders?.fulfillmentStatus,
                                 });
                               }}
                             >
@@ -473,8 +614,8 @@ export default function OrderDetailsPage() {
                           }`}
                           onClick={() => {
                             changeStatus({
-                              orderStatus: orders?.status,
-                              paymentStatus: orders?.paymentStatus,
+                              // orderStatus: orders?.status,
+                              // paymentStatus: orders?.paymentStatus,
                               fulfillmentStatus: "Fulfilled",
                             });
                           }}
@@ -497,8 +638,8 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
-                                  paymentStatus: orders?.paymentStatus,
+                                  // orderStatus: orders?.status,
+                                  // paymentStatus: orders?.paymentStatus,
                                   fulfillmentStatus: "Unfulfilled",
                                 });
                               }}
@@ -508,8 +649,8 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
-                                  paymentStatus: orders?.paymentStatus,
+                                  // orderStatus: orders?.status,
+                                  // paymentStatus: orders?.paymentStatus,
                                   fulfillmentStatus: "Ready",
                                 });
                               }}
@@ -519,8 +660,8 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
-                                  paymentStatus: orders?.paymentStatus,
+                                  // orderStatus: orders?.status,
+                                  // paymentStatus: orders?.paymentStatus,
                                   fulfillmentStatus: "Out For Delivery",
                                 });
                               }}
@@ -530,8 +671,8 @@ export default function OrderDetailsPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 changeStatus({
-                                  orderStatus: orders?.status,
-                                  paymentStatus: orders?.paymentStatus,
+                                  // orderStatus: orders?.status,
+                                  // paymentStatus: orders?.paymentStatus,
                                   fulfillmentStatus: "Fulfilled",
                                 });
                               }}

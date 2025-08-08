@@ -125,7 +125,7 @@ export default function StatusDialog({
     const requiresInventoryAction = ordersWithTracking.length > 0;
 
     // Save status change first
-    updateStatusMutation.mutate({ selectedOrders, activeStatus });
+    updateStatusMutation.mutate({ selectedOrders, activeStatus,isBulkUpdate: true, });
     onOpenChange(false);
 
     for (const order of ordersWithTracking) {

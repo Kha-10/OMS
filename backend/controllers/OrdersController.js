@@ -314,16 +314,18 @@ const OrdersController = {
   bulkUpdate: async (req, res) => {
     const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
       req.body;
+    console.log("orderIds", orderIds);
+    console.log("orderStatus", orderStatus);
 
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      res.status(400).json({ msg: "empty orderIds" });
+      return res.status(400).json({ msg: "empty orderIds" });
     }
 
     const invalidIds = orderIds.filter(
       (id) => !mongoose.Types.ObjectId.isValid(id)
     );
     if (invalidIds.length > 0) {
-      res
+      return res
         .status(400)
         .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
     }
@@ -332,20 +334,18 @@ const OrdersController = {
 
     try {
       await session.withTransaction(async () => {
-        // Get all orders first
         const orders = await Order.find({ _id: { $in: orderIds } }).session(
           session
         );
-
+        console.log("orders", orders);
         if (orders.length === 0) {
-          throw new Error("No orders found");
+          return res.status(404).json({ msg: `No orders found` });
         }
 
         await Order.updateMany(
           { _id: { $in: orderIds } },
           { $set: { orderStatus, paymentStatus, fulfillmentStatus } }
         );
-        // await clearProductCache();
       });
 
       session.endSession();
@@ -354,8 +354,11 @@ const OrdersController = {
         message: `Order status has been Successfully updated.`,
       });
     } catch (error) {
+      console.log("error", error);
       session.endSession();
-      res.status(500).json({ msg: error.message || "Internal server error" });
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
     }
   },
   loadOrderAsCart: async (req, res) => {
@@ -624,7 +627,7 @@ const OrdersController = {
           {
             updateOne: {
               filter: { _id: customerId },
-              update: { $inc: { totalSpent: - totalSpent } },
+              update: { $inc: { totalSpent: -totalSpent } },
             },
           },
         ],

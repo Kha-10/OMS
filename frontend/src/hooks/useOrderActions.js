@@ -2,11 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { errorToast, successToast } from "@/helper/showToast";
 
-const updateSingleOrderStatus = async (id, status) => {
-  const res = await axios.patch(`/api/orders/${id}`, { ...status });
-  return res.data;
-};
-
 const updateBulkOrdersStatus = async (orderIds, status) => {
   const res = await axios.post("/api/orders/bulk-update", {
     orderIds,
@@ -33,24 +28,17 @@ const useOrderActions = (onSelectOrders, onSingleDeleteSuccess) => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ selectedOrders, activeStatus }) => {
-      console.log("selectedOrders", selectedOrders);
-      console.log("data", activeStatus);
       if (Array.isArray(selectedOrders) && selectedOrders.length > 0) {
         console.log("Using bulk update for:", selectedOrders);
         return await updateBulkOrdersStatus(selectedOrders, activeStatus);
-      } else if (selectedOrders && typeof selectedOrders === "object") {
-        console.log("Using single update for:", selectedOrders);
-        const orderId = selectedOrders._id;
-        return await updateSingleOrderStatus(orderId, data);
       } else {
         throw new Error("No valid order(s) provided");
       }
     },
     onSuccess: (result, variables, context) => {
-      console.log("Update operation successful:", result);
       queryClient.invalidateQueries(["orders"]);
 
-      if (Array.isArray(variables?.selectedOrders)) {
+      if (variables?.isBulkUpdate) {
         const count = variables.selectedOrders.length;
         successToast(`Successfully updated ${count} orders`);
         onSelectOrders([]);
