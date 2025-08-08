@@ -98,7 +98,8 @@ const CartController = {
       }
 
       // Save to Redis with TTL
-      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ success: true, cart });
     } catch (error) {
@@ -122,7 +123,8 @@ const CartController = {
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 
-      const cart = JSON.parse(cartData);
+      //   const cart = JSON.parse(cartData);
+      const cart = cartData;
       console.log("cart", cart);
       const items = cart.order?.items || cart.items || [];
       const foundItem = items.find(
@@ -160,7 +162,8 @@ const CartController = {
       foundItem.totalPrice =
         foundItem.basePrice * foundItem.quantity + optionExtra;
 
-      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ success: true, cart });
     } catch (error) {
@@ -200,7 +203,8 @@ const CartController = {
       }
 
       // Otherwise, update Redis with new cart
-      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ success: true, cart });
     } catch (error) {

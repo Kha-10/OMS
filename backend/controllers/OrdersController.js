@@ -69,7 +69,8 @@ const OrdersController = {
           .status(409)
           .json({ msg: "Cart is currently being processed" });
       }
-      await redisClient.setEx(cartLockKey, 30, "locked");
+      // await redisClient.setEx(cartLockKey, 30, "locked");
+      await redisClient.set(cartLockKey, "locked", { ex: 30 });
 
       const orderCounter = await Counter.findOneAndUpdate(
         { id: "orderNumber" },
@@ -137,13 +138,21 @@ const OrdersController = {
         { session }
       );
 
-      await redisClient.setEx(
+      // await redisClient.setEx(
+      //   `idemp:${idempotencyKey}`,
+      //   3600,
+      //   JSON.stringify({
+      //     status: "completed",
+      //     orderId: order._id,
+      //   })
+      // );
+      await redisClient.set(
         `idemp:${idempotencyKey}`,
-        3600,
         JSON.stringify({
           status: "completed",
           orderId: order._id,
-        })
+        }),
+        { ex: 3600 }
       );
 
       await session.commitTransaction();
@@ -158,13 +167,21 @@ const OrdersController = {
       console.error("Error creating order:", error);
       await session.abortTransaction();
       session.endSession();
-      await redisClient.setEx(
+      // await redisClient.setEx(
+      //   `idemp:${idempotencyKey}`,
+      //   600,
+      //   JSON.stringify({
+      //     status: "failed",
+      //     error: error.message,
+      //   })
+      // );
+      await redisClient.set(
         `idemp:${idempotencyKey}`,
-        600,
         JSON.stringify({
           status: "failed",
           error: error.message,
-        })
+        }),
+        { ex: 600 }
       );
       await redisClient.del(cartLockKey);
       return res
@@ -405,7 +422,8 @@ const OrdersController = {
         createdAt: Date.now(),
       };
 
-      await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      // await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ cart });
     } catch (error) {
@@ -431,7 +449,7 @@ const OrdersController = {
   },
   singleOrderedit: async (req, res) => {
     const { id } = req.params;
-
+    const { customer, items, notes, orderStatus, pricing } = req.body;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ msg: "Invalid order ID" });
     }
@@ -439,6 +457,27 @@ const OrdersController = {
     try {
       const order = await Order.findById(id);
       if (!order) return res.status(404).json({ msg: "Order not found" });
+
+      let customerId = null;
+      let manualCustomer = null;
+
+      if (
+        customer.customerId &&
+        mongoose.Types.ObjectId.isValid(customer.customerId)
+      ) {
+        customerId = customer.customerId;
+      } else {
+        manualCustomer = {
+          name: customer.name?.trim() || "",
+          phone: customer.phone?.trim() || "",
+          email: customer.email,
+          deliveryAddress: customer.deliveryAddress,
+        };
+      }
+
+      if (!customerId && !manualCustomer) {
+        return res.status(400).json({ error: "Customer info is required." });
+      }
 
       const originalItems = order.items;
       let needRestockAndDeduct = false;
@@ -449,6 +488,29 @@ const OrdersController = {
         }
       }
 
+      const existingCustomer = await Customer.findById(customerId);
+      if (existingCustomer) {
+        existingCustomer.name = customer.name;
+        existingCustomer.email = customer.email;
+        existingCustomer.phone = customer.phone;
+        existingCustomer.deliveryAddress = customer.deliveryAddress;
+
+        await existingCustomer.save();
+      }
+
+      if (!needRestockAndDeduct) {
+        await Order.updateOne(
+          { _id: id },
+          {
+            customer: customerId,
+            manualCustomer,
+            items,
+            notes,
+            orderStatus,
+            pricing,
+          }
+        );
+      }
       res.status(200).json({
         msg: "Order updated successfully",
         needRestockAndDeduct,

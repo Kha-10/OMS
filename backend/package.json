@@ -4,6 +4,7 @@
     "@aws-sdk/cloudfront-signer": "^3.649.0",
     "@aws-sdk/lib-storage": "^3.620.0",
     "@aws-sdk/s3-request-presigner": "^3.620.0",
+    "@upstash/redis": "^1.35.3",
     "aws-sdk": "^2.1664.0",
     "bcrypt": "^5.1.1",
     "bull": "^4.16.0",

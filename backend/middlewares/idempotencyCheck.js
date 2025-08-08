@@ -31,10 +31,15 @@ const idempotencyCheck = async (req, res, next) => {
     }
 
     // Reserve key for processing
-    await redisClient.setEx(
+    // await redisClient.setEx(
+    //   `idemp:${idempotencyKey}`,
+    //   300, // 5-minute lock
+    //   JSON.stringify({ status: "processing" })
+    // );
+    await redisClient.set(
       `idemp:${idempotencyKey}`,
-      300, // 5-minute lock
-      JSON.stringify({ status: "processing" })
+      JSON.stringify({ status: "processing" }),
+      { ex: 300 }
     );
 
     req.idempotencyKey = idempotencyKey;

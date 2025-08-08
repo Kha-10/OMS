@@ -15,11 +15,14 @@ const clearProductCache = require("../helpers/clearProductCache");
 // GET
 const getCachedProducts = async (cacheKey) => {
   const cachedData = await redisClient.get(cacheKey);
-  return cachedData ? JSON.parse(cachedData) : null;
+  console.log("cachedData", cachedData);
+  // return cachedData ? JSON.parse(cachedData) : null;
+  return cachedData;
 };
 
 const cacheProducts = async (cacheKey, products) => {
-  await redisClient.setEx(cacheKey, 3600, JSON.stringify(products)); // Cache for 1 hour
+  // await redisClient.setEx(cacheKey, 3600, JSON.stringify(products)); // Cache for 1 hour
+  await redisClient.set(cacheKey, JSON.stringify(products), { ex: 3600 });
 };
 
 const buildQuery = (queryParams) => {
@@ -40,7 +43,7 @@ const buildQuery = (queryParams) => {
       { "variants.name": { $regex: queryParams.search, $options: "i" } },
     ];
   }
-  
+
   return query;
 };
 
