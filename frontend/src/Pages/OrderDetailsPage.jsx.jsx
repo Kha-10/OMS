@@ -25,7 +25,7 @@ import StatusBadge from "@/components/StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer,toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import axios from "@/helper/axios";
 
 export default function OrderDetailsPage() {
@@ -76,8 +76,6 @@ export default function OrderDetailsPage() {
     );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    console.log("orderIdsWithTracking", orderIdsWithTracking);
-    console.log("status", status);
     updateStatusMutation.mutate({
       selectedOrders: [orders._id],
       activeStatus: status,
@@ -126,6 +124,7 @@ export default function OrderDetailsPage() {
                 hideProgressBar: true,
                 closeOnClick: true,
               });
+              navigate("/orders");
             }
           } catch (invErr) {
             console.error("Restock failed:", invErr);
@@ -223,22 +222,40 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const deleteOrders = () => {
-    let data = {};
-    const shouldDelete = confirm("Delete an order?");
-    if (!shouldDelete) return;
-
-    const hasNullProductId = orders?.items?.some(
-      (item) => item.productId === null
+  const deleteOrders = async () => {
+    const orderIdsWithTracking = orders?.items?.filter(
+      (item) => item.trackQuantityEnabled && item.productId !== null
     );
 
-    if (!hasNullProductId) {
-      const shouldRestock = confirm("Restock the inventory?");
-      if (shouldRestock) {
-        data.shouldRestock = true;
+    const requiresInventoryAction = orderIdsWithTracking.length > 0;
+    deleteMutation.mutate({ selectedOrders: [orders._id] });
+
+    // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+    if (requiresInventoryAction) {
+      const confirmRestock = confirm("Restock the inventory?");
+      if (confirmRestock) {
+        console.log(`Called restock API for order ${orders._id}`);
+        try {
+          let res = await axios.post("/api/orders/restock", orders);
+          if (res.status === 200) {
+            toast.success("Successfully restocked", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+            });
+          }
+        } catch (invErr) {
+          console.error("Restock failed:", invErr);
+          toast.error("Failed to restock inventory", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
+          });
+        }
       }
     }
-    deleteMutation.mutate({ selectedOrders: orders, data });
   };
 
   return (
