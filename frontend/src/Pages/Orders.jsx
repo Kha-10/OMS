@@ -250,9 +250,9 @@ export default function OrdersPage() {
             <Download size={20} />
             <span className="font-medium">Export</span>
           </button>
-          <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">
+          {/* <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">
             Summary
-          </button>
+          </button> */}
         </div>
       </div>
 

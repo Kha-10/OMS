@@ -283,6 +283,8 @@ export default function OrderDetailsPage() {
               <Button
                 variant="ghost"
                 className="rounded-r-none border border-gray-200"
+                type="button"
+                onClick={() => navigate(`/invoice/${id}`)}
               >
                 <Printer className="w-4 h-4" />
                 <span className="hidden md:inline ml-2">Print</span>

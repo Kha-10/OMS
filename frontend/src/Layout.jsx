@@ -14,11 +14,27 @@ export default function RootLayout() {
 
   const excludedPrefixes = ["/checkout", `/addToCart`];
 
+  const includedPrefixes = [
+    "/",
+    `/orders`,
+    "/categories",
+    "/products",
+    "/customers",
+  ];
+
   const isExcluded = excludedPrefixes.some((prefix) =>
     pathnames.startsWith(prefix)
   );
 
-  const showSidebar = !isExcluded;
+  const isIncluded = includedPrefixes.some((prefix) => {
+    if (prefix === "/") {
+      return pathnames === "/";
+    }
+    return pathnames.startsWith(prefix);
+  });
+
+
+  const showSidebar = !isExcluded && isIncluded;
 
   //   if (loading) {
   //     return <InitialLoading />;

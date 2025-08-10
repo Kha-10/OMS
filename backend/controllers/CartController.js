@@ -50,7 +50,8 @@ const CartController = {
       let cart;
       if (cartData) {
         // Existing cart -> push new item
-        cart = JSON.parse(cartData);
+        // cart = JSON.parse(cartData);
+        cart = cartData;
         const items = cart.order?.items || cart.items || [];
         console.log("cartpush", cart);
         items.push({

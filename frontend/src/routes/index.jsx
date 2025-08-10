@@ -29,6 +29,8 @@ import CheckoutForm from "@/Pages/CheckoutForm";
 import OrderDetailsPage from "@/Pages/OrderDetailsPage.jsx";
 import OrderReceipt from "@/Pages/OrderReceipt";
 import AddToCart from "@/Pages/AddtoCart";
+import NotFound from "@/Pages/NotFound";
+import Invoice from "@/Pages/Invoice";
 
 function index() {
   // const { user } = useContext(AuthContext);
@@ -94,6 +96,10 @@ function index() {
           element: tenant ? <OrderDetailsPage /> : <Navigate to={"/sign-in"} />,
         },
         {
+          path: "/invoice/:id",
+          element: tenant ? <Invoice /> : <Navigate to={"/sign-in"} />,
+        },
+        {
           path: "/:tennantName/orders/:id",
           element: tenant ? <OrderReceipt /> : <Navigate to={"/sign-in"} />,
         },
@@ -157,7 +163,7 @@ function index() {
         {
           path: "*",
           // element: <ErrorMessage />,
-          element: <Navigate to={"/sign-in"} />,
+          element: tenant ? <NotFound /> : <Navigate to={"/sign-in"} />,
         },
       ],
     },
