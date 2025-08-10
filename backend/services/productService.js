@@ -11,6 +11,7 @@ const {
   duplicateImages,
 } = require("./imageService");
 const clearProductCache = require("../helpers/clearProductCache");
+const uploadAdapter = require("./adapters/index");
 
 // GET
 const getCachedProducts = async (cacheKey) => {
@@ -128,26 +129,35 @@ const findProducts = async (queryParams) => {
   return cachedProducts;
 };
 
+// const enhanceProductImages = (input) => {
+//   if (!input) return input;
+
+//   const processProduct = (product) => {
+//     if (product?.photo?.length > 0) {
+//       product.imgUrls = product.photo.map((image) =>
+//         getSignedUrl({
+//           url: `https://d1pgjvyfhid4er.cloudfront.net/${image}`,
+//           dateLessThan: new Date(Date.now() + 1000 * 60 * 60),
+//           privateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
+//           keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
+//         })
+//       );
+//     }
+//     return product;
+//   };
+
+//   return Array.isArray(input)
+//     ? input.map(processProduct)
+//     : processProduct(input);
+// };
+
 const enhanceProductImages = (input) => {
   if (!input) return input;
-
-  const processProduct = (product) => {
-    if (product?.photo?.length > 0) {
-      product.imgUrls = product.photo.map((image) =>
-        getSignedUrl({
-          url: `https://d1pgjvyfhid4er.cloudfront.net/${image}`,
-          dateLessThan: new Date(Date.now() + 1000 * 60 * 60),
-          privateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
-          keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
-        })
-      );
-    }
-    return product;
-  };
-
-  return Array.isArray(input)
-    ? input.map(processProduct)
-    : processProduct(input);
+  if (Array.isArray(input)) {
+    return input.map((product) => uploadAdapter.getImageUrls(product));
+  } else {
+    return uploadAdapter.getImageUrls(input);
+  }
 };
 
 // POST
@@ -222,8 +232,9 @@ const deleteProducts = async (ids) => {
 
     // AWS removal and cache clearing outside the transaction
     if (photosToDelete.length > 0) {
-      await awsRemove(photosToDelete);
-      await invalidateCloudFrontCache(photosToDelete);
+      // await awsRemove(photosToDelete);
+      // await invalidateCloudFrontCache(photosToDelete);
+      uploadAdapter.removeImages(photosToDelete);
     }
 
     await clearProductCache();
@@ -240,33 +251,49 @@ const deleteProducts = async (ids) => {
 };
 
 const updateProduct = async (id, updateData) => {
-  const { images, deletedImages } = updateData;
+  console.log("updateData",updateData);
+  const { images, deletedImages, ...rest } = updateData;
 
-  const formattedDeletedImages = (deletedImages || [])
-    .map(extractFilename)
-    .filter(Boolean);
-
-  const formattedImages = (images || []).map(extractFilename).filter(Boolean);
-
-  if (formattedDeletedImages.length > 0) {
-    await awsRemove(formattedDeletedImages);
-    await invalidateCloudFrontCache(formattedDeletedImages);
+  let updatedProduct;
+  if (deletedImages && deletedImages.length > 0) {
+    updatedProduct = await uploadAdapter.updateImages(
+      id,
+      deletedImages,
+      images
+    );
+  } else {
+    // If there are no deletions, still update the product fields
+    updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { ...rest, images },
+      { new: true }
+    );
   }
 
-  const updateFields = {
-    ...updateData,
-    ...(images && {
-      photo: formattedImages,
-      imgUrls: formattedImages.map(
-        (filename) => `https://d1pgjvyfhid4er.cloudfront.net/${filename}`
-      ),
-    }),
-  };
+  // const formattedDeletedImages = (deletedImages || [])
+  //   .map(extractFilename)
+  //   .filter(Boolean);
 
-  const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
-    new: true,
-  });
+  // const formattedImages = (images || []).map(extractFilename).filter(Boolean);
 
+  // if (formattedDeletedImages.length > 0) {
+  //   await awsRemove(formattedDeletedImages);
+  //   await invalidateCloudFrontCache(formattedDeletedImages);
+  // }
+
+  // const updateFields = {
+  //   ...updateData,
+  //   ...(images && {
+  //     photo: formattedImages,
+  //     imgUrls: formattedImages.map(
+  //       (filename) => `https://d1pgjvyfhid4er.cloudfront.net/${filename}`
+  //     ),
+  //   }),
+  // };
+
+  // const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
+  //   new: true,
+  // });
   return updatedProduct;
 };
 
@@ -335,7 +362,7 @@ const duplicateProduct = async (ids) => {
       // Optional: duplicate photo array if needed
       let duplicatedImages = [];
       if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
-        duplicatedImages = await duplicateImages(originalData.photo);
+        duplicatedImages = await uploadAdapter.duplicateImages(originalData.photo);
       }
 
       const duplicated = {

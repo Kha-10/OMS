@@ -259,6 +259,7 @@ export default function CreateProduct() {
       formData.append("photo", fileObj.file); // Ensure correct key
 
       try {
+        console.log("productId",productId);
         const response = await axios.post(
           `/api/products/${productId}/upload`, // Correct API URL
           formData,
@@ -305,7 +306,7 @@ export default function CreateProduct() {
       }
 
       // Step 2: Upload Photos (only if there are images)
-
+      console.log('res',res);
       if (newImages.length > 0) {
         await uploadPhotos(res.data._id, newImages);
       }

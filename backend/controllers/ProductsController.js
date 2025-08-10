@@ -203,13 +203,34 @@ const ProductsController = {
     try {
       console.log("REQ", req.randomImageNames);
       let id = req.params.id;
+      console.log("req.params.id",req.params.id);
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
       }
-      let product = await Product.findByIdAndUpdate(id, {
-        $push: { photo: req.randomImageNames },
+      const isCloudinary = process.env.UPLOAD_PROVIDER === "cloudinary";
+
+      // Build update object depending on provider
+      let update = {};
+      if (isCloudinary) {
+        update = {
+          $push: {
+            photo: req.randomImageNames.map((img) => img.public_id),
+            // imgUrls: req.randomImageNames.map((img) => img.url),
+          },
+        };
+      } else {
+        update = {
+          $push: {
+            photo: req.randomImageNames,
+          },
+        };
+      }
+
+      const product = await Product.findByIdAndUpdate(id, update, {
+        new: true,
       });
 
+      console.log("product", product);
       if (!product) {
         return res.status(404).json({ msg: "Product not found" });
       }

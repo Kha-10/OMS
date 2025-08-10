@@ -5,6 +5,7 @@ const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
 const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
+const uploadAdapter = require("../services/adapters/index");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -51,7 +52,8 @@ router.post(
 
 router.post(
   "/:id/upload",
-  [upload.array("photo"), validatePhotoUpload],
+  // [upload.array("photo"), validatePhotoUpload],
+  [upload.array("photo"), uploadAdapter.uploadImages],
   // RoleMiddleware(["admin", "superadmin"]),
   handleErrorMessage,
   ProductsController.upload
