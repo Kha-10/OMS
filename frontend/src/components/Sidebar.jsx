@@ -33,7 +33,7 @@ const navigation = [
     icon: <ShoppingCart className="h-5 w-5" />,
     submenu: [
       { title: "All", to: "/orders" },
-      { title: "Summary", to: "/orders/summary" },
+      // { title: "Summary", to: "/orders/summary" },
     ],
   },
   {
@@ -53,16 +53,16 @@ const navigation = [
     to: "/customers?page=1&limit=10&sortBy=createdAt&sortDirection=desc",
     icon: <Users className="h-5 w-5" />,
   },
-  {
-    title: "Design",
-    to: "/design",
-    icon: <Paintbrush className="h-5 w-5" />,
-  },
-  {
-    title: "Settings",
-    to: "/settings",
-    icon: <Settings className="h-5 w-5" />,
-  },
+  // {
+  //   title: "Design",
+  //   to: "/design",
+  //   icon: <Paintbrush className="h-5 w-5" />,
+  // },
+  // {
+  //   title: "Settings",
+  //   to: "/settings",
+  //   icon: <Settings className="h-5 w-5" />,
+  // },
 ];
 
 // const apps = [
