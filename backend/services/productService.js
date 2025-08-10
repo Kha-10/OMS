@@ -3,13 +3,6 @@ const redisClient = require("../config/redisClient");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Order = require("../models/Order");
-const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
-const {
-  awsRemove,
-  extractFilename,
-  invalidateCloudFrontCache,
-  duplicateImages,
-} = require("./imageService");
 const clearProductCache = require("../helpers/clearProductCache");
 const uploadAdapter = require("./adapters/index");
 
@@ -129,28 +122,6 @@ const findProducts = async (queryParams) => {
   return cachedProducts;
 };
 
-// const enhanceProductImages = (input) => {
-//   if (!input) return input;
-
-//   const processProduct = (product) => {
-//     if (product?.photo?.length > 0) {
-//       product.imgUrls = product.photo.map((image) =>
-//         getSignedUrl({
-//           url: `https://d1pgjvyfhid4er.cloudfront.net/${image}`,
-//           dateLessThan: new Date(Date.now() + 1000 * 60 * 60),
-//           privateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
-//           keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
-//         })
-//       );
-//     }
-//     return product;
-//   };
-
-//   return Array.isArray(input)
-//     ? input.map(processProduct)
-//     : processProduct(input);
-// };
-
 const enhanceProductImages = (input) => {
   if (!input) return input;
   if (Array.isArray(input)) {
@@ -269,31 +240,6 @@ const updateProduct = async (id, updateData) => {
       { new: true }
     );
   }
-
-  // const formattedDeletedImages = (deletedImages || [])
-  //   .map(extractFilename)
-  //   .filter(Boolean);
-
-  // const formattedImages = (images || []).map(extractFilename).filter(Boolean);
-
-  // if (formattedDeletedImages.length > 0) {
-  //   await awsRemove(formattedDeletedImages);
-  //   await invalidateCloudFrontCache(formattedDeletedImages);
-  // }
-
-  // const updateFields = {
-  //   ...updateData,
-  //   ...(images && {
-  //     photo: formattedImages,
-  //     imgUrls: formattedImages.map(
-  //       (filename) => `https://d1pgjvyfhid4er.cloudfront.net/${filename}`
-  //     ),
-  //   }),
-  // };
-
-  // const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
-  //   new: true,
-  // });
   return updatedProduct;
 };
 

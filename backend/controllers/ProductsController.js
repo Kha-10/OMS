@@ -7,7 +7,6 @@ const clearProductCache = require("../helpers/clearProductCache");
 const clearCartCache = require("../helpers/clearCartCache");
 const clearOrderCache = require("../helpers/clearOrderCache");
 const redisClient = require("../config/redisClient");
-const updateInventoryQuantities = require("../services/inventoryService");
 
 const ProductsController = {
   index: async (req, res) => {
