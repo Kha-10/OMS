@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Search, ArrowUpDown, Download, Filter } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, ArrowUpDown, Filter, Upload } from "lucide-react";
 import OrderList from "@/components/Orders/OrderList";
 import OrdersHeader from "@/components/Orders/OrderHeader";
 import FilterPanel from "@/components/Orders/FilterPanel";
@@ -247,7 +247,7 @@ export default function OrdersPage() {
             </Popover>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-            <Download size={20} />
+            <Upload size={20} />
             <span className="font-medium">Export</span>
           </button>
           {/* <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">

@@ -9,8 +9,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Menu, User } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "@/features/tenants/tenantSlice";
+import axios from "@/helper/axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ onOpenSidebar }) {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { loading, tenant, error } = useSelector((state) => state.tenants);
+  console.log(tenant);
+
+  const logoutHandler = async () => {
+    try {
+      // setLoading(true);
+
+      const res = await axios.post("/api/users/logout");
+
+      if (res.status === 200) {
+        // dispatch({ type: "LOGOUT" });
+        dispatch(logout());
+        navigate("/sign-in");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -44,9 +68,11 @@ export default function Navbar({ onOpenSidebar }) {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">username</p>
+                    <p className="text-sm font-medium leading-none">
+                      {tenant?.name}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      user@example.com
+                      {tenant?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -54,7 +80,9 @@ export default function Navbar({ onOpenSidebar }) {
                 <DropdownMenuItem>My Account</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={logoutHandler}>
+                  Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
