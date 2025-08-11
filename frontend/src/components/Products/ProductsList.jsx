@@ -85,7 +85,7 @@ export default function ProductsList({
   if (isPending) {
     return <InitialLoading />;
   }
-
+  console.log(products);
   return (
     <div className="bg-white border border-gray-200 overflow-hidden rounded-xl">
       <table className="w-full">
@@ -179,7 +179,7 @@ export default function ProductsList({
                         )}
                         <div>
                           <p>{product.name}</p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-5 text-sm text-gray-500">
                             <span>
                               ฿
                               {(
@@ -197,6 +197,11 @@ export default function ProductsList({
                                 <span>{category.name}</span>
                               </div>
                             ))}
+                            {product.trackQuantityEnabled && (
+                              <p className="text-sm text-gray-400">
+                                {product.inventory.quantity} left
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
