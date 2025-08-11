@@ -11,9 +11,8 @@ export default function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const pathnames = location.pathname;
-
   const excludedPrefixes = ["/checkout", `/addToCart`];
-
+  console.log("pathnames",pathnames);
   const includedPrefixes = [
     "/",
     `/orders`,

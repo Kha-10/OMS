@@ -15,6 +15,7 @@ import axios from "../helper/axios";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/authContext";
+
 function SignUpForm() {
   const [errors, setErrors] = useState(null);
   let navigate = useNavigate();

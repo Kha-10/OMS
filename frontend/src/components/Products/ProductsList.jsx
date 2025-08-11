@@ -199,7 +199,7 @@ export default function ProductsList({
                             ))}
                             {product.trackQuantityEnabled && (
                               <p className="text-sm text-gray-400">
-                                {product.inventory.quantity} left
+                                {product.inventory.quantity > 0 ? `${product.inventory.quantity} left` : 'Sold out'}
                               </p>
                             )}
                           </div>

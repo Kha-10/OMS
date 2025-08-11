@@ -5,10 +5,10 @@ import ProductsList from "@/components/Products/ProductsList";
 import FilterPanel from "@/components/Products/FilterPanel";
 import Badges from "@/components/Products/Badges";
 import { useSearchParams } from "react-router-dom";
+import axios from "@/helper/axios";
 import debounce from "lodash.debounce";
-// import InitialLoading from "@/components/InitialLoading";
-// import ErrorMessage from "@/components/ErrorMessages";
-import { ToastContainer } from "react-toastify";
+import InitialLoading from "@/components/InitialLoading";
+import ErrorMessage from "@/components/ErrorMessages";
 import useProducts from "@/hooks/useProducts";
 
 export default function ProductsPage() {
@@ -16,6 +16,7 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
+
   const params = new URLSearchParams(searchParams);
   const page = parseInt(params.get("page") || "1", 10);
   const pageSize = parseInt(params.get("limit") || "10", 10);
@@ -35,8 +36,10 @@ export default function ProductsPage() {
     searchQuery,
   });
 
+
   const products = data?.data || [];
   const pagination = data?.pagination || {};
+  const errorMessage = error?.response;
 
   const sorts = [
     { id: "title", name: "title" },
@@ -79,9 +82,25 @@ export default function ProductsPage() {
     debouncedSearch(e.target.value);
   };
 
+  // if (isPending) {
+  //   return <InitialLoading />;
+  // }
+
+  if (errorMessage)
+    return (
+      <ErrorMessage
+        title={errorMessage.data.msg}
+        code={errorMessage.status}
+        action={{
+          label: "Return to Dashboard",
+          to: "/",
+        }}
+      />
+    );
+
   return (
     <div className="p-6 space-y-6">
-      <ProductsHeader header="Products" buttonText="products" context="new" />
+      <ProductsHeader header="Products" buttonText="products" />
 
       <ProductsToolbar
         text="Search by product,variant names or SKU "
@@ -126,7 +145,6 @@ export default function ProductsPage() {
         setSearchParams={setSearchParams}
         clearAllFilters={clearAllFilters}
       />
-      <ToastContainer />
     </div>
   );
 }

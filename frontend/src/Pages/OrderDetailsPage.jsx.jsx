@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigationType } from "react-router-dom";
 import useOrders from "@/hooks/useOrders";
 import { format, parseISO } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
@@ -44,6 +45,15 @@ export default function OrderDetailsPage() {
   const { updateStatusMutation, deleteMutation } = useOrderActions(null, () =>
     navigate("/orders")
   );
+
+  const navigationType = useNavigationType();
+  console.log("navigationType", navigationType);
+
+  useEffect(() => {
+    if (navigationType === "POP") {
+      sessionStorage.removeItem("adminCartId");
+    }
+  }, [navigationType]);
 
   const total = orders?.items?.reduce((sum, item) => sum + item.totalPrice, 0);
 

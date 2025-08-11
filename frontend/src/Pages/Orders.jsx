@@ -141,7 +141,7 @@ export default function OrdersPage() {
   const filterSections = [
     {
       id: "orderStatus",
-      label: "orderStatus",
+      label: "OrderStatus",
       options: [
         { id: "Pending", label: "Pending" },
         { id: "Confirmed", label: "Confirmed" },

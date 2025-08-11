@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useForm, useWatch, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,6 @@ import {
   Edit,
   Trash2,
   Undo2,
-  ArrowLeftIcon,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -51,7 +50,6 @@ import { ToastContainer, toast } from "react-toastify";
 import { showToast } from "@/helper/showToast";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import useOrders from "@/hooks/useOrders";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
 
@@ -329,46 +327,6 @@ export default function AddToCart() {
   }, [selectedProduct]);
 
   useEffect(() => {
-    if (!id) return;
-
-    // if (orders.length > 0 || orders.customer || orders.manualCustomer) {
-    //   customerForm.setValue("customerId", orders?.customer?._id);
-    //   customerForm.setValue("name", orders?.customer?.name);
-    //   customerForm.setValue("email", orders?.customer?.email);
-    //   customerForm.setValue("phone", orders?.customer?.phone);
-    //   customerForm.setValue(
-    //     "deliveryAddress",
-    //     orders?.customer?.deliveryAddress
-    //   );
-    //   customerForm.setValue(
-    //     "deliveryAddress.apartment",
-    //     orders?.customer?.deliveryAddress?.apartment
-    //   );
-    //   customerForm.setValue(
-    //     "deliveryAddress.city",
-    //     orders?.customer?.deliveryAddress?.city
-    //   );
-    //   customerForm.setValue(
-    //     "deliveryAddress.street",
-    //     orders?.customer?.deliveryAddress?.street
-    //   );
-    //   customerForm.setValue(
-    //     "deliveryAddress.zipCode",
-    //     orders?.customer?.deliveryAddress?.zipCode
-    //   );
-    //   setCart([...cartData.items]);
-    //   sessionStorage.setItem("adminCartId", cartData.id);
-    //   setSelectedProduct(null);
-    //   setCurrentView("cart");
-    //   productForm.reset();
-
-    //   setCartButtonAnimation(true);
-    //   setTimeout(() => setCartButtonAnimation(false), 1000);
-    //   window.scrollTo({ top: 0, behavior: "smooth" });
-    // }
-  }, [id]);
-
-  useEffect(() => {
     if (id) {
       loadOrder();
     }
@@ -550,31 +508,6 @@ export default function AddToCart() {
   }
   console.log("cart", cart);
   const cartId = sessionStorage.getItem("adminCartId");
-
-  // const fetchCart = async () => {
-  //   const res = await axios(`/api/cart/${cartId}`);
-  //   if (res.status === 200) {
-  //     console.log("fetchCart", res.data);
-  //     if (id) {
-  //       setCart([...res.data.order.items]);
-  //     } else {
-  //       setCart([...res.data.items]);
-  //     }
-  //     setSelectedProduct(null);
-  //     setCurrentView("cart");
-  //     productForm.reset();
-
-  //     setCartButtonAnimation(true);
-  //     setTimeout(() => setCartButtonAnimation(false), 1000);
-  //     window.scrollTo({ top: 0, behavior: "smooth" });
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (cartId) {
-  //     fetchCart();
-  //   }
-  // }, [cartId]);
 
   const addToCart = async (formData) => {
     if (!selectedProduct) return;
@@ -904,7 +837,6 @@ export default function AddToCart() {
       },
       notes: orderNotes,
     };
-    console.log("orderData", orderData);
     try {
       const endpoint = isEdit ? `/api/orders/${id}/edit` : "/api/orders";
       const headers = {};

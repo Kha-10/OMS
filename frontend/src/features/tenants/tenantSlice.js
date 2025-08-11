@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from '../../helper/axios';
+import axios from 'axios';
 
 // Thunk for fetching the user from the API
 export const fetchTenant = createAsyncThunk(

@@ -27,7 +27,6 @@ function Navbar() {
 
   const isExpired = recipes.some((recipe) => recipe.status == "expired");
 
-
   const logoutHandler = async () => {
     try {
       // setLoading(true);
@@ -43,7 +42,6 @@ function Navbar() {
       console.error("Logout failed:", error);
     }
   };
-  
 
   return (
     <nav className="w-full flex items-center justify-between p-2 bg-slate-50 border border-b fixed top-0 left-0 right-0 z-10">

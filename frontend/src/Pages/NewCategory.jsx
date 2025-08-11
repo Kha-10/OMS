@@ -181,11 +181,11 @@ export default function NewCategory() {
                       TOTAL {selectedProducts?.length}
                     </Badge>
                   </div>
-                  {/* <ProductSearch
+                  <ProductSearch
                     products={products}
                     selectedProducts={selectedProducts}
                     setSelectedProducts={setSelectedProducts}
-                  /> */}
+                  />
                 </div>
 
                 <Button

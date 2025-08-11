@@ -4,6 +4,7 @@ import axios from "@/helper/axios";
 const fetchCustomers = async ({ queryKey }) => {
   const [, { id, page, pageSize, searchQuery, sortBy, sortDirection }] =
     queryKey;
+
   const url = id
     ? `/api/customers/${id || ""}`
     : `/api/customers?page=${page}&limit=${pageSize}${
