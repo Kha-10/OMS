@@ -1,111 +1,7 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 
 const AnalyticsController = {
-  // getAnalytics: async (req, res) => {
-  //   try {
-  //     const { startDate, endDate } = req.query;
-
-  //     const start = startDate
-  //       ? new Date(startDate)
-  //       : new Date(Date.now() - 6 * 24 * 60 * 60 * 1000); // last 7 days
-  //     start.setHours(0, 0, 0, 0);
-
-  //     const end = endDate ? new Date(endDate) : new Date();
-  //     end.setHours(23, 59, 59, 999);
-
-  //     const pipeline = [
-  //       {
-  //         $match: {
-  //           createdAt: { $gte: start, $lte: end },
-  //         },
-  //       },
-  //       {
-  //         $project: {
-  //           createdAt: 1,
-  //           orderStatus: 1,
-  //           paymentStatus: 1,
-  //           totalAmount: "$pricing.finalTotal",
-  //         },
-  //       },
-  //       {
-  //         $group: {
-  //           _id: {
-  //             $dateTrunc: { date: "$createdAt", unit: "day" },
-  //           },
-  //           orders: {
-  //             $sum: {
-  //               $cond: [
-  //                 {
-  //                   $in: [
-  //                     "$orderStatus",
-  //                     ["Pending", "Confirmed", "Completed"],
-  //                   ],
-  //                 },
-  //                 1,
-  //                 0,
-  //               ],
-  //             },
-  //           },
-  //           revenue: {
-  //             $sum: {
-  //               $cond: [{ $eq: ["$paymentStatus", "Paid"] }, "$totalAmount", 0],
-  //             },
-  //           },
-  //         },
-  //       },
-  //       { $sort: { _id: 1 } },
-  //     ];
-
-  //     const rawData = await Order.aggregate(pipeline);
-  //     console.log("rawData", rawData);
-  //     // Map raw data into a fixed range
-  //     const dateMap = {};
-  //     rawData.forEach((entry) => {
-  //       const dateStr = entry._id.toISOString().split("T")[0];
-  //       dateMap[dateStr] = {
-  //         orders: entry.orders,
-  //         revenue: entry.revenue,
-  //       };
-  //     });
-
-  //     const resultOrdersByDate = [];
-  //     const resultRevenueByDate = [];
-
-  //     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-  //       const dateStr = d.toISOString().split("T")[0];
-
-  //       resultOrdersByDate.push({
-  //         date: formatDisplayDate(d),
-  //         value: dateMap[dateStr]?.orders || 0,
-  //       });
-
-  //       resultRevenueByDate.push({
-  //         date: formatDisplayDate(d),
-  //         value: dateMap[dateStr]?.revenue || 0,
-  //       });
-  //     }
-
-  //     const totalOrders = resultOrdersByDate.reduce(
-  //       (acc, d) => acc + d.value,
-  //       0
-  //     );
-  //     console.log("resultRevenueByDate", resultRevenueByDate);
-  //     const totalRevenue = resultRevenueByDate.reduce(
-  //       (acc, d) => acc + d.value,
-  //       0
-  //     );
-
-  //     res.json({
-  //       orders: totalOrders,
-  //       revenue: totalRevenue,
-  //       ordersByDate: resultOrdersByDate,
-  //       revenueByDate: resultRevenueByDate,
-  //     });
-  //   } catch (err) {
-  //     console.error("Analytics error:", err);
-  //     res.status(500).json({ error: "Failed to get analytics" });
-  //   }
-  // },
   getAnalytics: async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
@@ -285,6 +181,20 @@ const AnalyticsController = {
         0
       );
 
+      const threshold = parseInt(req.query.threshold) || 5;
+
+      const lowStockCount = await Product.aggregate([
+        {
+          $match: {
+            trackQuantityEnabled: true,
+            "inventory.quantity": { $lte: threshold },
+          },
+        },
+        {
+          $count: "lowStockCount",
+        },
+      ]);
+
       res.json({
         orders: totalOrders,
         revenue: totalRevenue,
@@ -295,6 +205,7 @@ const AnalyticsController = {
         revenueByDate: resultRevenueByDate,
         pendingOrdersByDate: resultPendingOrdersByDate,
         unpaidOrdersByDate: resultUnpaidOrdersByDate,
+        lowStockCount: lowStockCount[0]?.lowStockCount || 0,
       });
     } catch (err) {
       console.error("Analytics error:", err);
