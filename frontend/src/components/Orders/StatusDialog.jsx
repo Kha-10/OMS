@@ -24,7 +24,7 @@ export default function StatusDialog({
   initialFulfillmentStatus = "Unfulfilled",
 }) {
   const [activeTab, setActiveTab] = useState("status");
-  const [activeStatus, setActiveStatus] = useState({});
+  const [activeStatus, setActiveStatus] = useState({ orderStatus: "Pending" });
   const [orderStatus, setOrderStatus] = useState(initialOrderStatus);
   const [paymentStatus, setPaymentStatus] = useState(initialPaymentStatus);
   const [fulfillmentStatus, setFulfillmentStatus] = useState(
@@ -112,7 +112,6 @@ export default function StatusDialog({
 
     const [key] = Object.keys(activeStatus); // "orderStatus" | "paymentStatus" | "fulfillmentStatus"
     const newStatus = activeStatus[key];
-
     const ordersWithTracking = selectedOrders
       .map((id) => orders.find((order) => order._id === id))
       .filter((order) =>
@@ -120,8 +119,6 @@ export default function StatusDialog({
           (item) => item.trackQuantityEnabled && item.productId !== null
         )
       );
-
-    console.log("ordersWithTracking", ordersWithTracking);
     const requiresInventoryAction = ordersWithTracking.length > 0;
 
     // Save status change first
