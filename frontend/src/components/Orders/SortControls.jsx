@@ -60,41 +60,4 @@ export default function SortControls({ sortBy, sortDirection, onSortChange }) {
                     id="desc-amount"
                     className="border-[1.5px] text-white border-gray-300 
               before:h-2 before:w-2 before:bg-white
-              data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
-              data-[state=checked]:before:bg-white"
-                  />
-                  <span>Highest first</span>
-                </Label>
-              </>
-            ) : (
-              <>
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem
-                    value="asc"
-                    id="asc-date"
-                    className="border-[1.5px] text-white border-gray-300 
-              before:h-2 before:w-2 before:bg-white
-              data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
-              data-[state=checked]:before:bg-white"
-                  />
-                  <span>Oldest first</span>
-                </Label>
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem
-                    value="desc"
-                    id="desc-date"
-                    className="border-[1.5px] text-white border-gray-300 
-              before:h-2 before:w-2 before:bg-white
-              data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
-              data-[state=checked]:before:bg-white"
-                  />
-                  <span>Newest first</span>
-                </Label>
-              </>
-            )}
-          </RadioGroup>
-        </div>
-      )}
-    </div>
-  );
-}
+              data-[state=checked]:border-blue

@@ -64,7 +64,7 @@ const step3Schema = z.object({
 const step4Schema = z
   .object({
     productName: z.string().optional(),
-    currency: z.enum(["USD", "EUR", "GBP"]).optional(),
+    currency: z.enum(["USD", "EUR", "GBP", "THB", "MMK"]).optional(),
     price: z.string().optional(),
     addSamples: z.boolean().optional(),
   })
@@ -97,15 +97,78 @@ const step4Schema = z
     }
   });
 
+// const step5Schema = z
+//   .object({
+//     cash: z.boolean(),
+//     bank: z.boolean(),
+//     qr: z.boolean(),
+//   })
+//   .refine((data) => data.cash || data.bank || data.qr, {
+//     message: "At least one payment method must be selected",
+//     path: ["cash"], // or any path you want to show the error on
+//   });
+
 const step5Schema = z
   .object({
     cash: z.boolean(),
     bank: z.boolean(),
     qr: z.boolean(),
+    countryCode: z.string().optional(),
+    phoneLocal: z.string().optional(),
+    accountNumber: z.string().optional(),
+    accountHolderName: z.string().optional(),
+    bankName: z.string().optional(),
   })
-  .refine((data) => data.cash || data.bank || data.qr, {
-    message: "At least one payment method must be selected",
-    path: ["cash"], // or any path you want to show the error on
+  .superRefine((data, ctx) => {
+    // Rule 1: At least one payment method selected
+    if (!data.cash && !data.bank && !data.qr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cash"],
+        message: "At least one payment method must be selected",
+      });
+    }
+
+    // Rule 2: If QR selected, countryCode & phoneLocal required
+    if (data.qr) {
+      if (!data.countryCode) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["countryCode"],
+          message: "Country code is required when QR is selected",
+        });
+      }
+      if (!data.phoneLocal) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["phoneLocal"],
+          message: "Phone number is required when QR is selected",
+        });
+      }
+    }
+    if (data.bank) {
+      if (!data.accountNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["accountNumber"],
+          message: "AccountNumber is required when Bank is selected",
+        });
+      }
+      if (!data.accountHolderName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["accountHolderName"],
+          message: "AccountHolderName is required when Bank is selected",
+        });
+      }
+      if (!data.bankName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bankName"],
+          message: "BankName is required when Bank is selected",
+        });
+      }
+    }
   });
 
 export default function Onboarding() {
@@ -123,7 +186,7 @@ export default function Onboarding() {
     resolver: zodResolver(step1Schema),
     defaultValues: {
       email: "",
-      countryCode: "+1",
+      countryCode: "+66",
       phoneLocal: "",
       password: "",
     },
@@ -162,6 +225,11 @@ export default function Onboarding() {
       cash: true,
       bank: false,
       qr: false,
+      countryCode: "+66",
+      phoneLocal: "",
+      accountNumber: "",
+      accountHolderName: "",
+      bankName: "",
     },
   });
 
@@ -296,7 +364,11 @@ export default function Onboarding() {
 
         <div className="flex flex-col-reverse gap-6 lg:grid lg:grid-cols-2 lg:gap-8 xl:gap-10">
           {/* Left Column - Form (appears second on mobile) */}
-          <div className="flex max-h-[600px] flex-col lg:max-h-[650px]">
+          <div
+            className={`
+            ${step5Form.watch("bank") && step === 5 && "h-[600px] lg:h-[650px]"}
+            flex max-h-[600px] flex-col lg:max-h-[650px]`}
+          >
             {step === 1 && (
               <Form {...step1Form}>
                 <form
@@ -354,8 +426,8 @@ export default function Onboarding() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="+1">+1</SelectItem>
-                                  <SelectItem value="+44">+44</SelectItem>
+                                  <SelectItem value="+66">+66</SelectItem>
+                                  <SelectItem value="+95">+95</SelectItem>
                                   <SelectItem value="+33">+33</SelectItem>
                                   <SelectItem value="+49">+49</SelectItem>
                                 </SelectContent>
@@ -712,6 +784,8 @@ export default function Onboarding() {
                                 <SelectItem value="USD">USD ($)</SelectItem>
                                 <SelectItem value="EUR">EUR (€)</SelectItem>
                                 <SelectItem value="GBP">GBP (£)</SelectItem>
+                                <SelectItem value="THB">THB (฿)</SelectItem>
+                                <SelectItem value="MMK">MMK (K)</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -823,120 +897,228 @@ export default function Onboarding() {
               <Form {...step5Form}>
                 <form
                   onSubmit={step5Form.handleSubmit(handlePaymentConfig)}
-                  className="flex flex-col space-y-6"
+                  className="flex h-full flex-col"
                 >
-                  <header className="space-y-2">
-                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                      Configure payment methods
-                    </h1>
-                    <p className="text-sm text-muted-foreground sm:text-base">
-                      Choose how your customers can pay.
-                    </p>
-                  </header>
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    <div className="p-1">
+                      <header className="space-y-2 mb-6">
+                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                          Configure payment methods
+                        </h1>
+                        <p className="text-sm text-muted-foreground sm:text-base">
+                          Choose how your customers can pay.
+                        </p>
+                      </header>
 
-                  <div className="space-y-4">
-                    <FormField
-                      control={step5Form.control}
-                      name="cash"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
-                            <div className="flex items-center space-x-3">
-                              <Banknote className="h-5 w-5 text-green-600" />
-                              <div>
-                                <FormLabel className="text-sm font-medium">
-                                  Cash
-                                </FormLabel>
-                                <p className="text-xs text-muted-foreground">
-                                  Accept cash payments
-                                </p>
+                      <div className="space-y-4 pb-4">
+                        <FormField
+                          control={step5Form.control}
+                          name="cash"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
+                                <div className="flex items-center space-x-3">
+                                  <Banknote className="h-5 w-5 text-green-600" />
+                                  <div>
+                                    <FormLabel className="text-sm font-medium">
+                                      Cash
+                                    </FormLabel>
+                                    <p className="text-xs text-muted-foreground">
+                                      Accept cash payments
+                                    </p>
+                                  </div>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
                               </div>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={step5Form.control}
+                          name="qr"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
+                                <div className="flex items-center space-x-3">
+                                  <QrCode className="h-5 w-5 text-purple-600" />
+                                  <div>
+                                    <FormLabel className="text-sm font-medium">
+                                      PromptPay
+                                    </FormLabel>
+                                    <p className="text-xs text-muted-foreground">
+                                      Mobile payments
+                                    </p>
+                                  </div>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        {step5Form.watch("qr") && (
+                          <div className="flex gap-2">
+                            <FormField
+                              control={step5Form.control}
+                              name="countryCode"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="h-11 w-20 rounded-xl border-gray-200 sm:h-12 sm:w-24 focus:ring-2 focus:ring-blue-500 focus-visible:ring-offset-0">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="+66">+66</SelectItem>
+                                      <SelectItem value="+95">+95</SelectItem>
+                                      <SelectItem value="+33">+33</SelectItem>
+                                      <SelectItem value="+49">+49</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={step5Form.control}
+                              name="phoneLocal"
+                              render={({ field }) => (
+                                <FormItem className="flex-1">
+                                  <FormControl>
+                                    <Input
+                                      type="tel"
+                                      placeholder="555-000-0000"
+                                      className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                           </div>
-                        </FormItem>
-                      )}
-                    />
+                        )}
+                        <FormField
+                          control={step5Form.control}
+                          name="bank"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
+                                <div className="flex items-center space-x-3">
+                                  <CreditCard className="h-5 w-5 text-blue-600" />
+                                  <div>
+                                    <FormLabel className="text-sm font-medium">
+                                      Bank Transfer
+                                    </FormLabel>
+                                    <p className="text-xs text-muted-foreground">
+                                      Direct bank transfers
+                                    </p>
+                                  </div>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        {step5Form.watch("bank") && (
+                          <div className="space-y-4 sm:space-y-5">
+                            <FormField
+                              control={step5Form.control}
+                              name="bankName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm font-medium">
+                                    Bank name
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="text"
+                                      className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={step5Form.control}
+                              name="accountNumber"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm font-medium">
+                                    Account number
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="text"
+                                      className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={step5Form.control}
+                              name="accountHolderName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm font-medium">
+                                    Account holder name
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="text"
+                                      className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                    <FormField
-                      control={step5Form.control}
-                      name="bank"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
-                            <div className="flex items-center space-x-3">
-                              <CreditCard className="h-5 w-5 text-blue-600" />
-                              <div>
-                                <FormLabel className="text-sm font-medium">
-                                  Bank Transfer
-                                </FormLabel>
-                                <p className="text-xs text-muted-foreground">
-                                  Direct bank transfers
-                                </p>
-                              </div>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={step5Form.control}
-                      name="qr"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
-                            <div className="flex items-center space-x-3">
-                              <QrCode className="h-5 w-5 text-purple-600" />
-                              <div>
-                                <FormLabel className="text-sm font-medium">
-                                  QR Payment
-                                </FormLabel>
-                                <p className="text-xs text-muted-foreground">
-                                  Mobile QR code payments
-                                </p>
-                              </div>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                    <footer className="flex flex-col gap-3 pt-4 border-t border-gray-100 bg-white sm:flex-row sm:items-center sm:justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={prevStep}
+                        className="order-2 rounded-xl bg-white sm:order-1"
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back
+                      </Button>
+                      <Button
+                        disabled={!isStep5Valid}
+                        className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
+                      >
+                        Finish Setup
+                      </Button>
+                    </footer>
                   </div>
-
-                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={prevStep}
-                      className="order-2 rounded-xl bg-white sm:order-1"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      disabled={!isStep5Valid}
-                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
-                    >
-                      Finish Setup
-                    </Button>
-                  </footer>
                 </form>
               </Form>
             )}
