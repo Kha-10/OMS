@@ -32,6 +32,7 @@ import AddToCart from "@/Pages/AddtoCart";
 import NotFound from "@/Pages/NotFound";
 import Invoice from "@/Pages/Invoice";
 import SignUpForm from "@/Pages/SignUpForm";
+import Onboarding from "@/Pages/Onboarding";
 
 function index() {
   // const { user } = useContext(AuthContext);
@@ -159,7 +160,7 @@ function index() {
         },
         {
           path: "/sign-up",
-          element: !tenant ? <SignUpForm /> : <Navigate to={"/"} />,
+          element: !tenant ? <Onboarding /> : <Navigate to={"/"} />,
         },
         {
           path: "forbidden",
