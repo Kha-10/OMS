@@ -61,18 +61,52 @@ const step3Schema = z.object({
   address: z.string().optional(),
 });
 
-const step4Schema = z.object({
-  productName: z.string().optional(),
-  currency: z.enum(["USD", "EUR", "GBP"]),
-  price: z.string().optional(),
-  addSamples: z.boolean(),
-});
+const step4Schema = z
+  .object({
+    productName: z.string().optional(),
+    currency: z.enum(["USD", "EUR", "GBP"]).optional(),
+    price: z.string().optional(),
+    addSamples: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const { addSamples, productName, currency, price } = data;
 
-const step5Schema = z.object({
-  cash: z.boolean(),
-  bank: z.boolean(),
-  qr: z.boolean(),
-});
+    if (addSamples !== true) {
+      // Require productName, currency, price
+      if (!productName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["productName"],
+          message: "Product name is required when samples are not added",
+        });
+      }
+      if (!currency) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["currency"],
+          message: "Currency is required when samples are not added",
+        });
+      }
+      if (!price) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["price"],
+          message: "Price is required when samples are not added",
+        });
+      }
+    }
+  });
+
+const step5Schema = z
+  .object({
+    cash: z.boolean(),
+    bank: z.boolean(),
+    qr: z.boolean(),
+  })
+  .refine((data) => data.cash || data.bank || data.qr, {
+    message: "At least one payment method must be selected",
+    path: ["cash"], // or any path you want to show the error on
+  });
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
@@ -134,7 +168,9 @@ export default function Onboarding() {
   const isStep1Valid = step1Form.formState.isValid;
   const isStep2Valid = step2Form.formState.isValid;
   const isStep3Valid = step3Form.formState.isValid;
-  console.log(step2Form.formState.defaultValues.otp);
+  const isStep4Valid = step4Form.formState.isValid;
+  const isStep5Valid = step5Form.formState.isValid;
+
   const nextStep = () => {
     if (step < 5) setStep(step + 1);
   };
@@ -771,7 +807,10 @@ export default function Onboarding() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2">
+                    <Button
+                      disabled={!isStep4Valid}
+                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
+                    >
                       Continue
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -891,7 +930,10 @@ export default function Onboarding() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2">
+                    <Button
+                      disabled={!isStep5Valid}
+                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
+                    >
                       Finish Setup
                     </Button>
                   </footer>
