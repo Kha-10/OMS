@@ -289,7 +289,7 @@ export default function Onboarding() {
                             <Input
                               type="email"
                               placeholder="you@example.com"
-                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
                           </FormControl>
@@ -313,7 +313,7 @@ export default function Onboarding() {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="h-11 w-20 rounded-xl border-gray-200 sm:h-12 sm:w-24">
+                                  <SelectTrigger className="h-11 w-20 rounded-xl border-gray-200 sm:h-12 sm:w-24 focus:ring-2 focus:ring-blue-500 focus-visible:ring-offset-0">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
@@ -336,7 +336,7 @@ export default function Onboarding() {
                                 <Input
                                   type="tel"
                                   placeholder="555-000-0000"
-                                  className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                                  className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                   {...field}
                                 />
                               </FormControl>
@@ -360,7 +360,7 @@ export default function Onboarding() {
                               <Input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Create a secure password"
-                                className="h-11 rounded-xl border-gray-200 pr-10 text-sm sm:h-12 sm:text-base"
+                                className="h-11 rounded-xl border-gray-200 pr-10 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                 {...field}
                               />
                               <button
@@ -387,18 +387,18 @@ export default function Onboarding() {
                     />
                   </div>
 
-                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
+                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
+                    {/* <Button
                       type="button"
                       variant="outline"
                       onClick={nextStep}
                       className="order-2 rounded-xl bg-white sm:order-1"
                     >
                       Skip
-                    </Button>
+                    </Button> */}
                     <Button
                       disabled={!isStep1Valid}
-                      className="order-1 rounded-xl bg-black text-white hover:bg-black/90 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
                     >
                       Continue
                       <ChevronRight className="ml-2 h-4 w-4" />
@@ -443,7 +443,7 @@ export default function Onboarding() {
                             }
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
                             onPaste={handleOtpPaste}
-                            className="h-12 w-12 rounded-xl border-gray-200 text-center text-lg font-medium sm:h-14 sm:w-14 sm:text-xl"
+                            className="h-12 w-12 rounded-xl border-gray-200 text-center text-lg font-medium sm:h-14 sm:w-14 sm:text-xl focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                           />
                         ))}
                       </div>
@@ -479,7 +479,7 @@ export default function Onboarding() {
                     </Button>
                     <Button
                       disabled={!isStep2Valid}
-                      className="order-1 rounded-xl bg-black text-white hover:bg-black/90 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
                     >
                       Continue
                       <ChevronRight className="ml-2 h-4 w-4" />
@@ -517,7 +517,7 @@ export default function Onboarding() {
                             <Input
                               type="text"
                               placeholder="My Awesome Store"
-                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
                           </FormControl>
@@ -541,7 +541,7 @@ export default function Onboarding() {
                             <Input
                               type="tel"
                               placeholder="+1 555-000-0000"
-                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
                           </FormControl>
@@ -565,7 +565,7 @@ export default function Onboarding() {
                             <Input
                               type="text"
                               placeholder="123 Main St, City, State"
-                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
                           </FormControl>
@@ -607,7 +607,7 @@ export default function Onboarding() {
                     </Button>
                     <Button
                       disabled={!isStep3Valid}
-                      className="order-1 rounded-xl bg-black text-white hover:bg-black/90 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
                     >
                       Continue
                       <ChevronRight className="ml-2 h-4 w-4" />
@@ -645,7 +645,7 @@ export default function Onboarding() {
                             <Input
                               type="text"
                               placeholder="Enter product name"
-                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
                           </FormControl>
@@ -668,7 +668,7 @@ export default function Onboarding() {
                               defaultValue={field.value}
                             >
                               <FormControl>
-                                <SelectTrigger className="h-11 rounded-xl border-gray-200 sm:h-12">
+                                <SelectTrigger className="h-11 rounded-xl border-gray-200 sm:h-12 focus:ring-2 focus:ring-blue-500 focus-visible:ring-offset-0">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
@@ -696,7 +696,7 @@ export default function Onboarding() {
                                 step="0.01"
                                 min="0"
                                 placeholder="0.00"
-                                className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base"
+                                className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                 {...field}
                               />
                             </FormControl>
@@ -748,6 +748,7 @@ export default function Onboarding() {
                             <Checkbox
                               checked={field.value}
                               onCheckedChange={field.onChange}
+                              className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
@@ -770,7 +771,7 @@ export default function Onboarding() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button className="order-1 rounded-xl bg-black text-white hover:bg-black/90 sm:order-2">
+                    <Button className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2">
                       Continue
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -890,7 +891,7 @@ export default function Onboarding() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button className="order-1 rounded-xl bg-black text-white hover:bg-black/90 sm:order-2">
+                    <Button className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2">
                       Finish Setup
                     </Button>
                   </footer>
