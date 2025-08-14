@@ -157,35 +157,4 @@ function index() {
         {
           path: "/sign-in",
           element:
-            !tenant || tenant?.onboarding_step < 6 ? (
-              <SignInForm />
-            ) : (
-              <Navigate to={"/"} />
-            ),
-        },
-        {
-          path: "/sign-up",
-          element:
-            !tenant || tenant?.onboarding_step < 6 ? (
-              <Onboarding stepper={tenant?.onboarding_step || 1} dbEmail={tenant?.email || ""} />
-            ) : (
-              <Navigate to={"/"} />
-            ),
-        },
-        {
-          path: "forbidden",
-          element: <Unauthorized />,
-        },
-        {
-          path: "*",
-          // element: <ErrorMessage />,
-          element: tenant ? <NotFound /> : <Navigate to={"/sign-in"} />,
-        },
-      ],
-    },
-  ]);
-
-  return <RouterProvider router={router} />;
-}
-
-export default index;
+            !tenant || tenant?.onboarding

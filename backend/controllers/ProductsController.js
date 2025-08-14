@@ -202,7 +202,7 @@ const ProductsController = {
     try {
       console.log("REQ", req.randomImageNames);
       let id = req.params.id;
-      console.log("req.params.id",req.params.id);
+      console.log("req.params.id", req.params.id);
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
       }

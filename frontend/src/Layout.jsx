@@ -58,17 +58,4 @@ export default function RootLayout() {
                 : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 overflow-y-auto min-h-screen"
             }`}
           >
-            <Outlet />
-          </div>
-        </main>
-      </div>
-    </div>
-  ) : (
-    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Outlet />
-        {/* Show only content when tenant does not exist */}
-      </div>
-    </main>
-  );
-}
+     

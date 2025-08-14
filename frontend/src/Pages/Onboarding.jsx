@@ -74,7 +74,7 @@ const step3Schema = z.object({
 
 const step4Schema = z
   .object({
-    productName: z.string().optional(),
+    name: z.string().optional(),
     currency: z.enum(["USD", "EUR", "GBP", "THB", "MMK"]).optional(),
     price: z.string().optional(),
     addSamples: z.boolean().optional(),
@@ -225,7 +225,7 @@ export default function Onboarding({ stepper, dbEmail }) {
   const step4Form = useForm({
     resolver: zodResolver(step4Schema),
     defaultValues: {
-      productName: "",
+      name: "",
       currency: "USD",
       price: "",
       addSamples: false,
@@ -358,7 +358,6 @@ export default function Onboarding({ stepper, dbEmail }) {
   };
 
   const handleStoreSetup = async (data) => {
-    console.log(data);
     let res = await axios.post("/api/stores", data);
     if (res.status === 200 && storeLogoInputRef.current.files[0]) {
       const formData = new FormData();
@@ -378,10 +377,27 @@ export default function Onboarding({ stepper, dbEmail }) {
     }
   };
 
-  const handleProductAddition = (data) => {
+  const handleProductAddition = async (data) => {
     console.log("Store data:", data);
     // Handle store setup logic
-    nextStep();
+    // nextStep();
+    let res = await axios.post("/api/products?type=onBoarding", data);
+    // if (res.status === 200 && productImageInputRef.current.files[0]) {
+    //   const formData = new FormData();
+    //   formData.append("photo", productImageInputRef.current.files[0]);
+    //   let imgResult = await axios.post(
+    //     `/api/products/${res.data._id}/upload`,
+    //     formData,
+    //     {
+    //       headers: {
+    //         "Content-Type": "multipart/form-data",
+    //       },
+    //     }
+    //   );
+    //   if (imgResult.status === 200) {
+    //     nextStep();
+    //   }
+    // }
   };
 
   const handlePaymentConfig = (data) => {
@@ -798,7 +814,7 @@ export default function Onboarding({ stepper, dbEmail }) {
                   <div className="space-y-4 sm:space-y-5">
                     <FormField
                       control={step4Form.control}
-                      name="productName"
+                      name="name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium">

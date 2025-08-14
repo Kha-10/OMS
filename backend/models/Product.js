@@ -2,28 +2,6 @@ const mongoose = require("mongoose");
 
 const schema = mongoose.Schema;
 
-// const validationSchema = new schema({
-//   type: {
-//     type: String,
-//     enum: ["not_applicable", "at_most", "at_least", "between"],
-//   },
-//   atLeastMin: {
-//     type: Number,
-//     default: undefined,
-//   },
-//   atLeastMax: {
-//     type: Number,
-//     default: undefined,
-//   },
-//   betweenMax: {
-//     type: Number,
-//     default: undefined,
-//   },
-//   betweenMin: {
-//     type: Number,
-//     default: undefined,
-//   },
-// });
 const InventorySchema = new mongoose.Schema(
   {
     quantity: { type: Number, required: true },
@@ -58,16 +36,6 @@ const optionSchema = new schema(
       type: String,
       default: "",
     },
-    // choices: [
-    //   {
-    //     name: { type: String },
-    //     amount: { type: Number },
-    //   },
-    // ],
-    // validation: {
-    //   type: validationSchema,
-    //   default: () => ({}),
-    // },
     settings: {
       min: Number,
       max: Number,

@@ -1,12 +1,13 @@
 const Store = require("../models/Store");
 const User = require("../models/User");
+const StoreMember = require("../models/StoreMember");
 const mongoose = require("mongoose");
 
 const StoreController = {
   store: async (req, res) => {
     try {
       const storeData = req.body;
-      const userId = req.user._id;
+      const ownerUserId = req.user._id;
       console.log("storetData", storeData);
       console.log("user", req.user);
       const existingStore = await Store.findOne({ phone: storeData.phone });
@@ -17,7 +18,15 @@ const StoreController = {
 
       const store = await Store.create(storeData);
 
-      await User.findByIdAndUpdate(userId, { onboarding_step: 4 });
+      await StoreMember.create({
+        store: store._id,
+        user: ownerUserId,
+        role: "owner",
+        joinedAt: new Date(),
+        isActive: true,
+      });
+
+      await User.findByIdAndUpdate(ownerUserId, { onboarding_step: 4 });
 
       return res.json(store);
     } catch (error) {
