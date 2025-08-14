@@ -14,7 +14,7 @@ router.post("/logout", UserController.logout);
 router.post(
   "/register",
   [
-    body("name").notEmpty(),
+    body("username").notEmpty(),
     body("email").notEmpty(),
     body("email").custom(async (value) => {
       const user = await User.findOne({ email: value });
@@ -27,5 +27,7 @@ router.post(
   handleErrorMessage,
   UserController.register
 );
+
+router.post("/verify-email", UserController.verify);
 
 module.exports = router;

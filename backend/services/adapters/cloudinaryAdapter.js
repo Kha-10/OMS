@@ -16,7 +16,7 @@ const uploadImages = async (req, res, next) => {
       // Optional: compress with sharp before uploading
       // const buffer = await sharp(file.buffer).webp({ quality: 70 }).toBuffer();
 
-      const folder = "products";
+      const folder = req.query.type || "products"; // dynamic folder
 
       const uploadResult = await new Promise((resolve, reject) => {
         const uploadStream = cloudinaryClient.uploader.upload_stream(

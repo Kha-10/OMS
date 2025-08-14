@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const sendEmail = require("../helpers/sendEmail");
 
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
-  name: {
+  username: {
     type: String,
     required: true,
   },
@@ -17,9 +19,27 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
+  countryCode: String,
+  phoneLocal: String,
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  onboarding_step: {
+    type: Number,
+    default: 1,
+  },
+  verificationCode: String,
+  verificationCodeExpiresAt: Date,
 });
 
-UserSchema.statics.register = async function (name, email, password) {
+UserSchema.statics.register = async function (
+  username,
+  email,
+  password,
+  countryCode,
+  phoneLocal
+) {
   let userExists = await this.findOne({ email });
   if (userExists) {
     throw new Error("user already exists");
@@ -28,11 +48,28 @@ UserSchema.statics.register = async function (name, email, password) {
   let salt = await bcrypt.genSalt();
   let hashValue = await bcrypt.hash(password, salt);
 
+  const verificationCode = crypto.randomInt(100000, 999999).toString();
+
   let user = await this.create({
-    name,
+    username,
     email,
     password: hashValue,
+    countryCode,
+    phoneLocal,
+    verificationCode,
+    verificationCodeExpiresAt: Date.now() + 15 * 60 * 1000, // 15 min
+    onboarding_step: 2,
   });
+
+  await sendEmail({
+    viewFilename: "email",
+    data: {
+      verificationCode,
+    },
+    from: "nexoraDigital@gmail.com",
+    to: "kha@gmail.com",
+  });
+
   return user;
 };
 

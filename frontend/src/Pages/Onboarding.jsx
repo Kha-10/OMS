@@ -20,7 +20,6 @@ import {
   MapPin,
   Store,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +40,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useDispatch } from "react-redux";
+import { registerTenant } from "@/features/tenants/tenantSlice";
+import axios from "@/helper/axios";
 
 const step1Schema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be at most 20 characters")
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username can only contain letters, numbers, and underscores"
+    ),
   email: z.string().email("Please enter a valid email address"),
   countryCode: z.string().min(1, "Country code is required"),
   phoneLocal: z.string().min(1, "Phone number is required"),
@@ -57,7 +68,7 @@ const step2Schema = z.object({
 
 const step3Schema = z.object({
   name: z.string().min(1, "Store name is required"),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Phone number is required"),
   address: z.string().optional(),
 });
 
@@ -171,20 +182,22 @@ const step5Schema = z
     }
   });
 
-export default function Onboarding() {
-  const [step, setStep] = useState(1);
+export default function Onboarding({ stepper, dbEmail }) {
+  const [step, setStep] = useState(stepper);
   const [showPassword, setShowPassword] = useState(false);
   const [storeLogo, setStoreLogo] = useState(null);
   const [productImage, setProductImage] = useState(null);
   const [products, setProducts] = useState([]);
-
+  const [email, setEmail] = useState(dbEmail);
   const storeLogoInputRef = useRef(null);
   const productImageInputRef = useRef(null);
   const otpInputRefs = useRef([]);
+  const dispatch = useDispatch();
 
   const step1Form = useForm({
     resolver: zodResolver(step1Schema),
     defaultValues: {
+      username: "",
       email: "",
       countryCode: "+66",
       phoneLocal: "",
@@ -323,22 +336,46 @@ export default function Onboarding() {
     }
   };
 
-  const handleAccountCreation = (data) => {
-    console.log("Account data:", data);
+  const handleAccountCreation = async (data) => {
     // Handle account creation logic
-    nextStep();
+    try {
+      const createdUser = await dispatch(registerTenant(data)).unwrap();
+      setEmail(createdUser.email);
+      nextStep();
+    } catch (error) {
+      console.log("Error submitting the form", error);
+    }
   };
 
-  const handleVerification = (data) => {
-    console.log("Verification data:", data);
-    // Handle verification logic
-    nextStep();
+  const handleVerification = async (data) => {
+    let res = await axios.post("/api/users/verify-email", {
+      code: data.otp,
+      email,
+    });
+    if (res.status === 200) {
+      nextStep();
+    }
   };
 
-  const handleStoreSetup = (data) => {
-    console.log("Store data:", data);
-    // Handle store setup logic
-    nextStep();
+  const handleStoreSetup = async (data) => {
+    console.log(data);
+    let res = await axios.post("/api/stores", data);
+    if (res.status === 200 && storeLogoInputRef.current.files[0]) {
+      const formData = new FormData();
+      formData.append("photo", storeLogoInputRef.current.files[0]);
+      let imgResult = await axios.post(
+        `/api/stores/${res.data._id}/upload?type=stores`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (imgResult.status === 200) {
+        nextStep();
+      }
+    }
   };
 
   const handleProductAddition = (data) => {
@@ -354,7 +391,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center px-28">
       <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-10 bg-white shadow rounded-xl">
         <div className="mb-8 text-center">
           <div className="mx-auto flex w-fit items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
@@ -385,6 +422,26 @@ export default function Onboarding() {
                   </header>
 
                   <div className="space-y-4 sm:space-y-5">
+                    <FormField
+                      control={step1Form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            Username
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              placeholder="username_123"
+                              className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={step1Form.control}
                       name="email"
@@ -470,6 +527,7 @@ export default function Onboarding() {
                                 placeholder="Create a secure password"
                                 className="h-11 rounded-xl border-gray-200 pr-10 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                 {...field}
+                                autoComplete="off"
                               />
                               <button
                                 type="button"
@@ -619,7 +677,7 @@ export default function Onboarding() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium">
-                            Store name
+                            Store name <span className="text-red-400">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -640,10 +698,7 @@ export default function Onboarding() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium">
-                            Phone number{" "}
-                            <span className="text-muted-foreground">
-                              (optional)
-                            </span>
+                            Phone number <span className="text-red-400">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -840,14 +895,14 @@ export default function Onboarding() {
                       />
                     </div>
 
-                    <Button
+                    {/* <Button
                       type="button"
                       variant="outline"
                       onClick={handleAddProduct}
                       className="h-12 w-full rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-100 sm:h-14 sm:text-base"
                     >
                       + Add product
-                    </Button>
+                    </Button> */}
 
                     <FormField
                       control={step4Form.control}
@@ -1222,6 +1277,8 @@ export default function Onboarding() {
                           {step4Form.watch("currency") === "USD" && "$"}
                           {step4Form.watch("currency") === "EUR" && "€"}
                           {step4Form.watch("currency") === "GBP" && "£"}
+                          {step4Form.watch("currency") === "THB" && "฿"}
+                          {step4Form.watch("currency") === "MMK" && "K"}
                           {step4Form.watch("price") || "29.99"}
                         </p>
                       </div>

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Menu, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "@/features/tenants/tenantSlice";
+import { logoutTenant } from "@/features/tenants/tenantSlice";
 import axios from "@/helper/axios";
 import { useNavigate } from "react-router-dom";
 
@@ -24,13 +24,8 @@ export default function Navbar({ onOpenSidebar }) {
     try {
       // setLoading(true);
 
-      const res = await axios.post("/api/users/logout");
-
-      if (res.status === 200) {
-        // dispatch({ type: "LOGOUT" });
-        dispatch(logout());
-        navigate("/sign-in");
-      }
+      dispatch(logoutTenant());
+      navigate("/sign-in");
     } catch (error) {
       console.error("Logout failed:", error);
     }

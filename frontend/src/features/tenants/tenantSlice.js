@@ -1,47 +1,80 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
 // Thunk for fetching the user from the API
 export const fetchTenant = createAsyncThunk(
-  'auth/fetchTenants',
+  "auth/fetchTenants",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios('/api/users/me');
+      const response = await axios("/api/users/me");
+      console.log("response", response);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.msg || 'Something went wrong');
+      return rejectWithValue(
+        error.response?.data?.msg || "Something went wrong"
+      );
     }
   }
 );
 
 // Thunk for logging in the user
 export const loginTenant = createAsyncThunk(
-  'auth/loginTenant',
+  "auth/loginTenant",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/users/login', data, {
+      const response = await axios.post("/api/users/login", data, {
         withCredentials: true,
       });
       console.log(response.data); // For debugging purposes
       return response.data.user; // Assuming superAdmin info is returned
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to log in');
+      return rejectWithValue(error.response?.data?.error || "Failed to log in");
+    }
+  }
+);
+
+export const logoutTenant = createAsyncThunk(
+  "auth/logoutTenant",
+  async (_, { rejectWithValue }) => {
+    try {
+      await axios.post("/api/users/logout", null, {
+        withCredentials: true, // if you need cookies sent
+      });
+      // No payload needed on success
+      return;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || "Failed to logout");
+    }
+  }
+);
+
+export const registerTenant = createAsyncThunk(
+  "auth/registerTenant",
+  async (data, { rejectWithValue }) => {
+    try {
+      const res = await axios.post("/api/users/register", data, {
+        withCredentials: true, // if you need cookies sent
+      });
+      // No payload needed on success
+      return res.data.user;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || "Failed to logout");
     }
   }
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState: {
-    tenant: JSON.parse(localStorage.getItem('tenant')) || null,
+    tenant: null,
     loading: false,
     error: null,
   },
   reducers: {
-    logout: (state) => {
-      state.tenant = null;
-      localStorage.removeItem('tenant'); // Consistently use 'user'
-    },
+    // logout: (state) => {
+    //   state.tenant = null;
+    //   localStorage.removeItem("tenant"); // Consistently use 'user'
+    // },
   },
   extraReducers: (builder) => {
     builder
@@ -53,13 +86,13 @@ const authSlice = createSlice({
       .addCase(fetchTenant.fulfilled, (state, action) => {
         state.loading = false;
         state.tenant = action.payload;
-        localStorage.setItem('tenant', JSON.stringify(action.payload)); // Consistent key
+        // localStorage.setItem("tenant", JSON.stringify(action.payload)); // Consistent key
       })
       .addCase(fetchTenant.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.tenant = null;
-        localStorage.removeItem('tenant');
+        // localStorage.removeItem("tenant");
       })
 
       // Login user
@@ -70,15 +103,42 @@ const authSlice = createSlice({
       .addCase(loginTenant.fulfilled, (state, action) => {
         state.loading = false;
         state.tenant = action.payload;
-        localStorage.setItem('tenant', JSON.stringify(action.payload)); // Consistently use 'user'
+        // localStorage.setItem("tenant", JSON.stringify(action.payload)); // Consistently use 'user'
       })
       .addCase(loginTenant.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.tenant = null;
+      })
+
+      .addCase(logoutTenant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(logoutTenant.fulfilled, (state) => {
+        state.loading = false;
+        state.tenant = null;
+        // localStorage.removeItem("tenant");
+      })
+      .addCase(logoutTenant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(registerTenant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerTenant.fulfilled, (state) => {
+        state.loading = false;
+        state.tenant = null;
+        // localStorage.removeItem("tenant");
+      })
+      .addCase(registerTenant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+// export const { logout } = authSlice.actions;
 export default authSlice.reducer;

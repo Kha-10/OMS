@@ -31,7 +31,7 @@ import OrderReceipt from "@/Pages/OrderReceipt";
 import AddToCart from "@/Pages/AddtoCart";
 import NotFound from "@/Pages/NotFound";
 import Invoice from "@/Pages/Invoice";
-import SignUpForm from "@/Pages/SignUpForm";
+// import SignUpForm from "@/Pages/SignUpForm";
 import Onboarding from "@/Pages/Onboarding";
 
 function index() {
@@ -40,10 +40,10 @@ function index() {
   const { tenant } = useSelector((state) => state.tenants);
 
   useEffect(() => {
-    if (tenant) {
-      dispatch(fetchTenant());
-    }
-  }, []);
+    dispatch(fetchTenant());
+  }, [dispatch]);
+
+  console.log("tenant", tenant?.onboarding_step);
 
   const router = createBrowserRouter([
     // {
@@ -156,11 +156,21 @@ function index() {
         },
         {
           path: "/sign-in",
-          element: !tenant ? <SignInForm /> : <Navigate to={"/"} />,
+          element:
+            !tenant || tenant?.onboarding_step < 6 ? (
+              <SignInForm />
+            ) : (
+              <Navigate to={"/"} />
+            ),
         },
         {
           path: "/sign-up",
-          element: !tenant ? <Onboarding /> : <Navigate to={"/"} />,
+          element:
+            !tenant || tenant?.onboarding_step < 6 ? (
+              <Onboarding stepper={tenant?.onboarding_step || 1} dbEmail={tenant?.email || ""} />
+            ) : (
+              <Navigate to={"/"} />
+            ),
         },
         {
           path: "forbidden",
