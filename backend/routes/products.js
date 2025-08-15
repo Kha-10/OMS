@@ -3,6 +3,7 @@ const ProductsController = require("../controllers/ProductsController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
+const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
 const uploadAdapter = require("../services/adapters/index");
@@ -45,8 +46,8 @@ router.post(
       .isArray({ min: 1 })
       .withMessage("Category must be a non-empty array"),
   ],
-  // RoleMiddleware(["tenant", "superadmin"]),
-  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.store
 );
 

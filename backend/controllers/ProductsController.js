@@ -40,39 +40,61 @@ const ProductsController = {
     }
   },
 
+  // store: async (req, res) => {
+  //   try {
+  //     const productData = req.body;
+
+  //     const existingProduct = await productService.findByName(productData.name);
+  //     if (existingProduct) {
+  //       return res.status(409).json({ msg: "Product already exists" });
+  //     }
+
+  //     const categoryIds = productService.validateCategoryIds(
+  //       productData.categories
+  //     );
+
+  //     const product = await productService.createProduct({
+  //       ...productData,
+  //       categories: categoryIds,
+  //     });
+
+  //     // Update category references
+  //     await Category.updateMany(
+  //       { _id: { $in: categoryIds } },
+  //       { $push: { products: product._id } }
+  //     );
+
+  //     // Clear cache
+  //     await clearProductCache();
+
+  //     return res.json(product);
+  //   } catch (error) {
+  //     console.error("Error creating Product:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
+  // productController.js
+
   store: async (req, res) => {
     try {
-      const productData = req.body;
+      const storeId = req.storeId; // from middleware
+      const userId = req.userId;
 
-      const existingProduct = await productService.findByName(productData.name);
-      if (existingProduct) {
-        return res.status(409).json({ msg: "Product already exists" });
-      }
-
-      const categoryIds = productService.validateCategoryIds(
-        productData.categories
+      const product = await productService.createProduct(
+        storeId,
+        userId,
+        req.body
       );
 
-      const product = await productService.createProduct({
-        ...productData,
-        categories: categoryIds,
-      });
-
-      // Update category references
-      await Category.updateMany(
-        { _id: { $in: categoryIds } },
-        { $push: { products: product._id } }
-      );
-
-      // Clear cache
       await clearProductCache();
-
-      return res.json(product);
+      res.json(product);
     } catch (error) {
       console.error("Error creating Product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      const status = error.message.includes("exists") ? 409 : 500;
+      res.status(status).json({ msg: error.message });
     }
   },
+
   show: async (req, res) => {
     try {
       let id = req.params.id;

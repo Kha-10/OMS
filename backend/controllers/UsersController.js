@@ -1,9 +1,21 @@
 const User = require("../models/User");
 const createToken = require("../helpers/createToken");
+const storeMembershipRepo = require("../repos/storeMembershipRepo");
 
 const UserController = {
   me: async (req, res) => {
-    return res.json(req.user);
+    try {
+      const memberships = await storeMembershipRepo.findByUserId(req.user._id);
+      const stores = memberships.map((m) => ({
+        _id: m.store._id,
+        name: m.store.name,
+      }));
+      return res.json({ user: req.user,stores });
+      // return res.json(req.user);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal Server error" });
+    }
   },
   login: async (req, res) => {
     console.log("i work");
@@ -49,7 +61,7 @@ const UserController = {
     try {
       const { email, code } = req.body;
       const codeString = code.join("");
-      console.log("email",email);
+      console.log("email", email);
       const user = await User.findOne({ email });
 
       if (!user) return res.status(400).json({ message: "User not found" });

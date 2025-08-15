@@ -5,6 +5,7 @@ const Category = require("../models/Category");
 const Order = require("../models/Order");
 const clearProductCache = require("../helpers/clearProductCache");
 const uploadAdapter = require("./adapters/index");
+const productRepo = require("../repos/productRepo");
 
 // GET
 const getCachedProducts = async (cacheKey) => {
@@ -136,18 +137,40 @@ const findByName = async (name) => {
   return await Product.findOne({ name });
 };
 
+// const validateCategoryIds = (categories) => {
+//   return categories
+//     .map((categoryId) =>
+//       mongoose.Types.ObjectId.isValid(categoryId)
+//         ? new mongoose.Types.ObjectId(categoryId)
+//         : null
+//     )
+//     .filter(Boolean);
+// };
+
+// const createProduct = async (productData) => {
+//   return await Product.create(productData);
+// };
+
 const validateCategoryIds = (categories) => {
-  return categories
-    .map((categoryId) =>
-      mongoose.Types.ObjectId.isValid(categoryId)
-        ? new mongoose.Types.ObjectId(categoryId)
-        : null
-    )
-    .filter(Boolean);
+  if (!Array.isArray(categories) || categories.length === 0) {
+    throw new Error("Category must be a non-empty array");
+  }
+  return categories;
 };
 
-const createProduct = async (productData) => {
-  return await Product.create(productData);
+const createProduct = async (storeId, userId, productData) => {
+  const existing = await productRepo.findByName(storeId, productData.name);
+  if (existing) throw new Error("Product already exists");
+
+  const categoryIds = validateCategoryIds(productData.categories);
+  const product = await productRepo.create(storeId, {
+    ...productData,
+    categories: categoryIds,
+    createdBy: userId,
+  });
+
+  await productRepo.addProductToCategories(categoryIds, product._id);
+  return product;
 };
 
 // Show
@@ -222,7 +245,7 @@ const deleteProducts = async (ids) => {
 };
 
 const updateProduct = async (id, updateData) => {
-  console.log("updateData",updateData);
+  console.log("updateData", updateData);
   const { images, deletedImages, ...rest } = updateData;
 
   let updatedProduct;
@@ -308,7 +331,9 @@ const duplicateProduct = async (ids) => {
       // Optional: duplicate photo array if needed
       let duplicatedImages = [];
       if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
-        duplicatedImages = await uploadAdapter.duplicateImages(originalData.photo);
+        duplicatedImages = await uploadAdapter.duplicateImages(
+          originalData.photo
+        );
       }
 
       const duplicated = {
