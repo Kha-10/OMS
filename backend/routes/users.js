@@ -30,4 +30,6 @@ router.post(
 
 router.post("/verify-email", UserController.verify);
 
+router.post("/resend", UserController.resendVerificationCode);
+
 module.exports = router;

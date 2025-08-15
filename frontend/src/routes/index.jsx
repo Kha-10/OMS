@@ -37,13 +37,11 @@ import Onboarding from "@/Pages/Onboarding";
 function index() {
   // const { user } = useContext(AuthContext);
   const dispatch = useDispatch();
-  const { tenant } = useSelector((state) => state.tenants);
+  const { tenant, loading } = useSelector((state) => state.tenants);
 
   useEffect(() => {
     dispatch(fetchTenant());
   }, [dispatch]);
-
-  console.log("tenant", tenant?.onboarding_step);
 
   const router = createBrowserRouter([
     // {
@@ -72,7 +70,11 @@ function index() {
       children: [
         {
           path: "/",
-          element: tenant ? <TenantDashboard /> : <Navigate to={"/sign-in"} />,
+          element: tenant?.user ? (
+            <TenantDashboard />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
           // <ProtectedRoute allowedRoles={["tenant"]} redirectPath="/sign-in">
           //   <Home />
           // </ProtectedRoute>
@@ -103,7 +105,11 @@ function index() {
         },
         {
           path: "/:tennantName/orders/:id",
-          element: tenant ? <OrderReceipt /> : <Navigate to={"/sign-in"} />,
+          element: tenant?.user ? (
+            <OrderReceipt />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         // {
         //   path: "/checkout",
@@ -157,7 +163,7 @@ function index() {
         {
           path: "/sign-in",
           element:
-            !tenant || tenant?.onboarding_step < 6 ? (
+            !tenant?.user || tenant?.user?.onboarding_step < 6 ? (
               <SignInForm />
             ) : (
               <Navigate to={"/"} />
@@ -166,8 +172,11 @@ function index() {
         {
           path: "/sign-up",
           element:
-            !tenant || tenant?.onboarding_step < 6 ? (
-              <Onboarding stepper={tenant?.onboarding_step || 1} dbEmail={tenant?.email || ""} />
+            !tenant?.user || tenant?.user?.onboarding_step < 6 ? (
+              <Onboarding
+                stepper={tenant?.user?.onboarding_step || 1}
+                dbEmail={tenant?.user?.email || ""}
+              />
             ) : (
               <Navigate to={"/"} />
             ),

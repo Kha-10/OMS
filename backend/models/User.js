@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const sendEmail = require("../helpers/sendEmail");
+const Verification = require("./Verification");
 
 const Schema = mongoose.Schema;
 
@@ -29,8 +30,6 @@ const UserSchema = new Schema({
     type: Number,
     default: 1,
   },
-  verificationCode: String,
-  verificationCodeExpiresAt: Date,
 });
 
 UserSchema.statics.register = async function (
@@ -56,9 +55,14 @@ UserSchema.statics.register = async function (
     password: hashValue,
     countryCode,
     phoneLocal,
-    verificationCode,
-    verificationCodeExpiresAt: Date.now() + 15 * 60 * 1000, // 15 min
     onboarding_step: 2,
+  });
+
+  await Verification.create({
+    userId: user._id,
+    code: verificationCode,
+    type: "email",
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
   });
 
   await sendEmail({
@@ -67,7 +71,7 @@ UserSchema.statics.register = async function (
       verificationCode,
     },
     from: "nexoraDigital@gmail.com",
-    to: "kha@gmail.com",
+    to: user.email,
   });
 
   return user;

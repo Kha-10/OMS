@@ -43,6 +43,8 @@ import {
 import { useDispatch } from "react-redux";
 import { registerTenant } from "@/features/tenants/tenantSlice";
 import axios from "@/helper/axios";
+import { ToastContainer, toast } from "react-toastify";
+import LoadingButton from "@/components/LoadingButton";
 
 const step1Schema = z.object({
   username: z
@@ -189,11 +191,11 @@ export default function Onboarding({ stepper, dbEmail }) {
   const [productImage, setProductImage] = useState(null);
   const [products, setProducts] = useState([]);
   const [email, setEmail] = useState(dbEmail);
+  const [loading, setLoading] = useState(false);
   const storeLogoInputRef = useRef(null);
   const productImageInputRef = useRef(null);
   const otpInputRefs = useRef([]);
   const dispatch = useDispatch();
-
   const step1Form = useForm({
     resolver: zodResolver(step1Schema),
     defaultValues: {
@@ -337,23 +339,54 @@ export default function Onboarding({ stepper, dbEmail }) {
   };
 
   const handleAccountCreation = async (data) => {
-    // Handle account creation logic
     try {
+      setLoading(true);
       const createdUser = await dispatch(registerTenant(data)).unwrap();
-      setEmail(createdUser.email);
-      nextStep();
+      if (createdUser) {
+        setEmail(createdUser.email);
+        nextStep();
+        setLoading(false);
+      }
     } catch (error) {
       console.log("Error submitting the form", error);
+      setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerification = async (data) => {
-    let res = await axios.post("/api/users/verify-email", {
-      code: data.otp,
-      email,
-    });
-    if (res.status === 200) {
-      nextStep();
+    try {
+      setLoading(true);
+      let res = await axios.post("/api/users/verify-email", {
+        code: data.otp,
+        email,
+      });
+      if (res.status === 200) {
+        nextStep();
+        setLoading(false);
+      }
+    } catch (error) {
+      console.log("Error submitting the form", error);
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      let res = await axios.post("/api/users/resend", {
+        email,
+      });
+      if (res.status === 200) {
+        step2Form.setValue("otp", Array(6).fill(""));
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
     }
   };
 
@@ -570,21 +603,13 @@ export default function Onboarding({ stepper, dbEmail }) {
                   </div>
 
                   <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
-                    {/* <Button
-                      type="button"
-                      variant="outline"
-                      onClick={nextStep}
-                      className="order-2 rounded-xl bg-white sm:order-1"
-                    >
-                      Skip
-                    </Button> */}
-                    <Button
+                    <LoadingButton
+                      loading={loading}
                       disabled={!isStep1Valid}
-                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      icon={<ChevronRight className="h-4 w-4" />}
                     >
                       Continue
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    </LoadingButton>
                   </footer>
                 </form>
               </Form>
@@ -640,9 +665,10 @@ export default function Onboarding({ stepper, dbEmail }) {
                       <button
                         type="button"
                         className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                        onClick={() =>
-                          step2Form.setValue("otp", Array(6).fill(""))
-                        }
+                        // onClick={() =>
+                        //   step2Form.setValue("otp", Array(6).fill(""))
+                        // }
+                        onClick={handleResend}
                       >
                         Resend code
                       </button>
@@ -659,13 +685,13 @@ export default function Onboarding({ stepper, dbEmail }) {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button
+                    <LoadingButton
+                      loading={loading}
                       disabled={!isStep2Valid}
-                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      icon={<ChevronRight className="h-4 w-4" />}
                     >
                       Continue
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    </LoadingButton>
                   </footer>
                 </form>
               </Form>
@@ -784,13 +810,13 @@ export default function Onboarding({ stepper, dbEmail }) {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button
+                    <LoadingButton
+                      loading={loading}
                       disabled={!isStep3Valid}
-                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 sm:order-2"
+                      icon={<ChevronRight className="h-4 w-4" />}
                     >
                       Continue
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    </LoadingButton>
                   </footer>
                 </form>
               </Form>
@@ -952,13 +978,13 @@ export default function Onboarding({ stepper, dbEmail }) {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Button>
-                    <Button
+                    <LoadingButton
+                      loading={loading}
                       disabled={!isStep4Valid}
-                      className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
+                      icon={<ChevronRight className="h-4 w-4" />}
                     >
                       Continue
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    </LoadingButton>
                   </footer>
                 </form>
               </Form>
@@ -1182,12 +1208,9 @@ export default function Onboarding({ stepper, dbEmail }) {
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back
                       </Button>
-                      <Button
-                        disabled={!isStep5Valid}
-                        className="order-1 rounded-xl bg-blue-500 text-white hover:bg-blue-600 sm:order-2  disabled:bg-gray-300 disabled:text-gray-500"
-                      >
+                      <LoadingButton loading={loading} disabled={!isStep5Valid}>
                         Finish Setup
-                      </Button>
+                      </LoadingButton>
                     </footer>
                   </div>
                 </form>
@@ -1336,6 +1359,7 @@ export default function Onboarding({ stepper, dbEmail }) {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }

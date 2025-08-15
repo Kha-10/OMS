@@ -71,10 +71,6 @@ const authSlice = createSlice({
     error: null,
   },
   reducers: {
-    // logout: (state) => {
-    //   state.tenant = null;
-    //   localStorage.removeItem("tenant"); // Consistently use 'user'
-    // },
   },
   extraReducers: (builder) => {
     builder

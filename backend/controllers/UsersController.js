@@ -1,6 +1,8 @@
 const User = require("../models/User");
+const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
 const storeMembershipRepo = require("../repos/storeMembershipRepo");
+const crypto = require("crypto");
 
 const UserController = {
   me: async (req, res) => {
@@ -10,7 +12,7 @@ const UserController = {
         _id: m.store._id,
         name: m.store.name,
       }));
-      return res.json({ user: req.user,stores });
+      return res.json({ user: req.user, stores });
       // return res.json(req.user);
     } catch (error) {
       console.error(error);
@@ -68,23 +70,78 @@ const UserController = {
       if (user.isVerified)
         return res.status(400).json({ message: "Already verified" });
 
-      if (user.verificationCode !== codeString) {
+      const verification = await Verification.findOne({
+        userId: user._id,
+        code: codeString,
+        type: "email",
+      });
+
+      if (!verification) {
         return res.status(400).json({ message: "Invalid code" });
       }
 
-      if (user.verificationCodeExpiresAt < Date.now()) {
+      if (verification.expiresAt < Date.now()) {
         return res.status(400).json({ message: "Code expired" });
       }
 
       user.isVerified = true;
-      user.verificationCode = undefined;
-      user.verificationCodeExpiresAt = undefined;
       (user.onboarding_step = 3), await user.save();
+
+      await Verification.deleteOne({ _id: verification._id });
 
       res.json({ message: "Email verified successfully" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+  resendVerificationCode: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      if (user.isVerified) {
+        return res.status(400).json({ message: "User already verified" });
+      }
+
+      const lastCode = await Verification.findOne({
+        userId: user._id,
+        type: "email",
+      }).sort({ createdAt: -1 });
+
+      if (lastCode && lastCode.expiresAt > Date.now() - 60 * 1000) {
+        return res
+          .status(429)
+          .json({ message: "Please check your email for the verification code or try again shortly." });
+      }
+
+      await Verification.deleteMany({ userId: user._id, type: "email" });
+
+      const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+      await Verification.create({
+        userId: user._id,
+        code: verificationCode,
+        type: "email",
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      });
+
+      // Send email
+      await sendEmail({
+        viewFilename: "email",
+        data: { verificationCode },
+        from: "nexoraDigital@gmail.com",
+        to: user.email,
+      });
+
+      return res.json({ message: "Verification code resent" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
     }
   },
 };
