@@ -10,6 +10,8 @@ const create = async (storeId, data) => {
 };
 
 const addProductToCategories = async (categoryIds, productId) => {
+  console.log("categoryIds",categoryIds);
+  console.log("productId",productId);
   return Category.updateMany(
     { _id: { $in: categoryIds } },
     { $push: { products: productId } }

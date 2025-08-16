@@ -36,7 +36,6 @@ const findCategories = async (queryParams) => {
 
 const ensureTenantCategories = async (storeId, userId, categoryNames) => {
   const storeCategoryIds = [];
-  console.log("categoryNames",categoryNames);
   for (const name of categoryNames) {
     let storeCategory = await CategoryRepo.findByName(storeId, name);
 

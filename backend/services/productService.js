@@ -3,14 +3,16 @@ const redisClient = require("../config/redisClient");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Order = require("../models/Order");
+const User = require("../models/User");
 const clearProductCache = require("../helpers/clearProductCache");
 const uploadAdapter = require("./adapters/index");
-const productRepo = require("../repos/productRepo");
-const categoryService = require("../services/categoryService");
+const ProductRepo = require("../repo/productRepo");
+const StoreRepo = require("../repo/storeRepo");
+const CategoryService = require("../services/categoryService");
+
 // GET
 const getCachedProducts = async (cacheKey) => {
   const cachedData = await redisClient.get(cacheKey);
-  console.log("cachedData", cachedData);
   // return cachedData ? JSON.parse(cachedData) : null;
   return cachedData;
 };
@@ -138,6 +140,7 @@ const findByName = async (name) => {
 };
 
 const validateCategoryIds = (categories) => {
+  console.log('143',categories);
   return categories
     .map((categoryId) =>
       mongoose.Types.ObjectId.isValid(categoryId)
@@ -159,23 +162,27 @@ const validateCategoryIds = (categories) => {
 // };
 
 const createProduct = async (storeId, userId, productData) => {
-  const existing = await productRepo.findByName(storeId, productData.name);
+  const existing = await ProductRepo.findByName(storeId, productData.name);
   if (existing) throw new Error("Product already exists");
-  console.log("productData",productData);
-  const storeCategoryIds = await categoryService.ensureTenantCategories(
+
+  const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,
     productData.categories
   );
-
-  const categoryIds = validateCategoryIds(productData.categories);
-  const product = await productRepo.create(storeId, {
+  
+  const categoryIds = validateCategoryIds(storeCategoryIds);
+  const product = await ProductRepo.create(storeId, {
     ...productData,
     categories: storeCategoryIds,
     createdBy: userId,
   });
 
-  await productRepo.addProductToCategories(categoryIds, product._id);
+  await ProductRepo.addProductToCategories(categoryIds, product._id);
+  await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
+  await StoreRepo.update(storeId, {
+    "settings.currency": productData.currency,
+  });
   return product;
 };
 

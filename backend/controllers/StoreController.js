@@ -1,6 +1,7 @@
 const Store = require("../models/Store");
 const User = require("../models/User");
 const StoreMember = require("../models/StoreMember");
+const storeService = require("../services/storeService");
 const mongoose = require("mongoose");
 
 const StoreController = {
@@ -8,7 +9,7 @@ const StoreController = {
     try {
       const storeData = req.body;
       const ownerUserId = req.user._id;
-      
+
       const existingStore = await Store.findOne({ phone: storeData.phone });
 
       if (existingStore) {
@@ -72,6 +73,26 @@ const StoreController = {
       return res.json(store);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
+    }
+  },
+  update: async (req, res) => {
+    try {
+      const storeId = req.params.id;
+      const userId = req.userId;
+      const storeData = req.body;
+      console.log("req.body", req.body);
+      const store = await storeService.updatePaymentSettings(storeId, userId, storeData);
+
+      return res.json(store);
+    } catch (err) {
+      if (err.message === "Invalid store ID") {
+        return res.status(400).json({ msg: err.message });
+      }
+      if (err.message === "Store not found") {
+        return res.status(404).json({ msg: err.message });
+      }
+      console.error(err);
+      res.status(500).json({ msg: "Internal server error" });
     }
   },
 };

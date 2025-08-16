@@ -42,6 +42,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerTenant } from "@/features/tenants/tenantSlice";
 import axios from "@/helper/axios";
@@ -209,6 +210,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   const productImageInputRef = useRef(null);
   const otpInputRefs = useRef([]);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const defaultCategories = [
     "Electronics",
@@ -427,9 +429,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
       setLoading(true);
       let res = await axios.post("/api/stores", data);
       if (res.status === 200 && storeLogoInputRef.current.files[0]) {
+        setStoreId(res.data._id);
         const formData = new FormData();
         formData.append("photo", storeLogoInputRef.current.files[0]);
-        setStoreId(res.data._id);
         let imgResult = await axios.post(
           `/api/stores/${res.data._id}/upload?type=stores`,
           formData,
@@ -455,9 +457,6 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   };
 
   const handleProductAddition = async (data) => {
-    console.log("Store data:", data);
-    // Handle store setup logic
-    // nextStep();
     try {
       setLoading(true);
       let res = await axios.post(`/api/stores/${storeId}/products`, data);
@@ -488,10 +487,23 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
     }
   };
 
-  const handlePaymentConfig = (data) => {
+  const handlePaymentConfig = async (data) => {
     console.log("Store data:", data);
-    // Handle store setup logic
-    nextStep();
+    try {
+      setLoading(true);
+      let res = await axios.patch(`/api/stores/${storeId}/payment`, data);
+      if (res.status === 200) {
+        navigate("/");
+      }
+    } catch (error) {
+      console.log("Error submitting the form", error);
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const categoryDropdownRef = useRef(null);
