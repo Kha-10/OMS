@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
 const Product = require("../models/Product");
-const clearProductCache = require("../helpers/clearProductCache")
+const CategoryRepo = require("../repos/categoryRepo");
+const clearProductCache = require("../helpers/clearProductCache");
 
 const fetchCategoriesFromDB = async (queryParams) => {
   const page = Number(queryParams.page) || 1;
@@ -24,6 +25,73 @@ const findCategories = async (queryParams) => {
   let categoriesData = await fetchCategoriesFromDB(queryParams);
 
   return categoriesData;
+};
+
+// const validateProductIds = (categories) => {
+//   if (!Array.isArray(categories) || categories.length === 0) {
+//     throw new Error("Category must be a non-empty array");
+//   }
+//   return categories;
+// };
+
+const ensureTenantCategories = async (storeId, userId, categoryNames) => {
+  const storeCategoryIds = [];
+  console.log("categoryNames",categoryNames);
+  for (const name of categoryNames) {
+    let storeCategory = await CategoryRepo.findByName(storeId, name);
+
+    if (!storeCategory) {
+      storeCategory = await CategoryRepo.create(storeId, {
+        name,
+        createdBy: userId,
+      });
+    }
+
+    storeCategoryIds.push(storeCategory._id);
+  }
+
+  return storeCategoryIds;
+};
+
+const validateProductIds = (products) => {
+  return products
+    .map((productId) =>
+      mongoose.Types.ObjectId.isValid(productId)
+        ? new mongoose.Types.ObjectId(productId)
+        : null
+    )
+    .filter(Boolean);
+};
+
+const createCategory = async ({
+  storeId,
+  userId,
+  name,
+  visibility,
+  description,
+  products,
+}) => {
+  const existing = await CategoryRepo.findByName(storeId, name);
+  if (existing) throw new Error("Category already exists");
+
+  const lastCategory = await CategoryRepo.findLastCategory();
+  const newOrderIndex = lastCategory ? lastCategory.orderIndex + 1 : 0;
+
+  const extractedProductIds = products?.map((p) => p._id) || [];
+
+  const productIds = validateProductIds(extractedProductIds);
+
+  const category = await CategoryRepo.create(storeId, {
+    name,
+    visibility,
+    orderIndex: newOrderIndex,
+    description,
+    products: productIds,
+    createdBy: userId,
+  });
+
+  await CategoryRepo.addCategoryToProducts(productIds, category._id);
+  return category;
 };
 
 // UPDATE
@@ -75,7 +143,7 @@ const deleteCategories = async (ids) => {
     const categories = await Category.find({ _id: { $in: ids } }).session(
       session
     );
-      console.log("categories",categories);
+    console.log("categories", categories);
     if (categories.length === 0) {
       await session.abortTransaction();
       session.endSession();
@@ -109,6 +177,8 @@ const deleteCategories = async (ids) => {
 
 module.exports = {
   findCategories,
+  createCategory,
+  ensureTenantCategories,
   updateProducts,
   deleteCategories,
 };

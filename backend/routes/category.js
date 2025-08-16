@@ -2,6 +2,7 @@ const express = require("express");
 const CategoriesController = require("../controllers/CategoriesController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
+const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
 
 const router = express.Router();
@@ -16,18 +17,17 @@ router.post(
       .withMessage("Product IDs must be a non-empty array"),
     body("visibility").notEmpty(),
   ],
-  // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
+  // RoleMiddleware(["tenant", "superadmin"]),
   CategoriesController.updateVisibility
 );
 
 router.post(
   "",
-  [
-    body("name").notEmpty(),
-  ],
-  // RoleMiddleware(["tenant", "superadmin"]),
+  [body("name").notEmpty()],
   handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   CategoriesController.store
 );
 

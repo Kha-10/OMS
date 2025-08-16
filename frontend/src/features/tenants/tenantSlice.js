@@ -56,9 +56,10 @@ export const registerTenant = createAsyncThunk(
         withCredentials: true, // if you need cookies sent
       });
       // No payload needed on success
-      return res.data.user;
+      return res.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || "Failed to logout");
+      console.log("registerTenant",error);
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.errors || "Failed to register");
     }
   }
 );
@@ -124,9 +125,9 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(registerTenant.fulfilled, (state) => {
+      .addCase(registerTenant.fulfilled, (state,action) => {
         state.loading = false;
-        state.tenant = null;
+        state.tenant = action.payload;
         // localStorage.removeItem("tenant");
       })
       .addCase(registerTenant.rejected, (state, action) => {

@@ -1,11 +1,12 @@
 import React from "react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   Eye,
   EyeOff,
   FileImage,
@@ -19,6 +20,7 @@ import {
   User,
   MapPin,
   Store,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,20 +79,29 @@ const step3Schema = z.object({
 const step4Schema = z
   .object({
     name: z.string().optional(),
+    categories: z.array(z.string()).optional(),
     currency: z.enum(["USD", "EUR", "GBP", "THB", "MMK"]).optional(),
     price: z.string().optional(),
     addSamples: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    const { addSamples, productName, currency, price } = data;
+    const { addSamples, name, categories, currency, price } = data;
 
     if (addSamples !== true) {
-      // Require productName, currency, price
-      if (!productName) {
+      // Require name, categories, currency, price
+      if (!name) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["productName"],
+          path: ["name"],
           message: "Product name is required when samples are not added",
+        });
+      }
+      if (!categories || categories.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["categories"],
+          message:
+            "At least one category is required when samples are not added",
         });
       }
       if (!currency) {
@@ -184,18 +195,36 @@ const step5Schema = z
     }
   });
 
-export default function Onboarding({ stepper, dbEmail }) {
+export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   const [step, setStep] = useState(stepper);
   const [showPassword, setShowPassword] = useState(false);
   const [storeLogo, setStoreLogo] = useState(null);
   const [productImage, setProductImage] = useState(null);
   const [products, setProducts] = useState([]);
   const [email, setEmail] = useState(dbEmail);
+  const [storeId, setStoreId] = useState(dbStoreId);
   const [loading, setLoading] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const storeLogoInputRef = useRef(null);
   const productImageInputRef = useRef(null);
   const otpInputRefs = useRef([]);
   const dispatch = useDispatch();
+
+  const defaultCategories = [
+    "Electronics",
+    "Clothing",
+    "Food & Beverages",
+    "Home & Garden",
+    "Health & Beauty",
+    "Sports & Outdoors",
+    "Books & Media",
+    "Toys & Games",
+    "Automotive",
+    "Office Supplies",
+    "Jewelry & Accessories",
+    "Art & Crafts",
+  ];
+
   const step1Form = useForm({
     resolver: zodResolver(step1Schema),
     defaultValues: {
@@ -228,6 +257,7 @@ export default function Onboarding({ stepper, dbEmail }) {
     resolver: zodResolver(step4Schema),
     defaultValues: {
       name: "",
+      categories: [],
       currency: "USD",
       price: "",
       addSamples: false,
@@ -255,7 +285,7 @@ export default function Onboarding({ stepper, dbEmail }) {
   const isStep5Valid = step5Form.formState.isValid;
 
   const nextStep = () => {
-    if (step < 5) setStep(step + 1);
+    setStep((prevStep) => (prevStep < 5 ? prevStep + 1 : prevStep));
   };
 
   const prevStep = () => {
@@ -342,13 +372,15 @@ export default function Onboarding({ stepper, dbEmail }) {
     try {
       setLoading(true);
       const createdUser = await dispatch(registerTenant(data)).unwrap();
-      if (createdUser) {
-        setEmail(createdUser.email);
+      if (createdUser?.user) {
+        setEmail(createdUser?.user?.email);
         nextStep();
-        setLoading(false);
       }
     } catch (error) {
       console.log("Error submitting the form", error);
+      toast.error(error?.response?.data?.message || error?.email?.msg, {
+        position: "top-center",
+      });
       setLoading(false);
     } finally {
       setLoading(false);
@@ -362,9 +394,9 @@ export default function Onboarding({ stepper, dbEmail }) {
         code: data.otp,
         email,
       });
+      console.log("res", res);
       if (res.status === 200) {
         nextStep();
-        setLoading(false);
       }
     } catch (error) {
       console.log("Error submitting the form", error);
@@ -391,22 +423,34 @@ export default function Onboarding({ stepper, dbEmail }) {
   };
 
   const handleStoreSetup = async (data) => {
-    let res = await axios.post("/api/stores", data);
-    if (res.status === 200 && storeLogoInputRef.current.files[0]) {
-      const formData = new FormData();
-      formData.append("photo", storeLogoInputRef.current.files[0]);
-      let imgResult = await axios.post(
-        `/api/stores/${res.data._id}/upload?type=stores`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+    try {
+      setLoading(true);
+      let res = await axios.post("/api/stores", data);
+      if (res.status === 200 && storeLogoInputRef.current.files[0]) {
+        const formData = new FormData();
+        formData.append("photo", storeLogoInputRef.current.files[0]);
+        setStoreId(res.data._id);
+        let imgResult = await axios.post(
+          `/api/stores/${res.data._id}/upload?type=stores`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        if (imgResult.status === 200) {
+          nextStep();
         }
-      );
-      if (imgResult.status === 200) {
-        nextStep();
       }
+    } catch (error) {
+      console.log("Error submitting the form", error);
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
+      setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -414,23 +458,34 @@ export default function Onboarding({ stepper, dbEmail }) {
     console.log("Store data:", data);
     // Handle store setup logic
     // nextStep();
-    let res = await axios.post("/api/products?type=onBoarding", data);
-    // if (res.status === 200 && productImageInputRef.current.files[0]) {
-    //   const formData = new FormData();
-    //   formData.append("photo", productImageInputRef.current.files[0]);
-    //   let imgResult = await axios.post(
-    //     `/api/products/${res.data._id}/upload`,
-    //     formData,
-    //     {
-    //       headers: {
-    //         "Content-Type": "multipart/form-data",
-    //       },
-    //     }
-    //   );
-    //   if (imgResult.status === 200) {
-    //     nextStep();
-    //   }
-    // }
+    try {
+      setLoading(true);
+      let res = await axios.post(`/api/stores/${storeId}/products`, data);
+      if (res.status === 200 && productImageInputRef.current.files[0]) {
+        const formData = new FormData();
+        formData.append("photo", productImageInputRef.current.files[0]);
+        let imgResult = await axios.post(
+          `/api/products/${res.data._id}/upload`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        if (imgResult.status === 200) {
+          nextStep();
+        }
+      }
+    } catch (error) {
+      console.log("Error submitting the form", error);
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePaymentConfig = (data) => {
@@ -438,6 +493,27 @@ export default function Onboarding({ stepper, dbEmail }) {
     // Handle store setup logic
     nextStep();
   };
+
+  const categoryDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    if (showCategoryDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showCategoryDropdown]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-28">
@@ -853,6 +929,93 @@ export default function Onboarding({ stepper, dbEmail }) {
                               className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                               {...field}
                             />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={step4Form.control}
+                      name="categories"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Categories</FormLabel>
+                          <FormControl>
+                            <div className="relative" ref={categoryDropdownRef}>
+                              {/* Input Display */}
+                              <div
+                                onClick={() =>
+                                  setShowCategoryDropdown(!showCategoryDropdown)
+                                }
+                                className="flex min-h-[44px] w-full cursor-pointer flex-wrap items-center gap-1 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:min-h-[48px] sm:text-base"
+                              >
+                                {field.value?.length > 0 ? (
+                                  field.value.map((category) => (
+                                    <span
+                                      key={category}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
+                                    >
+                                      {category}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          field.onChange(
+                                            field.value.filter(
+                                              (c) => c !== category
+                                            )
+                                          );
+                                        }}
+                                        className="ml-1 hover:text-blue-600"
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    Select categories
+                                  </span>
+                                )}
+                                <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+                              </div>
+
+                              {/* Dropdown */}
+                              {showCategoryDropdown && (
+                                <div className="absolute top-full z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-popover shadow-lg">
+                                  {defaultCategories.map((category) => (
+                                    <div
+                                      key={category}
+                                      onClick={() => {
+                                        if (field.value?.includes(category)) {
+                                          field.onChange(
+                                            field.value.filter(
+                                              (c) => c !== category
+                                            )
+                                          );
+                                        } else {
+                                          field.onChange([
+                                            ...(field.value || []),
+                                            category,
+                                          ]);
+                                        }
+                                      }}
+                                      className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-accent ${
+                                        field.value?.includes(category)
+                                          ? "bg-blue-50 text-blue-700"
+                                          : ""
+                                      }`}
+                                    >
+                                      <span>{category}</span>
+                                      {field.value?.includes(category) && (
+                                        <Check className="h-4 w-4 text-blue-600" />
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>

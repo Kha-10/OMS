@@ -71,6 +71,7 @@ const productSchema = new schema(
       type: String,
       enum: ["physical", "digital", "service"],
       required: true,
+      default: "physical"
     },
     price: { type: Number, required: true },
     originalPrice: { type: Number, default: 0 },

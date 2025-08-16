@@ -6,7 +6,7 @@ const Order = require("../models/Order");
 const clearProductCache = require("../helpers/clearProductCache");
 const uploadAdapter = require("./adapters/index");
 const productRepo = require("../repos/productRepo");
-
+const categoryService = require("../services/categoryService");
 // GET
 const getCachedProducts = async (cacheKey) => {
   const cachedData = await redisClient.get(cacheKey);
@@ -137,35 +137,41 @@ const findByName = async (name) => {
   return await Product.findOne({ name });
 };
 
-// const validateCategoryIds = (categories) => {
-//   return categories
-//     .map((categoryId) =>
-//       mongoose.Types.ObjectId.isValid(categoryId)
-//         ? new mongoose.Types.ObjectId(categoryId)
-//         : null
-//     )
-//     .filter(Boolean);
-// };
+const validateCategoryIds = (categories) => {
+  return categories
+    .map((categoryId) =>
+      mongoose.Types.ObjectId.isValid(categoryId)
+        ? new mongoose.Types.ObjectId(categoryId)
+        : null
+    )
+    .filter(Boolean);
+};
 
 // const createProduct = async (productData) => {
 //   return await Product.create(productData);
 // };
 
-const validateCategoryIds = (categories) => {
-  if (!Array.isArray(categories) || categories.length === 0) {
-    throw new Error("Category must be a non-empty array");
-  }
-  return categories;
-};
+// const validateCategoryIds = (categories) => {
+//   if (!Array.isArray(categories) || categories.length === 0) {
+//     throw new Error("Category must be a non-empty array");
+//   }
+//   return categories;
+// };
 
 const createProduct = async (storeId, userId, productData) => {
   const existing = await productRepo.findByName(storeId, productData.name);
   if (existing) throw new Error("Product already exists");
+  console.log("productData",productData);
+  const storeCategoryIds = await categoryService.ensureTenantCategories(
+    storeId,
+    userId,
+    productData.categories
+  );
 
   const categoryIds = validateCategoryIds(productData.categories);
   const product = await productRepo.create(storeId, {
     ...productData,
-    categories: categoryIds,
+    categories: storeCategoryIds,
     createdBy: userId,
   });
 

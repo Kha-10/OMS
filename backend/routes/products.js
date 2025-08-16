@@ -46,6 +46,7 @@ router.post(
       .isArray({ min: 1 })
       .withMessage("Category must be a non-empty array"),
   ],
+  handleErrorMessage,
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager"]),
   ProductsController.store

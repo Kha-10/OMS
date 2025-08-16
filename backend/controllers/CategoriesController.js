@@ -26,47 +26,74 @@ const CategoriesController = {
           hasPreviousPage: page > 1,
         },
       };
-      console.log("response",response);
+      console.log("response", response);
       return res.json(response);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
+  // store: async (req, res) => {
+  //   const { name, visibility, description, products } = req.body;
+
+  //   try {
+  //     const existingCategory = await Category.findOne({ name });
+
+  //     if (existingCategory) {
+  //       return res.status(409).json({ msg: "Category name already exists" });
+  //     }
+
+  //     const lastCategory = await Category.findOne().sort({ orderIndex: -1 });
+
+  //     const newOrderIndex = lastCategory ? lastCategory.orderIndex + 1 : 0;
+
+  //     const extractedProductIds = products?.map((product) => product._id);
+  //     const category = await Category.create({
+  //       name,
+  //       visibility,
+  //       orderIndex: newOrderIndex,
+  //       description,
+  //       products: extractedProductIds?.length > 0 ? extractedProductIds : [],
+  //     });
+
+  //     // Update category references
+  //     await Product.updateMany(
+  //       { _id: { $in: extractedProductIds } },
+  //       { $push: { categories: category._id } }
+  //     );
+
+  //     await clearProductCache();
+
+  //     return res.json(category);
+  //   } catch (error) {
+  //     console.error("Error creating category:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   store: async (req, res) => {
-    const { name, visibility, description, products } = req.body;
-
     try {
-      const existingCategory = await Category.findOne({ name });
+      const storeId = req.storeId;
+      const userId = req.userId;
 
-      if (existingCategory) {
-        return res.status(409).json({ msg: "Category name already exists" });
-      }
+      const { name, visibility, description, products } = req.body;
 
-      const lastCategory = await Category.findOne().sort({ orderIndex: -1 });
-
-      const newOrderIndex = lastCategory ? lastCategory.orderIndex + 1 : 0;
-
-      const extractedProductIds = products?.map((product) => product._id);
-      const category = await Category.create({
+      const category = await categoryService.createCategory({
+        storeId,
+        userId,
         name,
         visibility,
-        orderIndex: newOrderIndex,
         description,
-        products: extractedProductIds?.length > 0 ? extractedProductIds : [],
+        products,
       });
-
-      // Update category references
-      await Product.updateMany(
-        { _id: { $in: extractedProductIds } },
-        { $push: { categories: category._id } }
-      );
 
       await clearProductCache();
 
       return res.json(category);
     } catch (error) {
+      if (error.message === "Category name already exists") {
+        return res.status(409).json({ msg: error.message });
+      }
       console.error("Error creating category:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      return res.status(500).json({ msg: "internal server error" });
     }
   },
   show: async (req, res) => {

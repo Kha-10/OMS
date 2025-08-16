@@ -7,7 +7,7 @@ const crypto = require("crypto");
 const UserController = {
   me: async (req, res) => {
     try {
-      const memberships = await storeMembershipRepo.findByUserId(req.user._id);
+      const memberships = await storeMembershipRepo.findByUserId(req.user?._id);
       const stores = memberships.map((m) => ({
         _id: m.store._id,
         name: m.store.name,
@@ -20,11 +20,9 @@ const UserController = {
     }
   },
   login: async (req, res) => {
-    console.log("i work");
     try {
       let { email, password } = req.body;
       let user = await User.login(email, password);
-      console.log("mmsp", user);
       let token = createToken(user._id);
       res.cookie("jwt", token, {
         httpOnly: true,

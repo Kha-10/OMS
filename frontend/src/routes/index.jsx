@@ -38,7 +38,7 @@ function index() {
   // const { user } = useContext(AuthContext);
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
-
+  console.log(tenant);
   useEffect(() => {
     dispatch(fetchTenant());
   }, [dispatch]);
@@ -176,6 +176,7 @@ function index() {
               <Onboarding
                 stepper={tenant?.user?.onboarding_step || 1}
                 dbEmail={tenant?.user?.email || ""}
+                dbStoreId={tenant?.stores?.[0]?._id || ""}
               />
             ) : (
               <Navigate to={"/"} />

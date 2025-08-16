@@ -8,8 +8,7 @@ const StoreController = {
     try {
       const storeData = req.body;
       const ownerUserId = req.user._id;
-      console.log("storetData", storeData);
-      console.log("user", req.user);
+      
       const existingStore = await Store.findOne({ phone: storeData.phone });
 
       if (existingStore) {

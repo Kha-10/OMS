@@ -77,9 +77,9 @@ const ProductsController = {
 
   store: async (req, res) => {
     try {
-      const storeId = req.storeId; // from middleware
+      const storeId = req.storeId;
       const userId = req.userId;
-
+      console.log("req.body", req.body);
       const product = await productService.createProduct(
         storeId,
         userId,
@@ -87,7 +87,7 @@ const ProductsController = {
       );
 
       await clearProductCache();
-      res.json(product);
+      return res.json(product);
     } catch (error) {
       console.error("Error creating Product:", error);
       const status = error.message.includes("exists") ? 409 : 500;

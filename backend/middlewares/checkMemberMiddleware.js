@@ -2,10 +2,9 @@ const StoreMember = require("../models/StoreMember");
 
 const checkMemberMiddleware = async (req, res, next) => {
   const userId = req.user.id;
+  const storeId = req.params.id || req.user.storeId;
 
-  const storeId = req.params.id;
-
-  const member = await StoreMember.findOne({ storeId, userId });
+  const member = await StoreMember.findOne({ store: storeId, user: userId });
   if (!member) return res.status(403).json({ message: "Not a store member" });
 
   req.storeId = storeId;
