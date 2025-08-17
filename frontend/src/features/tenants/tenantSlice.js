@@ -25,7 +25,7 @@ export const loginTenant = createAsyncThunk(
       const response = await axios.post("/api/users/login", data, {
         withCredentials: true,
       });
-      console.log('login',response.data); // For debugging purposes
+      console.log("login", response.data); // For debugging purposes
       return response.data; // Assuming superAdmin info is returned
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to log in");
@@ -41,7 +41,7 @@ export const logoutTenant = createAsyncThunk(
         withCredentials: true, // if you need cookies sent
       });
       // No payload needed on success
-      return;
+      return { success: true };
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to logout");
     }
@@ -58,8 +58,12 @@ export const registerTenant = createAsyncThunk(
       // No payload needed on success
       return res.data;
     } catch (error) {
-      console.log("registerTenant",error);
-      return rejectWithValue(error.response?.data?.error || error.response?.data?.errors || "Failed to register");
+      console.log("registerTenant", error);
+      return rejectWithValue(
+        error.response?.data?.error ||
+          error.response?.data?.errors ||
+          "Failed to register"
+      );
     }
   }
 );
@@ -71,8 +75,7 @@ const authSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Fetch user
@@ -125,7 +128,7 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(registerTenant.fulfilled, (state,action) => {
+      .addCase(registerTenant.fulfilled, (state, action) => {
         state.loading = false;
         state.tenant = action.payload;
         // localStorage.removeItem("tenant");

@@ -11,25 +11,25 @@ import {
 import { Menu, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutTenant } from "@/features/tenants/tenantSlice";
-import axios from "@/helper/axios";
 import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ onOpenSidebar }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, tenant, error } = useSelector((state) => state.tenants);
-  console.log(tenant);
 
   const logoutHandler = async () => {
     try {
       // setLoading(true);
-
-      dispatch(logoutTenant());
-      navigate("/sign-in");
+      const loggedOutUser = await dispatch(logoutTenant()).unwrap();
+      if (loggedOutUser.success) {
+        navigate("/sign-in");
+      }
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
+  
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -64,10 +64,10 @@ export default function Navbar({ onOpenSidebar }) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {tenant?.name}
+                      {tenant?.user?.username}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {tenant?.email}
+                      {tenant?.user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
