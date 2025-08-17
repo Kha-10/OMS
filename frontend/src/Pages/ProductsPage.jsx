@@ -7,7 +7,7 @@ import Badges from "@/components/Products/Badges";
 import { useSearchParams } from "react-router-dom";
 import axios from "@/helper/axios";
 import debounce from "lodash.debounce";
-import InitialLoading from "@/components/InitialLoading";
+// import InitialLoading from "@/components/InitialLoading";
 import ErrorMessage from "@/components/ErrorMessages";
 import useProducts from "@/hooks/useProducts";
 

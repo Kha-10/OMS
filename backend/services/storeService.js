@@ -1,4 +1,4 @@
-const storeRepo = require("../repos/storeRepo");
+const storeRepo = require("../repo/storeRepo");
 const User = require("../models/User");
 const mongoose = require("mongoose");
 

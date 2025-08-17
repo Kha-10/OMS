@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
-const storeMembershipRepo = require("../repos/storeMembershipRepo");
+const storeMembershipRepo = require("../repo/storeMembershipRepo");
 const crypto = require("crypto");
 
 const UserController = {

@@ -17,7 +17,6 @@ import { AuthContext } from "@/contexts/authContext.jsx";
 import Unauthorized from "@/components/Unauthorized";
 import ResetPassword from "@/Pages/ResetPassword";
 import ExpiredPage from "@/Pages/ExpiredPage";
-import UsedLink from "@/Pages/UsedLink";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSuperAdmin } from "../features/superadmin/superadminSlice";
 import { fetchTenant } from "@/features/tenants/tenantSlice";
@@ -59,10 +58,6 @@ function index() {
     {
       path: "/expired-link",
       element: <ExpiredPage />,
-    },
-    {
-      path: "/used-link",
-      element: <UsedLink />,
     },
     {
       path: "/",

@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-// import InitialLoading from "./components/InitialLoading";
+import LoadingSpinner from "./components/LoadingSpinner";
 import Nav from "./components/Nav";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
@@ -12,7 +12,6 @@ export default function RootLayout() {
   const location = useLocation();
   const pathnames = location.pathname;
   const excludedPrefixes = ["/checkout", `/addToCart`];
-  console.log("pathnames",pathnames);
   const includedPrefixes = [
     "/",
     `/orders`,
@@ -32,12 +31,11 @@ export default function RootLayout() {
     return pathnames.startsWith(prefix);
   });
 
-
   const showSidebar = !isExcluded && isIncluded;
 
-  //   if (loading) {
-  //     return <InitialLoading />;
-  //   }
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return tenant ? (
     <div className="flex min-h-screen">

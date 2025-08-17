@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
 const Product = require("../models/Product");
-const CategoryRepo = require("../repos/categoryRepo");
+const CategoryRepo = require("../repo/categoryRepo");
 const clearProductCache = require("../helpers/clearProductCache");
 
 const fetchCategoriesFromDB = async (queryParams) => {
