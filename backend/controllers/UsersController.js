@@ -3,6 +3,7 @@ const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
 const storeMembershipRepo = require("../repo/storeMembershipRepo");
 const crypto = require("crypto");
+const StoreMember = require("../models/StoreMember");
 
 const UserController = {
   me: async (req, res) => {
@@ -23,12 +24,19 @@ const UserController = {
     try {
       let { email, password } = req.body;
       let user = await User.login(email, password);
-      let token = createToken(user._id);
+
+      const memberships = await storeMembershipRepo.findByUserId(user._id);
+      const stores = memberships.map((m) => ({
+        _id: m.store._id,
+        name: m.store.name,
+      }));
+
+      let token = createToken(user._id, stores[0]?._id);
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
       });
-      return res.json({ user, token });
+      return res.json({ user, token, stores });
     } catch (e) {
       return res.status(400).json({ error: e.message });
     }
@@ -112,9 +120,10 @@ const UserController = {
       }).sort({ createdAt: -1 });
 
       if (lastCode && lastCode.expiresAt > Date.now() - 60 * 1000) {
-        return res
-          .status(429)
-          .json({ message: "Please check your email for the verification code or try again shortly." });
+        return res.status(429).json({
+          message:
+            "Please check your email for the verification code or try again shortly.",
+        });
       }
 
       await Verification.deleteMany({ userId: user._id, type: "email" });

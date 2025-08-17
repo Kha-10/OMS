@@ -11,6 +11,8 @@ const AuthMiddleware = (req, res, next) => {
         //logged in user
         User.findById(decodedValue._id).then((user) => {
           req.user = user;
+          req.storeId = decodedValue.storeId;
+          console.log("decodedValue",decodedValue.storeId);
           next();
         });
       }

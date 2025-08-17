@@ -2,6 +2,7 @@ const Store = require("../models/Store");
 const User = require("../models/User");
 const StoreMember = require("../models/StoreMember");
 const storeService = require("../services/storeService");
+const createToken = require("../helpers/createToken");
 const mongoose = require("mongoose");
 
 const StoreController = {
@@ -27,6 +28,8 @@ const StoreController = {
       });
 
       await User.findByIdAndUpdate(ownerUserId, { onboarding_step: 4 });
+
+      createToken(ownerUserId, store._id);
 
       return res.json(store);
     } catch (error) {
@@ -81,7 +84,11 @@ const StoreController = {
       const userId = req.userId;
       const storeData = req.body;
       console.log("req.body", req.body);
-      const store = await storeService.updatePaymentSettings(storeId, userId, storeData);
+      const store = await storeService.updatePaymentSettings(
+        storeId,
+        userId,
+        storeData
+      );
 
       return res.json(store);
     } catch (err) {
