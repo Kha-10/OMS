@@ -1,9 +1,7 @@
 const User = require("../models/User");
 const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
-const storeMembershipRepo = require("../repo/storeMembershipRepo");
 const crypto = require("crypto");
-const StoreMember = require("../models/StoreMember");
 
 const UserController = {
   me: async (req, res) => {

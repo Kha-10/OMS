@@ -18,8 +18,8 @@ import Unauthorized from "@/components/Unauthorized";
 import ResetPassword from "@/Pages/ResetPassword";
 import ExpiredPage from "@/Pages/ExpiredPage";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchSuperAdmin } from "../features/superadmin/superadminSlice";
 import { fetchTenant } from "@/features/tenants/tenantSlice";
+import { fetchStore } from "@/features/stores/storeSlice";
 import Layout from "@/Layout";
 import CustomerPage from "@/Pages/CustomerPage";
 import NewCustomer from "@/Pages/NewCustomer";
@@ -37,9 +37,12 @@ function index() {
   // const { user } = useContext(AuthContext);
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
+  const { stores } = useSelector((state) => state.stores);
   console.log(tenant);
+  console.log(stores);
   useEffect(() => {
     dispatch(fetchTenant());
+    dispatch(fetchStore());
   }, [dispatch]);
 
   const router = createBrowserRouter([
@@ -65,7 +68,7 @@ function index() {
       children: [
         {
           path: "/",
-          element: tenant?.user ? (
+          element: tenant ? (
             <TenantDashboard />
           ) : (
             <Navigate to={"/sign-in"} />
@@ -100,7 +103,7 @@ function index() {
         },
         {
           path: "/:tennantName/orders/:id",
-          element: tenant?.user ? (
+          element: tenant ?  (
             <OrderReceipt />
           ) : (
             <Navigate to={"/sign-in"} />
@@ -158,7 +161,7 @@ function index() {
         {
           path: "/sign-in",
           element:
-            !tenant?.user || tenant?.user?.onboarding_step < 6 ? (
+            !tenant || tenant?.onboarding_step < 6 ? (
               <SignInForm />
             ) : (
               <Navigate to={"/"} />
@@ -167,11 +170,11 @@ function index() {
         {
           path: "/sign-up",
           element:
-            !tenant?.user || tenant?.user?.onboarding_step < 6 ? (
+            !tenant|| tenant?.onboarding_step < 6 ? (
               <Onboarding
-                stepper={tenant?.user?.onboarding_step || 1}
-                dbEmail={tenant?.user?.email || ""}
-                dbStoreId={tenant?.stores?.[0]?._id || ""}
+                stepper={tenant?.onboarding_step || 1}
+                dbEmail={tenant?.email || ""}
+                dbStoreId={stores?.[0]?._id || ""}
               />
             ) : (
               <Navigate to={"/"} />

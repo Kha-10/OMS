@@ -12,7 +12,9 @@ import { useSelector } from "react-redux";
 
 function TenantDashboard() {
   const { tenant, loading } = useSelector((state) => state.tenants);
+  const { stores } = useSelector((state) => state.stores)
   console.log(tenant);
+  console.log(stores);
   const { data } = useAnalytics();
   const navigate = useNavigate();
 

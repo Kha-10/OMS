@@ -7,7 +7,6 @@ export const fetchTenant = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios("/api/users/me");
-      console.log("response", response);
       return response.data;
     } catch (error) {
       return rejectWithValue(

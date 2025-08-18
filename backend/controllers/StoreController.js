@@ -8,7 +8,7 @@ const StoreController = {
   index: async (req, res) => {
     try {
       const userId = req.user?._id;
-      const stores = await getStoreByUserId(userId);
+      const stores = await storeService.getStoreByUserId(userId);
       return res.json(stores);
     } catch (err) {
       if (err.message === "Invalid store ID") {

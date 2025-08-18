@@ -13,6 +13,8 @@ const upload = multer({ storage: storage });
 
 const router = express.Router();
 
+router.get("", StoreController.index);
+
 router.post(
   "",
   [body("name").notEmpty(), body("phone").notEmpty()],
