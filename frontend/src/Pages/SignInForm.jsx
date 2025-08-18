@@ -16,7 +16,8 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/authContext";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTenant, loginTenant } from "@/features/tenants/tenantSlice";
+import { loginTenant } from "@/features/tenants/tenantSlice";
+import { fetchStore } from "@/features/stores/storeSlice";
 
 function SignInForm() {
   let navigate = useNavigate();
@@ -27,20 +28,21 @@ function SignInForm() {
     },
   });
   // const { dispatch, setLoading, error, setError } = useContext(AuthContext);
-  const { loading, tenant, error } = useSelector((state) => state.tenants);
+  const { error } = useSelector((state) => state.tenants);
   console.log(error);
   const dispatch = useDispatch();
 
   const onSubmit = async (data) => {
     try {
-      console.log('called');
-      dispatch(loginTenant(data));
+      const user = await dispatch(loginTenant(data)).unwrap();
+      if (user) {
+        dispatch(fetchStore());
+      }
       navigate("/");
     } catch (error) {
       console.log("Error during login:", error);
     }
   };
-
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -93,7 +95,9 @@ function SignInForm() {
               )}
             />
             <div className="w-full flex items-center justify-between">
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">Login</Button>
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                Login
+              </Button>
               <span className="text-sm text-gray-400">
                 Don't have an account?
                 <Link to={"/sign-up"} className=" text-blue-400 ml-1">

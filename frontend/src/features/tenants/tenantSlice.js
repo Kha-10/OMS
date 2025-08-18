@@ -24,8 +24,8 @@ export const loginTenant = createAsyncThunk(
       const response = await axios.post("/api/users/login", data, {
         withCredentials: true,
       });
-      console.log("login", response.data); // For debugging purposes
-      return response.data; // Assuming superAdmin info is returned
+      console.log("login", response.data.user); // For debugging purposes
+      return response.data.user; // Assuming superAdmin info is returned
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to log in");
     }

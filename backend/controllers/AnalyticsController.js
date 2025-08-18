@@ -3,7 +3,6 @@ const AnalyticsService = require("../services/analyticsService");
 const AnalyticsController = {
   getAnalytics: async (req, res) => {
     try {
-      console.log("req",req);
       const storeId = req.storeId;
       const { startDate, endDate, threshold } = req.query;
 

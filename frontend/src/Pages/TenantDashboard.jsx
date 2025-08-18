@@ -10,7 +10,7 @@ import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate } from "react-router-dom";
 
 function TenantDashboard({stores}) {
-  const { data } = useAnalytics(stores[0]?._id);
+  const { data } = useAnalytics(stores?.[0]?._id);
   const navigate = useNavigate();
 
   return (

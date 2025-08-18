@@ -38,8 +38,7 @@ function index() {
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
-  console.log(tenant);
-  console.log(stores);
+
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());

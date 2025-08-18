@@ -1,17 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 
-const fetchAnalytics = async () => {
-  const url = `/api/analytics`;
+const fetchAnalytics = async ({ queryKey }) => {
+  const [, { storeId }] = queryKey;
+  const url = storeId ? `/api/stores/${storeId}/analytics` : "";
 
   const res = await axios.get(url);
 
   return res.data;
 };
 
-const useAnalytics = () => {
+const useAnalytics = (storeId) => {
   return useQuery({
-    queryKey: ["analytics"],
+    queryKey: ["analytics", { storeId }],
     queryFn: fetchAnalytics,
     keepPreviousData: true,
     onError: (error) => {
