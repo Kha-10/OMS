@@ -32,4 +32,6 @@ router.post("/verify-email", UserController.verify);
 
 router.post("/resend", UserController.resendVerificationCode);
 
+router.patch("/skip", AuthMiddleware, UserController.skip);
+
 module.exports = router;

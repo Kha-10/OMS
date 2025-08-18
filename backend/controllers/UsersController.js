@@ -137,6 +137,31 @@ const UserController = {
       return res.status(500).json({ message: "Server error" });
     }
   },
+  skip: async (req, res) => {
+    try {
+      let userId = req.user._id;
+      console.log("user", userId);
+      let existingUser = await User.findById(userId);
+      if (!existingUser) {
+        return res.status(400).json({ message: "User not found" });
+      }
+      let update = {
+        $inc: {
+          onboarding_step: 1,
+        },
+      };
+      let updatedUser;
+      if (existingUser.onboarding_step < 7) {
+        updatedUser = await User.findByIdAndUpdate(userId, update, {
+          new: true,
+        });
+      }
+      return res.json(updatedUser);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
 };
 
 module.exports = UserController;

@@ -465,8 +465,13 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
     setStoreId(dbStoreId);
   }, [dbStoreId]);
 
+  const skipStep = async () => {
+    let res = await axios.patch("/api/users/skip");
+    if (res.status === 200) {
+      nextStep();
+    }
+  };
   const handleProductAddition = async (data) => {
-    console.log(data);
     try {
       setLoading(true);
       let res = await axios.post(`/api/stores/${storeId}/products`, data);
@@ -1135,11 +1140,11 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={prevStep}
+                      onClick={skipStep}
                       className="order-2 rounded-xl bg-white sm:order-1"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
+                      {/* <ArrowLeft className="mr-2 h-4 w-4" /> */}
+                      Skip
                     </Button>
                     <LoadingButton
                       loading={loading}
@@ -1365,11 +1370,11 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={prevStep}
+                        onClick={skipStep}
                         className="order-2 rounded-xl bg-white sm:order-1"
                       >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
+                        {/* <ArrowLeft className="mr-2 h-4 w-4" /> */}
+                        Skip
                       </Button>
                       <LoadingButton loading={loading} disabled={!isStep5Valid}>
                         Finish Setup
