@@ -140,7 +140,7 @@ const findByName = async (name) => {
 };
 
 const validateCategoryIds = (categories) => {
-  console.log('143',categories);
+  console.log("143", categories);
   return categories
     .map((categoryId) =>
       mongoose.Types.ObjectId.isValid(categoryId)
@@ -165,15 +165,25 @@ const createProduct = async (storeId, userId, productData) => {
   const existing = await ProductRepo.findByName(storeId, productData.name);
   if (existing) throw new Error("Product already exists");
 
+  let data = { ...productData };
+  if (productData.addSamples) {
+    data = {
+      ...data,
+      name: "Hamburger",
+      categories: ["Food & Beverages"],
+      price: "20",
+    };
+  }
+  
   const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,
-    productData.categories
+    data.categories
   );
-  
+
   const categoryIds = validateCategoryIds(storeCategoryIds);
   const product = await ProductRepo.create(storeId, {
-    ...productData,
+    ...data,
     categories: storeCategoryIds,
     createdBy: userId,
   });
@@ -181,7 +191,7 @@ const createProduct = async (storeId, userId, productData) => {
   await ProductRepo.addProductToCategories(categoryIds, product._id);
   await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
   await StoreRepo.update(storeId, {
-    "settings.currency": productData.currency,
+    "settings.currency": data.currency,
   });
   return product;
 };

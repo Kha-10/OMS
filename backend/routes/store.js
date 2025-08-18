@@ -33,11 +33,47 @@ router.post(
 
 router.post(
   "/:storeId/products",
+  // [
+  //   body("name").notEmpty(),
+  //   body("categories")
+  //     .isArray({ min: 1 })
+  //     .withMessage("Category must be a non-empty array"),
+  // ],
   [
-    body("name").notEmpty(),
-    body("categories")
-      .isArray({ min: 1 })
-      .withMessage("Category must be a non-empty array"),
+    body().custom((value) => {
+      if (
+        !value.name &&
+        !value.categories &&
+        !value.price &&
+        !value.addSamples
+      ) {
+        throw new Error(
+          "Please add a product manually or select 'Add sample products' to get started."
+        );
+      }
+      return true;
+    }),
+
+    body().custom((value) => {
+      if (value.addSamples === false) {
+        if (!value.name) {
+          throw new Error(
+            "Product name is required when 'Add sample products'"
+          );
+        }
+        if (!value.categories) {
+          throw new Error(
+            "Category is required when 'Add sample products' is enabled"
+          );
+        }
+        if (!value.price) {
+          throw new Error(
+            "Price is required when 'Add sample products' is enabled"
+          );
+        }
+      }
+      return true;
+    }),
   ],
   handleErrorMessage,
   checkMemberMiddleware,

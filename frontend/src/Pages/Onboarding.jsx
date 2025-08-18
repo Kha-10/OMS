@@ -402,6 +402,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
       setLoading(false);
     } finally {
       setLoading(false);
@@ -425,33 +428,12 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   };
 
   const handleStoreSetup = async (data) => {
-    // try {
-    //   setLoading(true);
-    //   let res = await axios.post("/api/stores", data);
-    //   if (res.status === 200 && storeLogoInputRef.current.files[0]) {
-    //     setStoreId(res.data._id);
-    //     const formData = new FormData();
-    //     formData.append("photo", storeLogoInputRef.current.files[0]);
-    //     let imgResult = await axios.post(
-    //       `/api/stores/${res.data._id}/upload?type=stores`,
-    //       formData,
-    //       {
-    //         headers: {
-    //           "Content-Type": "multipart/form-data",
-    //         },
-    //       }
-    //     );
-    //     if (imgResult.status === 200) {
-    //       nextStep();
-    //     }
-    //   }
-    // }
     try {
       setLoading(true);
       let res = await axios.post(`/api/stores`, data);
       if (res.status === 200) {
         setStoreId(res.data._id);
-        console.log('storeId',storeId);
+        console.log("storeId", storeId);
         const file = productImageInputRef.current?.files?.[0];
         if (file) {
           const formData = new FormData();
@@ -470,7 +452,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error.response.data.message, {
+      toast.error(error.response.data.msg, {
         position: "top-center",
       });
       setLoading(false);
@@ -484,7 +466,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   }, [dbStoreId]);
 
   const handleProductAddition = async (data) => {
-    console.log(storeId);
+    console.log(data);
     try {
       setLoading(true);
       let res = await axios.post(`/api/stores/${storeId}/products`, data);
@@ -787,16 +769,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
                     </div>
                   </div>
 
-                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={prevStep}
-                      className="order-2 rounded-xl bg-white sm:order-1"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
+                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
                     <LoadingButton
                       loading={loading}
                       disabled={!isStep2Valid}
@@ -912,16 +885,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
                     </div>
                   </div>
 
-                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={prevStep}
-                      className="order-2 rounded-xl bg-white sm:order-1"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
+                  <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
                     <LoadingButton
                       loading={loading}
                       disabled={!isStep3Valid}
