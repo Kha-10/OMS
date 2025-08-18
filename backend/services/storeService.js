@@ -1,16 +1,27 @@
 const storeRepo = require("../repo/storeRepo");
+const storeMembershipRepo = require("../repo/storeMembershipRepo");
 const User = require("../models/User");
 const mongoose = require("mongoose");
 
-const validateStoreId = (storeId) => {
+const validateId = (storeId) => {
   if (!mongoose.Types.ObjectId.isValid(storeId)) {
     throw new Error("Invalid store ID");
   }
   return storeId;
 };
 
+const getStoreByUserId = async (userId) => {
+  const validatedUserId = validateId(userId);
+  const memberships = await storeMembershipRepo.findByUserId(validatedUserId);
+  const stores = memberships.map((m) => ({
+    _id: m.store._id,
+    name: m.store.name,
+  }));
+  return stores;
+};
+
 const updatePaymentSettings = async (storeId, userId, storeData) => {
-  const validatedStoreId = validateStoreId(storeId);
+  const validatedStoreId = validateId(storeId);
   const existingStore = await storeRepo.findByStoreId(validatedStoreId);
   if (!existingStore) throw new Error("Store not found");
 
@@ -36,5 +47,6 @@ const updatePaymentSettings = async (storeId, userId, storeData) => {
 };
 
 module.exports = {
+  getStoreByUserId,
   updatePaymentSettings,
 };

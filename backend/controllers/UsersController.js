@@ -25,18 +25,12 @@ const UserController = {
       let { email, password } = req.body;
       let user = await User.login(email, password);
 
-      const memberships = await storeMembershipRepo.findByUserId(user._id);
-      const stores = memberships.map((m) => ({
-        _id: m.store._id,
-        name: m.store.name,
-      }));
-
-      let token = createToken(user._id, stores[0]?._id);
+      let token = createToken(user._id);
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
       });
-      return res.json({ user, token, stores });
+      return res.json({ user, token });
     } catch (e) {
       return res.status(400).json({ error: e.message });
     }

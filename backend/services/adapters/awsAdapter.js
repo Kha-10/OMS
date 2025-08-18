@@ -1,5 +1,5 @@
-const s3 = require("../config/aws");
-const cloudFront = require("../config/cloudFront");
+const s3 = require("../../config/aws");
+const cloudFront = require("../../config/cloudFront");
 const crypto = require("crypto");
 const { CreateInvalidationCommand } = require("@aws-sdk/client-cloudfront");
 const {

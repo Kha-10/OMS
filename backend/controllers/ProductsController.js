@@ -79,7 +79,6 @@ const ProductsController = {
     try {
       const storeId = req.storeId;
       const userId = req.userId;
-      console.log("req.body", req.body);
       const product = await productService.createProduct(
         storeId,
         userId,

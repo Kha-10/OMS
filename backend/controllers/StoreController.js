@@ -2,10 +2,25 @@ const Store = require("../models/Store");
 const User = require("../models/User");
 const StoreMember = require("../models/StoreMember");
 const storeService = require("../services/storeService");
-const createToken = require("../helpers/createToken");
 const mongoose = require("mongoose");
 
 const StoreController = {
+  index: async (req, res) => {
+    try {
+      const userId = req.user?._id;
+      const stores = await getStoreByUserId(userId);
+      return res.json(stores);
+    } catch (err) {
+      if (err.message === "Invalid store ID") {
+        return res.status(400).json({ msg: err.message });
+      }
+      if (err.message === "Store not found") {
+        return res.status(404).json({ msg: err.message });
+      }
+      console.error(err);
+      res.status(500).json({ msg: "Internal server error" });
+    }
+  },
   store: async (req, res) => {
     try {
       const storeData = req.body;
@@ -28,8 +43,6 @@ const StoreController = {
       });
 
       await User.findByIdAndUpdate(ownerUserId, { onboarding_step: 4 });
-
-      createToken(ownerUserId, store._id);
 
       return res.json(store);
     } catch (error) {
@@ -83,7 +96,7 @@ const StoreController = {
       const storeId = req.params.id;
       const userId = req.userId;
       const storeData = req.body;
-      console.log("req.body", req.body);
+
       const store = await storeService.updatePaymentSettings(
         storeId,
         userId,

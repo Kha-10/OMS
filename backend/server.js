@@ -100,9 +100,9 @@ app.use("/api/customers", authMiddleware, customerRoutes);
 
 app.use("/api/orders", authMiddleware, orderRoutes);
 
-app.use("/api/analytics", authMiddleware, analyticsRoutes);
+app.use("/api/stores/:storeId/analytics", authMiddleware, analyticsRoutes);
 
-app.use("/api/stores",authMiddleware, storeRoutes);
+app.use("/api/stores", authMiddleware, storeRoutes);
 
 app.use("/api/users", userRoutes);
 

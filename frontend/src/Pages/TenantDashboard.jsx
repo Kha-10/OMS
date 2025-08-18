@@ -8,8 +8,11 @@ import {
 import { StatsCard } from "@/components/StatsCard";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 function TenantDashboard() {
+  const { tenant, loading } = useSelector((state) => state.tenants);
+  console.log(tenant);
   const { data } = useAnalytics();
   const navigate = useNavigate();
 
