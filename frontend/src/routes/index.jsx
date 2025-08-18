@@ -38,6 +38,8 @@ function index() {
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
+  console.log("stores", stores);
+  console.log("tenant", tenant);
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());
@@ -101,11 +103,7 @@ function index() {
         },
         {
           path: "/:tennantName/orders/:id",
-          element: tenant ?  (
-            <OrderReceipt />
-          ) : (
-            <Navigate to={"/sign-in"} />
-          ),
+          element: tenant ? <OrderReceipt /> : <Navigate to={"/sign-in"} />,
         },
         // {
         //   path: "/checkout",
@@ -159,7 +157,7 @@ function index() {
         {
           path: "/sign-in",
           element:
-            !tenant || tenant?.onboarding_step < 6 ? (
+            !tenant || tenant?.onboarding_step < 7 ? (
               <SignInForm />
             ) : (
               <Navigate to={"/"} />
@@ -168,11 +166,12 @@ function index() {
         {
           path: "/sign-up",
           element:
-            !tenant|| tenant?.onboarding_step < 6 ? (
+            !tenant || tenant?.onboarding_step < 7 ? (
               <Onboarding
                 stepper={tenant?.onboarding_step || 1}
                 dbEmail={tenant?.email || ""}
                 dbStoreId={stores?.[0]?._id}
+                storeName={stores?.[0]?.name}
               />
             ) : (
               <Navigate to={"/"} />

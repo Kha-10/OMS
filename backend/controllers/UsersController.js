@@ -151,7 +151,7 @@ const UserController = {
         },
       };
       let updatedUser;
-      if (existingUser.onboarding_step < 7) {
+      if (existingUser.onboarding_step <= 7) {
         updatedUser = await User.findByIdAndUpdate(userId, update, {
           new: true,
         });
