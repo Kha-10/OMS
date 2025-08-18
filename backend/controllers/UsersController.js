@@ -8,13 +8,7 @@ const StoreMember = require("../models/StoreMember");
 const UserController = {
   me: async (req, res) => {
     try {
-      const memberships = await storeMembershipRepo.findByUserId(req.user?._id);
-      const stores = memberships.map((m) => ({
-        _id: m.store._id,
-        name: m.store.name,
-      }));
-      return res.json({ user: req.user, stores });
-      // return res.json(req.user);
+      return res.json(req.user);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal Server error" });
