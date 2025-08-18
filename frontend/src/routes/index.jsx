@@ -38,7 +38,6 @@ function index() {
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
-
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());
@@ -173,7 +172,7 @@ function index() {
               <Onboarding
                 stepper={tenant?.onboarding_step || 1}
                 dbEmail={tenant?.email || ""}
-                dbStoreId={stores?.[0]?._id || ""}
+                dbStoreId={stores?.[0]?._id}
               />
             ) : (
               <Navigate to={"/"} />

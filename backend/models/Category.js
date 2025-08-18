@@ -7,7 +7,6 @@ const CategorySchema = new schema(
     name: {
       type: String,
       required: true,
-      unique: true,
     },
     visibility: {
       type: String,
@@ -27,12 +26,13 @@ const CategorySchema = new schema(
     storeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Store",
-      index: true,
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
+
+CategorySchema.index({ storeId: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Category", CategorySchema);

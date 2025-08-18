@@ -4,7 +4,6 @@ const checkMemberMiddleware = async (req, res, next) => {
   const userId = req.user.id;
   const storeId = req.params.storeId;
   console.log("storeId",storeId);
-
   const member = await StoreMember.findOne({ store: storeId, user: userId });
   if (!member) return res.status(403).json({ message: "Not a store member" });
 

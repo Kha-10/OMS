@@ -13,6 +13,7 @@ const validateId = (storeId) => {
 const getStoreByUserId = async (userId) => {
   const validatedUserId = validateId(userId);
   const memberships = await storeMembershipRepo.findByUserId(validatedUserId);
+  console.log("memberships",memberships);
   const stores = memberships.map((m) => ({
     _id: m.store._id,
     name: m.store.name,

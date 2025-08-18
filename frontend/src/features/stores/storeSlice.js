@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { logoutTenant } from "../tenants/tenantSlice";
 
 export const fetchStore = createAsyncThunk(
   "auth/stores",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios("/api/stores");
-      console.log(response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -39,6 +39,10 @@ const storeSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.stores = null;
+      })
+      .addCase(logoutTenant.fulfilled, (state) => {
+        state.loading = false;
+        state.stores = [];
       });
   },
 });

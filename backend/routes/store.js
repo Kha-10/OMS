@@ -32,7 +32,7 @@ router.post(
 );
 
 router.post(
-  "/:id/products",
+  "/:storeId/products",
   [
     body("name").notEmpty(),
     body("categories")
@@ -46,7 +46,7 @@ router.post(
 );
 
 router.patch(
-  "/:id/payment",
+  "/:storeId/payment",
   [
     body().custom((value) => {
       if (!value.qr && !value.bank && !value.cash) {

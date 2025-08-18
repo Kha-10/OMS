@@ -10,7 +10,7 @@ export const fetchTenant = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.msg || "Something went wrong"
+        error.response?.data?.message || "Something went wrong"
       );
     }
   }
@@ -37,9 +37,8 @@ export const logoutTenant = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await axios.post("/api/users/logout", null, {
-        withCredentials: true, // if you need cookies sent
+        withCredentials: true,
       });
-      // No payload needed on success
       return { success: true };
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to logout");
@@ -54,8 +53,7 @@ export const registerTenant = createAsyncThunk(
       const res = await axios.post("/api/users/register", data, {
         withCredentials: true, // if you need cookies sent
       });
-      // No payload needed on success
-      return res.data;
+      return res.data.user;
     } catch (error) {
       console.log("registerTenant", error);
       return rejectWithValue(

@@ -33,6 +33,7 @@ const StoreController = {
       }
 
       const store = await Store.create(storeData);
+      console.log("store",store);
 
       await StoreMember.create({
         store: store._id,
@@ -93,7 +94,7 @@ const StoreController = {
   },
   update: async (req, res) => {
     try {
-      const storeId = req.params.id;
+      const storeId = req.storeId;
       const userId = req.userId;
       const storeData = req.body;
 

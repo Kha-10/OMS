@@ -425,25 +425,48 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   };
 
   const handleStoreSetup = async (data) => {
+    // try {
+    //   setLoading(true);
+    //   let res = await axios.post("/api/stores", data);
+    //   if (res.status === 200 && storeLogoInputRef.current.files[0]) {
+    //     setStoreId(res.data._id);
+    //     const formData = new FormData();
+    //     formData.append("photo", storeLogoInputRef.current.files[0]);
+    //     let imgResult = await axios.post(
+    //       `/api/stores/${res.data._id}/upload?type=stores`,
+    //       formData,
+    //       {
+    //         headers: {
+    //           "Content-Type": "multipart/form-data",
+    //         },
+    //       }
+    //     );
+    //     if (imgResult.status === 200) {
+    //       nextStep();
+    //     }
+    //   }
+    // }
     try {
       setLoading(true);
-      let res = await axios.post("/api/stores", data);
-      if (res.status === 200 && storeLogoInputRef.current.files[0]) {
+      let res = await axios.post(`/api/stores`, data);
+      if (res.status === 200) {
         setStoreId(res.data._id);
-        const formData = new FormData();
-        formData.append("photo", storeLogoInputRef.current.files[0]);
-        let imgResult = await axios.post(
-          `/api/stores/${res.data._id}/upload?type=stores`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        if (imgResult.status === 200) {
-          nextStep();
+        console.log('storeId',storeId);
+        const file = productImageInputRef.current?.files?.[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append("photo", file);
+
+          await axios.post(
+            `/api/stores/${res.data._id}/upload?type=stores`,
+            formData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
         }
+
+        nextStep();
       }
     } catch (error) {
       console.log("Error submitting the form", error);
@@ -456,29 +479,31 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
     }
   };
 
+  useEffect(() => {
+    setStoreId(dbStoreId);
+  }, [dbStoreId]);
+
   const handleProductAddition = async (data) => {
+    console.log(storeId);
     try {
       setLoading(true);
       let res = await axios.post(`/api/stores/${storeId}/products`, data);
-      if (res.status === 200 && productImageInputRef.current.files[0]) {
-        const formData = new FormData();
-        formData.append("photo", productImageInputRef.current.files[0]);
-        let imgResult = await axios.post(
-          `/api/products/${res.data._id}/upload`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        if (imgResult.status === 200) {
-          nextStep();
+      if (res.status === 200) {
+        const file = productImageInputRef.current?.files?.[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append("photo", file);
+
+          await axios.post(`/api/products/${res.data._id}/upload`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
         }
+
+        nextStep();
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error.response.data.message, {
+      toast.error(error?.response?.data?.message, {
         position: "top-center",
       });
       setLoading(false);
@@ -488,7 +513,6 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
   };
 
   const handlePaymentConfig = async (data) => {
-    console.log("Store data:", data);
     try {
       setLoading(true);
       let res = await axios.patch(`/api/stores/${storeId}/payment`, data);
@@ -1485,7 +1509,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId }) {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          {step4Form.watch("productName") || "Sample Product"}
+                          {step4Form.watch("name") || "Sample Product"}
                         </h3>
                         <p className="text-lg font-semibold text-gray-900">
                           {step4Form.watch("currency") === "USD" && "$"}

@@ -16,7 +16,7 @@ const AuthMiddleware = (req, res, next) => {
       }
     });
   } else {
-    return res.status(400).json({ message: "token need to provide" });
+    return res.status(400).json({ message: "Token need to provide" });
   }
 };
 

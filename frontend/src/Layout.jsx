@@ -33,9 +33,9 @@ export default function RootLayout() {
 
   const showSidebar = !isExcluded && isIncluded;
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  // if (loading) {
+  //   return <LoadingSpinner />;
+  // }
 
   return tenant ? (
     <div className="flex min-h-screen">
