@@ -16,11 +16,10 @@ import { useNavigate } from "react-router-dom";
 export default function Navbar({ onOpenSidebar }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, tenant, error } = useSelector((state) => state.tenants);
+  const { tenant } = useSelector((state) => state.tenants);
 
   const logoutHandler = async () => {
     try {
-      // setLoading(true);
       const loggedOutUser = await dispatch(logoutTenant()).unwrap();
       if (loggedOutUser.success) {
         navigate("/sign-in");
@@ -29,7 +28,7 @@ export default function Navbar({ onOpenSidebar }) {
       console.error("Logout failed:", error);
     }
   };
-  
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -64,10 +63,10 @@ export default function Navbar({ onOpenSidebar }) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {tenant?.user?.username}
+                      {tenant?.username}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {tenant?.user?.email}
+                      {tenant?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>

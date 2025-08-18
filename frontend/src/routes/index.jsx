@@ -69,7 +69,7 @@ function index() {
         {
           path: "/",
           element: tenant ? (
-            <TenantDashboard />
+            <TenantDashboard stores={stores} />
           ) : (
             <Navigate to={"/sign-in"} />
           ),
