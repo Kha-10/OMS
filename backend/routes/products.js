@@ -11,9 +11,9 @@ const uploadAdapter = require("../services/adapters/index");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-router.get("", ProductsController.index);
+router.get("/", ProductsController.index);
 
 router.post(
   "/duplicate",

@@ -9,18 +9,49 @@ const clearOrderCache = require("../helpers/clearOrderCache");
 const redisClient = require("../config/redisClient");
 
 const ProductsController = {
+  // index: async (req, res) => {
+  //   try {
+  //     const queryParams = req.query;
+  //     let { products, totalProducts, allProductsCount, page, limit } =
+  //       await productService.findProducts(queryParams);
+
+  //     if (!Array.isArray(products)) {
+  //       products = [];
+  //     }
+  //     const enhancedProducts = productService.enhanceProductImages(products);
+
+  //     const response = {
+  //       data: enhancedProducts,
+  //       pagination: {
+  //         totalProducts,
+  //         allProductsCount,
+  //         totalPages: Math.ceil(totalProducts / limit),
+  //         currentPage: page,
+  //         pageSize: limit,
+  //         hasNextPage: page < Math.ceil(totalProducts / limit),
+  //         hasPreviousPage: page > 1,
+  //       },
+  //     };
+
+  //     return res.json(response);
+  //   } catch (error) {
+  //     console.error("Error creating Product:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   index: async (req, res) => {
     try {
+      const storeId = req.params.storeId; // multi-tenant
       const queryParams = req.query;
-      let { products, totalProducts, allProductsCount, page, limit } =
-        await productService.findProducts(queryParams);
 
-      if (!Array.isArray(products)) {
-        products = [];
-      }
+      let { products, totalProducts, allProductsCount, page, limit } =
+        await productService.findProducts(storeId, queryParams);
+
+      if (!Array.isArray(products)) products = [];
+
       const enhancedProducts = productService.enhanceProductImages(products);
 
-      const response = {
+      return res.json({
         data: enhancedProducts,
         pagination: {
           totalProducts,
@@ -31,12 +62,10 @@ const ProductsController = {
           hasNextPage: page < Math.ceil(totalProducts / limit),
           hasPreviousPage: page > 1,
         },
-      };
-
-      return res.json(response);
+      });
     } catch (error) {
-      console.error("Error creating Product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error fetching products:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
 

@@ -99,8 +99,22 @@ const fetchProductsFromDB = async (queryParams) => {
 //   return explain;
 // };
 
-const generateCacheKey = (queryParams) => {
-  let cacheKey = `products:page${queryParams.page}:limit${queryParams.limit}`;
+// const generateCacheKey = (queryParams) => {
+//   let cacheKey = `products:page${queryParams.page}:limit${queryParams.limit}`;
+//   if (queryParams.categories)
+//     cacheKey += `:categories${queryParams.categories}`;
+//   if (queryParams.visibility)
+//     cacheKey += `:visibility${queryParams.visibility}`;
+//   if (queryParams.sortBy) cacheKey += `:sortBy${queryParams.sortBy}`;
+//   if (queryParams.sortDirection)
+//     cacheKey += `:sortDirection${queryParams.sortDirection}`;
+//   if (queryParams.search) cacheKey += `:searchQuery${queryParams.search}`;
+//   return cacheKey;
+// };
+const generateCacheKey = (storeId, queryParams) => {
+  let cacheKey = `products:store${storeId}:page${queryParams.page || 1}:limit${
+    queryParams.limit || 10
+  }`;
   if (queryParams.categories)
     cacheKey += `:categories${queryParams.categories}`;
   if (queryParams.visibility)
@@ -112,26 +126,60 @@ const generateCacheKey = (queryParams) => {
   return cacheKey;
 };
 
-const findProducts = async (queryParams) => {
-  // await fetchProductsExplain(queryParams);
-  const cacheKey = generateCacheKey(queryParams);
-  let cachedProducts = await getCachedProducts(cacheKey);
-  console.log("cachedProducts", cachedProducts);
-  if (!cachedProducts) {
-    cachedProducts = await fetchProductsFromDB(queryParams);
-    console.log("db", cachedProducts);
-    await cacheProducts(cacheKey, cachedProducts);
-  }
-  return cachedProducts;
-};
+// const findProducts = async (queryParams) => {
+//   // await fetchProductsExplain(queryParams);
+//   const cacheKey = generateCacheKey(queryParams);
+//   let cachedProducts = await getCachedProducts(cacheKey);
+//   console.log("cachedProducts", cachedProducts);
+//   if (!cachedProducts) {
+//     cachedProducts = await fetchProductsFromDB(queryParams);
+//     console.log("db", cachedProducts);
+//     await cacheProducts(cacheKey, cachedProducts);
+//   }
+//   return cachedProducts;
+// };
 
+// const enhanceProductImages = (input) => {
+//   if (!input) return input;
+//   if (Array.isArray(input)) {
+//     return input.map((product) => uploadAdapter.getImageUrls(product));
+//   } else {
+//     return uploadAdapter.getImageUrls(input);
+//   }
+// };
+const findProducts = async (storeId, queryParams) => {
+  const cacheKey = generateCacheKey(storeId, queryParams);
+
+  // Try cache first
+  let cached = await redisClient.get(cacheKey);
+  if (cached) return cached;
+
+  // Build query & fetch from repo
+  const query = buildQuery(queryParams);
+  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
+  const page = Number(queryParams.page) || 1;
+  const limit = Number(queryParams.limit) || 10;
+
+  const result = await ProductRepo.find(
+    storeId,
+    query,
+    sort,
+    page,
+    limit,
+    queryParams.search
+  );
+
+  // Cache result
+  await redisClient.set(cacheKey, JSON.stringify(result), { EX: 3600 });
+
+  return result;
+};
 const enhanceProductImages = (input) => {
   if (!input) return input;
   if (Array.isArray(input)) {
     return input.map((product) => uploadAdapter.getImageUrls(product));
-  } else {
-    return uploadAdapter.getImageUrls(input);
   }
+  return uploadAdapter.getImageUrls(input);
 };
 
 // POST
@@ -174,7 +222,7 @@ const createProduct = async (storeId, userId, productData) => {
       price: "20",
     };
   }
-  
+
   const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,

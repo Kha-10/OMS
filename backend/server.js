@@ -90,7 +90,7 @@ app.get("/", (req, res) => {
   // return res.render('email')
 });
 
-app.use("/api/products", authMiddleware, productRoutes);
+app.use("/api/stores/:storeId/products", authMiddleware, productRoutes);
 
 app.use("/api/categories", authMiddleware, categoryRoutes);
 
