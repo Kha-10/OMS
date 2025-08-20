@@ -10,6 +10,7 @@ const ProductRepo = require("../repo/productRepo");
 const StoreRepo = require("../repo/storeRepo");
 const CategoryService = require("../services/categoryService");
 const generateCacheKey = require("../helpers/generateCacheKey");
+const handler = require("../helpers/handler");
 
 const buildQuery = (queryParams) => {
   let query = {};
@@ -114,7 +115,7 @@ const validateCategoryIds = (categories) => {
 
 const createProduct = async (storeId, userId, productData) => {
   const existing = await ProductRepo.findByName(storeId, productData.name);
-  if (existing) throw new Error("Product already exists");
+  if (existing) throw handler.conflictError("Product already exists");
 
   let data = { ...productData };
   if (productData.addSamples) {
@@ -125,7 +126,7 @@ const createProduct = async (storeId, userId, productData) => {
       price: "20",
     };
   }
-  console.log('data',data);
+  console.log("data", data);
   const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,
@@ -143,7 +144,7 @@ const createProduct = async (storeId, userId, productData) => {
 
   let existingUser = await User.findById(userId);
   if (!existingUser) {
-    return res.status(400).json({ message: "User not found" });
+    throw handler.notFoundError("User not found");
   }
   if (existingUser.onboarding_step < 7) {
     await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
@@ -155,8 +156,21 @@ const createProduct = async (storeId, userId, productData) => {
 };
 
 // Show
-const findProductById = async (id) => {
-  return await Product.findById(id).populate("categories");
+
+const validateId = (productId) => {
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    throw handler.invalidError("Invalid product ID");
+  }
+  return productId;
+};
+
+const findProductById = async (storeId, id) => {
+  const validatedProductId = validateId(id);
+  const product = await ProductRepo.findById(storeId, validatedProductId);
+  if (!product) {
+    throw handler.notFoundError("Product not found");
+  }
+  return product;
 };
 
 const deleteProducts = async (ids) => {

@@ -18,7 +18,7 @@ const ProductsController = {
       if (!Array.isArray(products)) products = [];
 
       const enhancedProducts = productService.enhanceProductImages(products);
-      console.log("enhancedProducts",enhancedProducts);
+      console.log("enhancedProducts", enhancedProducts);
       return res.json({
         data: enhancedProducts,
         pagination: {
@@ -49,30 +49,51 @@ const ProductsController = {
       await clearCache(storeId, "products");
       await clearCache(storeId, "categories");
       return res.json(product);
-    } catch (error) {
-      console.error("Error creating Product:", error);
-      const status = error.message.includes("exists") ? 409 : 500;
-      res.status(status).json({ msg: error.message });
+    } catch (err) {
+      console.error("Error storing Product:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ msg: message });
     }
   },
 
+  // show: async (req, res) => {
+  //   try {
+  //     let id = req.params.id;
+  //     if (!mongoose.Types.ObjectId.isValid(id)) {
+  //       return res.status(400).json({ msg: "Invalid ID" });
+  //     }
+  //     let product = await productService.findProductById(id);
+  //     if (!product) {
+  //       return res.status(404).json({ msg: "Product not found" });
+  //     }
+
+  //     const formattedProducts = productService.enhanceProductImages(product);
+
+  //     return res.json(formattedProducts);
+  //   } catch (error) {
+  //     console.error("Error fetching product:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   show: async (req, res) => {
     try {
+      const storeId = req.params.storeId;
       let id = req.params.id;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid ID" });
-      }
-      let product = await productService.findProductById(id);
-      if (!product) {
-        return res.status(404).json({ msg: "Product not found" });
-      }
+      let product = await productService.findProductById(storeId, id);
 
       const formattedProducts = productService.enhanceProductImages(product);
 
       return res.json(formattedProducts);
-    } catch (error) {
-      console.error("Error fetching product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+    } catch (err) {
+      console.error("Error getting Product:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ error: message });
     }
   },
   destroy: async (req, res) => {

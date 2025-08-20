@@ -79,7 +79,7 @@ export default function NewCategory() {
       }
     } catch (error) {
       console.log(error);
-      console.error("Error handling category:", error.response?.data.msg);
+      console.error("Error handling category:", error.response?.data);
       showToast(toastId, error.response?.data.msg, "error");
     }
   };

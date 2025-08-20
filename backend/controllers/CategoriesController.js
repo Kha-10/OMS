@@ -52,30 +52,47 @@ const CategoriesController = {
       await clearCache(storeId, "categories");
       await clearCache(storeId, "products");
       return res.json(category);
-    } catch (error) {
-      if (error.message === "Category name already exists") {
-        return res.status(409).json({ msg: error.message });
-      }
-      console.error("Error creating category:", error);
-      return res.status(500).json({ msg: "internal server error" });
+    } catch (err) {
+      console.error("Error storing Category:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ msg: message });
     }
   },
+  // show: async (req, res) => {
+  //   try {
+  //     let id = req.params.id;
+  //     if (!mongoose.Types.ObjectId.isValid(id)) {
+  //       return res.status(400).json({ msg: "Invalid id" });
+  //     }
+  //     let category = await Category.findById(id).populate("products");
+  //     if (!category) {
+  //       return handler.handleResponse(res, {
+  //         status: 404,
+  //         message: "category not found",
+  //       });
+  //     }
+  //     return res.json(category);
+  //   } catch (error) {
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   show: async (req, res) => {
     try {
+      const storeId = req.params.storeId;
       let id = req.params.id;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid id" });
-      }
-      let category = await Category.findById(id).populate("products");
-      if (!category) {
-        return handler.handleResponse(res, {
-          status: 404,
-          message: "category not found",
-        });
-      }
+      let category = await categoryService.findCategoryById(storeId, id);
+
       return res.json(category);
-    } catch (error) {
-      return res.status(500).json({ msg: "internet server error" });
+    } catch (err) {
+      console.error("Error getting Category:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ msg: message });
     }
   },
   destroy: async (req, res) => {

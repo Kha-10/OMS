@@ -6,7 +6,7 @@ const findByName = async (storeId, name) => {
 };
 
 const findById = async (storeId, id) => {
-  return Category.findOne({ storeId, _id: id });
+  return Category.findOne({ storeId, _id: id }).populate("products");
 };
 
 const find = async (

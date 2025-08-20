@@ -1,13 +1,22 @@
 const handler = {
-  handleResponse: (res, status = 200, response) => {
-    return res.status(status).json(response);
+  notFoundError: (message) => {
+    const err = new Error(message);
+    err.statusCode = 404;
+    return err;
   },
 
-  handleError: (res, status = 500, message = "Internal Server Error") => {
-    return res.status(status).json({
-      message,
-      data: null,
-    });
+  conflictError: (message) => {
+    console.log("conflictError");
+    const err = new Error(message);
+    err.statusCode = 409;
+    console.log("err",err);
+    return err;
+  },
+
+  invalidError: (message) => {
+    const err = new Error(message);
+    err.statusCode = 400;
+    return err;
   },
 };
 

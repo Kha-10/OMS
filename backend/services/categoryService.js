@@ -5,6 +5,7 @@ const Product = require("../models/Product");
 const CategoryRepo = require("../repo/categoryRepo");
 const clearProductCache = require("../helpers/clearProductCache");
 const generateCacheKey = require("../helpers/generateCacheKey");
+const handler = require("../helpers/handler");
 
 const findCategories = async (storeId, queryParams) => {
   const cacheKey = generateCacheKey(storeId, "categories", queryParams);
@@ -68,7 +69,7 @@ const createCategory = async ({
   products,
 }) => {
   const existing = await CategoryRepo.findByName(storeId, name);
-  if (existing) throw new Error("Category already exists");
+  if (existing) throw handler.conflictError("Category already exists");
 
   const lastCategory = await CategoryRepo.findLastCategory();
   const newOrderIndex = lastCategory ? lastCategory.orderIndex + 1 : 0;
@@ -87,6 +88,24 @@ const createCategory = async ({
   });
 
   await CategoryRepo.addCategoryToProducts(productIds, category._id);
+  return category;
+};
+
+// Show
+
+const validateId = (categoryId) => {
+  if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+    throw handler.invalidError("Invalid category ID");
+  }
+  return categoryId;
+};
+
+const findCategoryById = async (storeId, id) => {
+  const validatedCategoryId = validateId(id);
+  const category = await CategoryRepo.findById(storeId, validatedCategoryId);
+  if (!category) {
+    throw handler.notFoundError("Category not found");
+  }
   return category;
 };
 
@@ -173,6 +192,7 @@ const deleteCategories = async (ids) => {
 
 module.exports = {
   findCategories,
+  findCategoryById,
   createCategory,
   ensureTenantCategories,
   updateProducts,

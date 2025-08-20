@@ -42,8 +42,13 @@ const addProductToCategories = async (categoryIds, productId) => {
   );
 };
 
+const findById = (storeId,id) => {
+  return Product.findOne({ storeId, _id: id }).populate("categories");
+};
+
 module.exports = {
   find,
+  findById,
   findByName,
   create,
   addProductToCategories,
