@@ -61,6 +61,17 @@ const update = async (storeId, productId, updateData) => {
   );
 };
 
+const bulkUpdateVisibility = async (storeId, ids, visibility) => {
+  const bulkOps = ids.map((id) => ({
+    updateOne: {
+      filter: { _id: id, storeId },
+      update: { $set: { visibility } },
+    },
+  }));
+
+  return Product.bulkWrite(bulkOps);
+};
+
 module.exports = {
   find,
   findById,
@@ -68,4 +79,5 @@ module.exports = {
   create,
   update,
   addProductToCategories,
+  bulkUpdateVisibility,
 };

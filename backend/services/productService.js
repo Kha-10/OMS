@@ -5,6 +5,7 @@ const Category = require("../models/Category");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const clearProductCache = require("../helpers/clearProductCache");
+const clearCache = require("../helpers/clearCache");
 const uploadAdapter = require("./adapters/index");
 const ProductRepo = require("../repo/productRepo");
 const StoreRepo = require("../repo/storeRepo");
@@ -240,64 +241,6 @@ const deleteProducts = async (ids) => {
   }
 };
 
-// const updateProduct = async (id, updateData) => {
-//   console.log("updateData", updateData);
-//   const { images, deletedImages, ...rest } = updateData;
-
-//   let updatedProduct;
-//   if (deletedImages && deletedImages.length > 0) {
-//     updatedProduct = await uploadAdapter.updateImages(
-//       id,
-//       deletedImages,
-//       images
-//     );
-//   } else {
-//     // If there are no deletions, still update the product fields
-//     updatedProduct = await Product.findByIdAndUpdate(
-//       id,
-//       { ...rest, images },
-//       { new: true }
-//     );
-//   }
-//   return updatedProduct;
-// };
-
-// const updateCategories = async (existingProduct, newCategoryIds, id) => {
-//   const oldCategoryIds = (existingProduct.categories || []).map((c) =>
-//     c.toString()
-//   );
-
-//   const categoriesToRemove = oldCategoryIds.filter(
-//     (catId) => !newCategoryIds.includes(catId)
-//   );
-
-//   const categoriesToAdd = newCategoryIds.filter(
-//     (catId) => !oldCategoryIds.includes(catId)
-//   );
-
-//   const ops = [];
-
-//   if (categoriesToRemove.length > 0) {
-//     ops.push(
-//       Category.updateMany(
-//         { _id: { $in: categoriesToRemove } },
-//         { $pull: { products: id } }
-//       )
-//     );
-//   }
-
-//   if (categoriesToAdd.length > 0) {
-//     ops.push(
-//       Category.updateMany(
-//         { _id: { $in: categoriesToAdd } },
-//         { $addToSet: { products: id } }
-//       )
-//     );
-//   }
-
-//   await Promise.all(ops);
-// };
-
 const updateCategories = async (
   existingProduct,
   newCategoryIds,
@@ -359,6 +302,26 @@ const updateProductWithCategories = async (
   );
 
   return updatedProduct;
+};
+
+const updateVisibility = async (storeId, ids, visibility) => {
+  // Validate IDs
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    throw handler.invalidError("Invalid product ids");
+  }
+
+  // Call repo with storeId
+  const result = await ProductRepo.bulkUpdateVisibility(
+    storeId,
+    ids,
+    visibility
+  );
+
+  // Clear cache scoped to this store
+  await clearCache(storeId, "products");
+
+  return result;
 };
 
 // Duplicate
@@ -439,4 +402,5 @@ module.exports = {
   // updateCategories,
   updateProductWithCategories,
   duplicateProduct,
+  updateVisibility,
 };

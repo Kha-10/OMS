@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { useSelector } from "react-redux";
 
 const duplicateProducts = async (id) => {
   const res = await axios.post(`/api/products/${id}/duplicate`);
@@ -11,8 +12,8 @@ const deleteProducts = async (id) => {
   return res.data;
 };
 
-const updateProductVisibility = async (id, visibility) => {
-  const res = await axios.patch(`/api/products/${id}`, {
+const updateProductVisibility = async (id, storeId, visibility) => {
+  const res = await axios.patch(`/api/stores/${storeId}/products/${id}`, {
     visibility,
   });
   return res.data;
@@ -20,6 +21,8 @@ const updateProductVisibility = async (id, visibility) => {
 
 const useProductActions = (onSelectProducts) => {
   const queryClient = useQueryClient();
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const duplicateMutation = useMutation({
     mutationFn: async (selectedProducts) => {
@@ -56,7 +59,9 @@ const useProductActions = (onSelectProducts) => {
   const updateVisibilityMutation = useMutation({
     mutationFn: async ({ selectedProducts, visibility }) => {
       const responses = await Promise.all(
-        selectedProducts.map((id) => updateProductVisibility(id, visibility))
+        selectedProducts.map((id) =>
+          updateProductVisibility(id, storeId, visibility)
+        )
       );
       return responses;
     },

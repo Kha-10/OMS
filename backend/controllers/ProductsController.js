@@ -73,7 +73,7 @@ const ProductsController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ error: message });
+      res.status(status).json({ msg: message });
     }
   },
   destroy: async (req, res) => {
@@ -160,30 +160,27 @@ const ProductsController = {
     }
   },
   updateVisibility: async (req, res) => {
-    const { ids, visibility } = req.body;
-    const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-    if (invalidIds.length > 0) {
-      return res.status(400).json({ msg: "Invalid products ids" });
-    }
     try {
-      const bulkOps = ids.map((id) => ({
-        updateOne: {
-          filter: { _id: id },
-          update: { $set: { visibility: visibility } },
-        },
-      }));
+      const { ids, visibility } = req.body;
+      const storeId = req.params.storeId;
 
-      const result = await Product.bulkWrite(bulkOps);
-
-      await clearProductCache();
+      const result = await productService.updateVisibility(
+        storeId,
+        ids,
+        visibility
+      );
 
       return res.json({
         modifiedCount: result.modifiedCount,
         message: "Product visibility updated successfully",
       });
     } catch (error) {
-      console.error("Error updating product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error updating product visibility:", error);
+
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   upload: async (req, res) => {
