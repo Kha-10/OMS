@@ -296,7 +296,7 @@ export default function CreateProduct() {
       console.log(data);
       let res;
       if (id) {
-        res = await axios.patch(`/api/products/${id}`, data);
+        res = await axios.patch(`/api/stores/${storeId}/products/${id}`, data);
       } else {
         res = await axios.post(`/api/stores/${storeId}/products`, data);
       }

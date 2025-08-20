@@ -45,6 +45,20 @@ const addCategoryToProducts = async (productIds, categoryId) => {
   );
 };
 
+const addProductToCategories = async (categoryIds, productId, storeId) => {
+  return Category.updateMany(
+    { _id: { $in: categoryIds }, storeId },
+    { $addToSet: { products: productId } }
+  );
+};
+
+const removeProductFromCategories = async (categoryIds, productId, storeId) => {
+  return Category.updateMany(
+    { _id: { $in: categoryIds }, storeId },
+    { $pull: { products: productId } }
+  );
+};
+
 module.exports = {
   findByName,
   findById,
@@ -52,4 +66,6 @@ module.exports = {
   create,
   findLastCategory,
   addCategoryToProducts,
+  addProductToCategories,
+  removeProductFromCategories,
 };

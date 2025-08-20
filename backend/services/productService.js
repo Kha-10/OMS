@@ -9,6 +9,7 @@ const uploadAdapter = require("./adapters/index");
 const ProductRepo = require("../repo/productRepo");
 const StoreRepo = require("../repo/storeRepo");
 const CategoryService = require("../services/categoryService");
+const CategoryRepo = require("../repo/categoryRepo");
 const generateCacheKey = require("../helpers/generateCacheKey");
 const handler = require("../helpers/handler");
 
@@ -239,37 +240,77 @@ const deleteProducts = async (ids) => {
   }
 };
 
-const updateProduct = async (id, updateData) => {
-  console.log("updateData", updateData);
-  const { images, deletedImages, ...rest } = updateData;
+// const updateProduct = async (id, updateData) => {
+//   console.log("updateData", updateData);
+//   const { images, deletedImages, ...rest } = updateData;
 
-  let updatedProduct;
-  if (deletedImages && deletedImages.length > 0) {
-    updatedProduct = await uploadAdapter.updateImages(
-      id,
-      deletedImages,
-      images
-    );
-  } else {
-    // If there are no deletions, still update the product fields
-    updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      { ...rest, images },
-      { new: true }
-    );
-  }
-  return updatedProduct;
-};
+//   let updatedProduct;
+//   if (deletedImages && deletedImages.length > 0) {
+//     updatedProduct = await uploadAdapter.updateImages(
+//       id,
+//       deletedImages,
+//       images
+//     );
+//   } else {
+//     // If there are no deletions, still update the product fields
+//     updatedProduct = await Product.findByIdAndUpdate(
+//       id,
+//       { ...rest, images },
+//       { new: true }
+//     );
+//   }
+//   return updatedProduct;
+// };
 
-const updateCategories = async (existingProduct, newCategoryIds, id) => {
+// const updateCategories = async (existingProduct, newCategoryIds, id) => {
+//   const oldCategoryIds = (existingProduct.categories || []).map((c) =>
+//     c.toString()
+//   );
+
+//   const categoriesToRemove = oldCategoryIds.filter(
+//     (catId) => !newCategoryIds.includes(catId)
+//   );
+
+//   const categoriesToAdd = newCategoryIds.filter(
+//     (catId) => !oldCategoryIds.includes(catId)
+//   );
+
+//   const ops = [];
+
+//   if (categoriesToRemove.length > 0) {
+//     ops.push(
+//       Category.updateMany(
+//         { _id: { $in: categoriesToRemove } },
+//         { $pull: { products: id } }
+//       )
+//     );
+//   }
+
+//   if (categoriesToAdd.length > 0) {
+//     ops.push(
+//       Category.updateMany(
+//         { _id: { $in: categoriesToAdd } },
+//         { $addToSet: { products: id } }
+//       )
+//     );
+//   }
+
+//   await Promise.all(ops);
+// };
+
+const updateCategories = async (
+  existingProduct,
+  newCategoryIds,
+  productId,
+  storeId
+) => {
   const oldCategoryIds = (existingProduct.categories || []).map((c) =>
-    c.toString()
+    typeof c === "object" && c._id ? c._id.toString() : c.toString()
   );
 
   const categoriesToRemove = oldCategoryIds.filter(
     (catId) => !newCategoryIds.includes(catId)
   );
-
   const categoriesToAdd = newCategoryIds.filter(
     (catId) => !oldCategoryIds.includes(catId)
   );
@@ -278,23 +319,46 @@ const updateCategories = async (existingProduct, newCategoryIds, id) => {
 
   if (categoriesToRemove.length > 0) {
     ops.push(
-      Category.updateMany(
-        { _id: { $in: categoriesToRemove } },
-        { $pull: { products: id } }
+      CategoryRepo.removeProductFromCategories(
+        categoriesToRemove,
+        productId,
+        storeId
       )
     );
   }
 
   if (categoriesToAdd.length > 0) {
     ops.push(
-      Category.updateMany(
-        { _id: { $in: categoriesToAdd } },
-        { $addToSet: { products: id } }
-      )
+      CategoryRepo.addProductToCategories(categoriesToAdd, productId, storeId)
     );
   }
 
   await Promise.all(ops);
+};
+
+const updateProductWithCategories = async (
+  storeId,
+  productId,
+  updateData,
+  newCategoryIds
+) => {
+  // 1. Find product within store
+  const existingProduct = await ProductRepo.findById(storeId, productId);
+  if (!existingProduct) {
+    throw handler.notFoundError("Product not found");
+  }
+
+  // 2. Update categories if changed
+  await updateCategories(existingProduct, newCategoryIds, productId, storeId);
+
+  // 3. Update product fields/images
+  const updatedProduct = await ProductRepo.update(
+    storeId,
+    productId,
+    updateData
+  );
+
+  return updatedProduct;
 };
 
 // Duplicate
@@ -371,7 +435,8 @@ module.exports = {
   createProduct,
   findProductById,
   deleteProducts,
-  updateProduct,
-  updateCategories,
+  // updateProduct,
+  // updateCategories,
+  updateProductWithCategories,
   duplicateProduct,
 };

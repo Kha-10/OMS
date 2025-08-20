@@ -58,26 +58,6 @@ const ProductsController = {
       res.status(status).json({ msg: message });
     }
   },
-
-  // show: async (req, res) => {
-  //   try {
-  //     let id = req.params.id;
-  //     if (!mongoose.Types.ObjectId.isValid(id)) {
-  //       return res.status(400).json({ msg: "Invalid ID" });
-  //     }
-  //     let product = await productService.findProductById(id);
-  //     if (!product) {
-  //       return res.status(404).json({ msg: "Product not found" });
-  //     }
-
-  //     const formattedProducts = productService.enhanceProductImages(product);
-
-  //     return res.json(formattedProducts);
-  //   } catch (error) {
-  //     console.error("Error fetching product:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   show: async (req, res) => {
     try {
       const storeId = req.params.storeId;
@@ -143,9 +123,10 @@ const ProductsController = {
     }
   },
   update: async (req, res) => {
-    const id = req.params.id;
+    const storeId = req.params.storeId;
+    const productId = req.params.id;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ msg: "Invalid product ID" });
     }
 
@@ -155,24 +136,27 @@ const ProductsController = {
     }
 
     try {
-      const existingProduct = await Product.findById(id);
-      if (!existingProduct) {
-        return res.status(404).json({ msg: "Product not found" });
-      }
-
-      await productService.updateCategories(
-        existingProduct,
-        newCategoryIds,
-        id
+      const updatedProduct = await productService.updateProductWithCategories(
+        storeId,
+        productId,
+        req.body,
+        newCategoryIds
       );
-      const updatedProduct = await productService.updateProduct(id, req.body);
-      await clearProductCache();
-      await await clearCartCache(`cart:*`);
+
+      // clear caches
+      await clearCache(storeId, "products");
+      await clearCache(storeId, "categories");
+      await clearCartCache("cart:*");
       await clearOrderCache();
+
       return res.json(updatedProduct);
-    } catch (error) {
-      console.error("Error updating product:", error);
-      return res.status(500).json({ msg: "Internal server error" });
+    } catch (err) {
+      console.error("Error Updating Product:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ msg: message });
     }
   },
   updateVisibility: async (req, res) => {

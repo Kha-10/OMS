@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const Category = require("../models/Category");
+const uploadAdapter = require("../services/adapters/index");
 
 const find = async (storeId, query, sort, page, limit, search) => {
   const skip = (page - 1) * limit;
@@ -42,8 +43,22 @@ const addProductToCategories = async (categoryIds, productId) => {
   );
 };
 
-const findById = (storeId,id) => {
+const findById = (storeId, id) => {
   return Product.findOne({ storeId, _id: id }).populate("categories");
+};
+
+const update = async (storeId, productId, updateData) => {
+  const { images, deletedImages, ...rest } = updateData;
+
+  if (deletedImages && deletedImages.length > 0) {
+    return uploadAdapter.updateImages(productId, deletedImages, images);
+  }
+
+  return Product.findOneAndUpdate(
+    { _id: productId, storeId },
+    { ...rest, images },
+    { new: true }
+  );
 };
 
 module.exports = {
@@ -51,5 +66,6 @@ module.exports = {
   findById,
   findByName,
   create,
+  update,
   addProductToCategories,
 };
