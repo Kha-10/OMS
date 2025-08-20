@@ -130,4 +130,13 @@ router.patch(
   StoreController.update
 );
 
+router.post(
+  "/:storeId/products/:id/upload",
+  // [upload.array("photo"), validatePhotoUpload],
+  [upload.array("photo"), uploadAdapter.uploadImages],
+  // RoleMiddleware(["admin", "superadmin"]),
+  handleErrorMessage,
+  ProductsController.upload
+);
+
 module.exports = router;

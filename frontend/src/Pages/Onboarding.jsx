@@ -481,8 +481,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
         if (file) {
           const formData = new FormData();
           formData.append("photo", file);
-
-          await axios.post(`/api/products/${res.data._id}/upload`, formData, {
+          await axios.post(`/api/stores/${storeId}/products/${res.data._id}/upload`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
         }

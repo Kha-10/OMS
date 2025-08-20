@@ -19,7 +19,7 @@ const fetchProducts = async ({ queryKey }) => {
   ] = queryKey;
 
   const url = id
-    ? `/api/stores/${storeId}/products/${id || ""}`
+    ? `/api/stores/${storeId}/products/${id}`
     : `/api/stores/${storeId}/products?page=${page}&limit=${pageSize}${
         categories ? `&categories=${categories}` : ""
       }${
@@ -48,7 +48,7 @@ const useProducts = ({
 
   return useQuery({
     queryKey: id
-      ? ["products", { id ,storeId}]
+      ? ["products", { id, storeId }]
       : [
           "products",
           {
@@ -64,6 +64,7 @@ const useProducts = ({
         ],
     queryFn: fetchProducts,
     keepPreviousData: true,
+    enabled: !!storeId,
     onError: (error) => {
       console.error("Error fetching products:", error);
     },

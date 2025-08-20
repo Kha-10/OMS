@@ -5,9 +5,9 @@ const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-router.get("", CategoriesController.index);
+router.get("/", CategoriesController.index);
 
 router.post(
   "/visibility",

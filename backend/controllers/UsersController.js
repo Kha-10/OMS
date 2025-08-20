@@ -140,7 +140,6 @@ const UserController = {
   skip: async (req, res) => {
     try {
       let userId = req.user._id;
-      console.log("user", userId);
       let existingUser = await User.findById(userId);
       if (!existingUser) {
         return res.status(400).json({ message: "User not found" });
@@ -151,7 +150,7 @@ const UserController = {
         },
       };
       let updatedUser;
-      if (existingUser.onboarding_step <= 7) {
+      if (existingUser.onboarding_step < 7) {
         updatedUser = await User.findByIdAndUpdate(userId, update, {
           new: true,
         });

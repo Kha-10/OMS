@@ -100,7 +100,7 @@ export default function ProductsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <ProductsHeader header="Products" buttonText="products" />
+      <ProductsHeader header="Products" buttonText="products" context="new" />
 
       <ProductsToolbar
         text="Search by product,variant names or SKU "

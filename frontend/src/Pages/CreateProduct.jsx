@@ -44,6 +44,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { showToast } from "@/helper/showToast";
 import useProducts from "@/hooks/useProducts";
+import { useSelector } from "react-redux";
 
 export default function CreateProduct() {
   const [channel, setChannel] = useState("whatsapp");
@@ -61,6 +62,8 @@ export default function CreateProduct() {
   const suggestionsRef = useRef(null);
   const optionsRef = useRef(null);
   const { id } = useParams();
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const form = useForm({
     defaultValues: {
@@ -103,7 +106,7 @@ export default function CreateProduct() {
   if (!id) {
     product = form.formState.defaultValues;
   }
-  console.log(product);
+
   useEffect(() => {
     if (id && product) {
       form.reset(product);
@@ -259,9 +262,8 @@ export default function CreateProduct() {
       formData.append("photo", fileObj.file); // Ensure correct key
 
       try {
-        console.log("productId",productId);
         const response = await axios.post(
-          `/api/products/${productId}/upload`, // Correct API URL
+          `/api/stores/${storeId}/products/${productId}/upload`, // Correct API URL
           formData,
           {
             headers: {
@@ -271,6 +273,7 @@ export default function CreateProduct() {
         );
         console.log("Upload response:", response.data);
       } catch (error) {
+        console.log(error);
         console.error("Upload error:", error.response?.data || error.message);
       }
     }
@@ -295,7 +298,7 @@ export default function CreateProduct() {
       if (id) {
         res = await axios.patch(`/api/products/${id}`, data);
       } else {
-        res = await axios.post("/api/products", data);
+        res = await axios.post(`/api/stores/${storeId}/products`, data);
       }
       if (res.status === 200) {
         showToast(
@@ -306,7 +309,7 @@ export default function CreateProduct() {
       }
 
       // Step 2: Upload Photos (only if there are images)
-      console.log('res',res);
+      console.log("res", res);
       if (newImages.length > 0) {
         await uploadPhotos(res.data._id, newImages);
       }
@@ -1165,10 +1168,7 @@ export default function CreateProduct() {
                                   `options.${index}.settings.choices.length`
                                 );
 
-                                if (
-                                  type === "min" &&
-                                  value > choicesLength
-                                ) {
+                                if (type === "min" && value > choicesLength) {
                                   return "Min must be less than or equal to number of choices";
                                 }
 
@@ -1215,10 +1215,7 @@ export default function CreateProduct() {
                                   `options.${index}.settings.choices.length`
                                 );
 
-                                if (
-                                  type === "max" &&
-                                  value > choicesLength
-                                ) {
+                                if (type === "max" && value > choicesLength) {
                                   return "Max must be greater than or equal to number of choices";
                                 }
 

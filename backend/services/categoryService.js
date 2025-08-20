@@ -1,55 +1,52 @@
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
+const redisClient = require("../config/redisClient");
 const Product = require("../models/Product");
 const CategoryRepo = require("../repo/categoryRepo");
 const clearProductCache = require("../helpers/clearProductCache");
+const generateCacheKey = require("../helpers/generateCacheKey");
 
-const fetchCategoriesFromDB = async (queryParams) => {
+const findCategories = async (storeId, queryParams) => {
+  const cacheKey = generateCacheKey(storeId, "categories", queryParams);
+  let cached = await redisClient.get(cacheKey);
+  if (cached) return cached;
+
   const page = Number(queryParams.page) || 1;
   const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
 
-  const [categories, totalCategories] = await Promise.all([
-    Category.find()
-      .populate("products")
-      .sort({ orderIndex: 1 })
-      .skip(skip)
-      .limit(limit),
-    Category.countDocuments(),
-  ]);
+  const sort = { orderIndex: 1 };
 
-  return { categories, totalCategories, page, limit };
+  const result = await CategoryRepo.find(storeId, sort, page, limit);
+
+  await redisClient.set(cacheKey, JSON.stringify(result), { EX: 3600 });
+
+  return result;
 };
-
-const findCategories = async (queryParams) => {
-  let categoriesData = await fetchCategoriesFromDB(queryParams);
-
-  return categoriesData;
-};
-
-// const validateProductIds = (categories) => {
-//   if (!Array.isArray(categories) || categories.length === 0) {
-//     throw new Error("Category must be a non-empty array");
-//   }
-//   return categories;
-// };
 
 const ensureTenantCategories = async (storeId, userId, categoryNames) => {
-  const storeCategoryIds = [];
-  for (const name of categoryNames) {
-    let storeCategory = await CategoryRepo.findByName(storeId, name);
+  const categoryIds = [];
 
-    if (!storeCategory) {
-      storeCategory = await CategoryRepo.create(storeId, {
-        name,
-        createdBy: userId,
-      });
+  for (const input of categoryNames) {
+    let category;
+
+    if (mongoose.Types.ObjectId.isValid(input)) {
+      category = await CategoryRepo.findById(storeId, input);
     }
 
-    storeCategoryIds.push(storeCategory._id);
+    if (!category) {
+      category = await CategoryRepo.findByName(storeId, input);
+      if (!category) {
+        category = await CategoryRepo.create(storeId, {
+          name: input,
+          createdBy: userId,
+        });
+      }
+    }
+
+    categoryIds.push(category._id);
   }
 
-  return storeCategoryIds;
+  return categoryIds;
 };
 
 const validateProductIds = (products) => {

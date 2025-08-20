@@ -92,7 +92,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/stores/:storeId/products", authMiddleware, productRoutes);
 
-app.use("/api/categories", authMiddleware, categoryRoutes);
+app.use("/api/stores/:storeId/categories", authMiddleware, categoryRoutes);
 
 app.use("/api/cart", authMiddleware, cartRoutes);
 

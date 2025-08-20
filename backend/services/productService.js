@@ -9,18 +9,7 @@ const uploadAdapter = require("./adapters/index");
 const ProductRepo = require("../repo/productRepo");
 const StoreRepo = require("../repo/storeRepo");
 const CategoryService = require("../services/categoryService");
-
-// GET
-const getCachedProducts = async (cacheKey) => {
-  const cachedData = await redisClient.get(cacheKey);
-  // return cachedData ? JSON.parse(cachedData) : null;
-  return cachedData;
-};
-
-const cacheProducts = async (cacheKey, products) => {
-  // await redisClient.setEx(cacheKey, 3600, JSON.stringify(products)); // Cache for 1 hour
-  await redisClient.set(cacheKey, JSON.stringify(products), { ex: 3600 });
-};
+const generateCacheKey = require("../helpers/generateCacheKey");
 
 const buildQuery = (queryParams) => {
   let query = {};
@@ -53,32 +42,6 @@ const buildSort = (sortBy, sortDirection) => {
     : { createdAt: direction };
 };
 
-const fetchProductsFromDB = async (queryParams) => {
-  const query = buildQuery(queryParams);
-  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
-
-  const findQuery = Product.find(query)
-    .populate("categories")
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
-
-  if (queryParams.search) {
-    findQuery.collation({ locale: "en", strength: 2 });
-  }
-
-  const [products, totalProducts, allProductsCount] = await Promise.all([
-    findQuery,
-    Product.countDocuments(query),
-    Product.countDocuments({}),
-  ]);
-
-  return { products, totalProducts, allProductsCount, page, limit };
-};
-
 // const fetchProductsExplain = async (queryParams) => {
 //   const query = buildQuery(queryParams);
 //   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
@@ -99,56 +62,8 @@ const fetchProductsFromDB = async (queryParams) => {
 //   return explain;
 // };
 
-// const generateCacheKey = (queryParams) => {
-//   let cacheKey = `products:page${queryParams.page}:limit${queryParams.limit}`;
-//   if (queryParams.categories)
-//     cacheKey += `:categories${queryParams.categories}`;
-//   if (queryParams.visibility)
-//     cacheKey += `:visibility${queryParams.visibility}`;
-//   if (queryParams.sortBy) cacheKey += `:sortBy${queryParams.sortBy}`;
-//   if (queryParams.sortDirection)
-//     cacheKey += `:sortDirection${queryParams.sortDirection}`;
-//   if (queryParams.search) cacheKey += `:searchQuery${queryParams.search}`;
-//   return cacheKey;
-// };
-const generateCacheKey = (storeId, queryParams) => {
-  let cacheKey = `products:store${storeId}:page${queryParams.page || 1}:limit${
-    queryParams.limit || 10
-  }`;
-  if (queryParams.categories)
-    cacheKey += `:categories${queryParams.categories}`;
-  if (queryParams.visibility)
-    cacheKey += `:visibility${queryParams.visibility}`;
-  if (queryParams.sortBy) cacheKey += `:sortBy${queryParams.sortBy}`;
-  if (queryParams.sortDirection)
-    cacheKey += `:sortDirection${queryParams.sortDirection}`;
-  if (queryParams.search) cacheKey += `:searchQuery${queryParams.search}`;
-  return cacheKey;
-};
-
-// const findProducts = async (queryParams) => {
-//   // await fetchProductsExplain(queryParams);
-//   const cacheKey = generateCacheKey(queryParams);
-//   let cachedProducts = await getCachedProducts(cacheKey);
-//   console.log("cachedProducts", cachedProducts);
-//   if (!cachedProducts) {
-//     cachedProducts = await fetchProductsFromDB(queryParams);
-//     console.log("db", cachedProducts);
-//     await cacheProducts(cacheKey, cachedProducts);
-//   }
-//   return cachedProducts;
-// };
-
-// const enhanceProductImages = (input) => {
-//   if (!input) return input;
-//   if (Array.isArray(input)) {
-//     return input.map((product) => uploadAdapter.getImageUrls(product));
-//   } else {
-//     return uploadAdapter.getImageUrls(input);
-//   }
-// };
 const findProducts = async (storeId, queryParams) => {
-  const cacheKey = generateCacheKey(storeId, queryParams);
+  const cacheKey = generateCacheKey(storeId, "products", queryParams);
 
   // Try cache first
   let cached = await redisClient.get(cacheKey);
@@ -171,7 +86,6 @@ const findProducts = async (storeId, queryParams) => {
 
   // Cache result
   await redisClient.set(cacheKey, JSON.stringify(result), { EX: 3600 });
-
   return result;
 };
 const enhanceProductImages = (input) => {
@@ -198,17 +112,6 @@ const validateCategoryIds = (categories) => {
     .filter(Boolean);
 };
 
-// const createProduct = async (productData) => {
-//   return await Product.create(productData);
-// };
-
-// const validateCategoryIds = (categories) => {
-//   if (!Array.isArray(categories) || categories.length === 0) {
-//     throw new Error("Category must be a non-empty array");
-//   }
-//   return categories;
-// };
-
 const createProduct = async (storeId, userId, productData) => {
   const existing = await ProductRepo.findByName(storeId, productData.name);
   if (existing) throw new Error("Product already exists");
@@ -222,7 +125,7 @@ const createProduct = async (storeId, userId, productData) => {
       price: "20",
     };
   }
-
+  console.log('data',data);
   const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,
@@ -237,7 +140,14 @@ const createProduct = async (storeId, userId, productData) => {
   });
 
   await ProductRepo.addProductToCategories(categoryIds, product._id);
-  await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
+
+  let existingUser = await User.findById(userId);
+  if (!existingUser) {
+    return res.status(400).json({ message: "User not found" });
+  }
+  if (existingUser.onboarding_step < 7) {
+    await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
+  }
   await StoreRepo.update(storeId, {
     "settings.currency": data.currency,
   });

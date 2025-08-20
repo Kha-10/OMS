@@ -4,8 +4,7 @@ const Category = require("../models/Category");
 const find = async (storeId, query, sort, page, limit, search) => {
   const skip = (page - 1) * limit;
 
-  // Always enforce multi-tenant
-  const tenantQuery = { store: storeId, ...query };
+  const tenantQuery = { storeId: storeId, ...query };
 
   const findQuery = Product.find(tenantQuery)
     .populate("categories")

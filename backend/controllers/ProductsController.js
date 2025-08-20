@@ -1,44 +1,12 @@
 const Product = require("../models/Product");
-const Category = require("../models/Category");
-const Order = require("../models/Order");
 const mongoose = require("mongoose");
 const productService = require("../services/productService");
 const clearProductCache = require("../helpers/clearProductCache");
 const clearCartCache = require("../helpers/clearCartCache");
+const clearCache = require("../helpers/clearCache");
 const clearOrderCache = require("../helpers/clearOrderCache");
-const redisClient = require("../config/redisClient");
 
 const ProductsController = {
-  // index: async (req, res) => {
-  //   try {
-  //     const queryParams = req.query;
-  //     let { products, totalProducts, allProductsCount, page, limit } =
-  //       await productService.findProducts(queryParams);
-
-  //     if (!Array.isArray(products)) {
-  //       products = [];
-  //     }
-  //     const enhancedProducts = productService.enhanceProductImages(products);
-
-  //     const response = {
-  //       data: enhancedProducts,
-  //       pagination: {
-  //         totalProducts,
-  //         allProductsCount,
-  //         totalPages: Math.ceil(totalProducts / limit),
-  //         currentPage: page,
-  //         pageSize: limit,
-  //         hasNextPage: page < Math.ceil(totalProducts / limit),
-  //         hasPreviousPage: page > 1,
-  //       },
-  //     };
-
-  //     return res.json(response);
-  //   } catch (error) {
-  //     console.error("Error creating Product:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   index: async (req, res) => {
     try {
       const storeId = req.params.storeId; // multi-tenant
@@ -50,7 +18,7 @@ const ProductsController = {
       if (!Array.isArray(products)) products = [];
 
       const enhancedProducts = productService.enhanceProductImages(products);
-
+      console.log("enhancedProducts",enhancedProducts);
       return res.json({
         data: enhancedProducts,
         pagination: {
@@ -68,42 +36,6 @@ const ProductsController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-
-  // store: async (req, res) => {
-  //   try {
-  //     const productData = req.body;
-
-  //     const existingProduct = await productService.findByName(productData.name);
-  //     if (existingProduct) {
-  //       return res.status(409).json({ msg: "Product already exists" });
-  //     }
-
-  //     const categoryIds = productService.validateCategoryIds(
-  //       productData.categories
-  //     );
-
-  //     const product = await productService.createProduct({
-  //       ...productData,
-  //       categories: categoryIds,
-  //     });
-
-  //     // Update category references
-  //     await Category.updateMany(
-  //       { _id: { $in: categoryIds } },
-  //       { $push: { products: product._id } }
-  //     );
-
-  //     // Clear cache
-  //     await clearProductCache();
-
-  //     return res.json(product);
-  //   } catch (error) {
-  //     console.error("Error creating Product:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
-  // productController.js
-
   store: async (req, res) => {
     try {
       const storeId = req.storeId;
@@ -114,7 +46,8 @@ const ProductsController = {
         req.body
       );
 
-      await clearProductCache();
+      await clearCache(storeId, "products");
+      await clearCache(storeId, "categories");
       return res.json(product);
     } catch (error) {
       console.error("Error creating Product:", error);
