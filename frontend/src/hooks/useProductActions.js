@@ -2,8 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
 
-const duplicateProducts = async (id) => {
-  const res = await axios.post(`/api/products/${id}/duplicate`);
+const duplicateProducts = async (ids, storeId) => {
+  const res = await axios.post(`/api/stores/${storeId}/products/duplicate`, {
+    ids: ids,
+  });
   return res.data;
 };
 
@@ -12,8 +14,13 @@ const deleteProducts = async (id) => {
   return res.data;
 };
 
-const updateProductVisibility = async (id, storeId, visibility) => {
-  const res = await axios.patch(`/api/stores/${storeId}/products/${id}`, {
+const updateProductVisibility = async (
+  selectedProducts,
+  storeId,
+  visibility
+) => {
+  const res = await axios.post(`/api/stores/${storeId}/products/visibility`, {
+    ids: selectedProducts,
     visibility,
   });
   return res.data;
@@ -25,11 +32,20 @@ const useProductActions = (onSelectProducts) => {
   const storeId = stores?.[0]?._id;
 
   const duplicateMutation = useMutation({
+    // mutationFn: async (selectedProducts) => {
+    //   const responses = await Promise.all(
+    //     selectedProducts.map((id) => duplicateProducts(id))
+    //   );
+    //   return responses;
+    // },
     mutationFn: async (selectedProducts) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) => duplicateProducts(id))
-      );
-      return responses;
+      console.log(selectedProducts);
+      if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+        console.log("Using bulk duplicate for:", selectedProducts);
+        return await duplicateProducts(selectedProducts, storeId);
+      } else {
+        throw new Error("No valid product(s) provided");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);
@@ -58,12 +74,16 @@ const useProductActions = (onSelectProducts) => {
 
   const updateVisibilityMutation = useMutation({
     mutationFn: async ({ selectedProducts, visibility }) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) =>
-          updateProductVisibility(id, storeId, visibility)
-        )
-      );
-      return responses;
+      if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+        console.log("Using bulk update for:", selectedProducts);
+        return await updateProductVisibility(
+          selectedProducts,
+          storeId,
+          visibility
+        );
+      } else {
+        throw new Error("No valid product(s) provided");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);

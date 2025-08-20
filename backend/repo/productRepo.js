@@ -51,7 +51,7 @@ const update = async (storeId, productId, updateData) => {
   const { images, deletedImages, ...rest } = updateData;
 
   if (deletedImages && deletedImages.length > 0) {
-    return uploadAdapter.updateImages(productId, deletedImages, images);
+    uploadAdapter.updateImages(productId, deletedImages, images);
   }
 
   return Product.findOneAndUpdate(
@@ -72,6 +72,17 @@ const bulkUpdateVisibility = async (storeId, ids, visibility) => {
   return Product.bulkWrite(bulkOps);
 };
 
+const findByIds = async (ids, storeId, session = null) => {
+  return Product.find({
+    _id: { $in: ids },
+    storeId: storeId, // ensure store ownership
+  }).session(session);
+};
+
+const insertMany = async (products, session = null) => {
+  return Product.insertMany(products, { session });
+};
+
 module.exports = {
   find,
   findById,
@@ -80,4 +91,6 @@ module.exports = {
   update,
   addProductToCategories,
   bulkUpdateVisibility,
+  findByIds,
+  insertMany,
 };

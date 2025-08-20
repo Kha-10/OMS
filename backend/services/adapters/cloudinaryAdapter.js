@@ -103,7 +103,6 @@ const getImageUrls = (product) => {
   const plainProduct = product.toObject ? product.toObject() : product;
 
   const images = plainProduct.photos || plainProduct.photo;
-  console.log("plainProduct", plainProduct);
   if (!images || !images.length) return plainProduct;
   return {
     ...plainProduct,

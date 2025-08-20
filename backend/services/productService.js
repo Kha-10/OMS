@@ -325,7 +325,72 @@ const updateVisibility = async (storeId, ids, visibility) => {
 };
 
 // Duplicate
-const duplicateProduct = async (ids) => {
+// const duplicateProduct = async (ids) => {
+//   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+//   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+//   if (validIds.length === 0) {
+//     return { duplicatedCount: 0, invalidIds };
+//   }
+
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const originalProducts = await Product.find({
+//       _id: { $in: validIds },
+//     }).session(session);
+//     if (originalProducts.length === 0) {
+//       await session.abortTransaction();
+//       return { duplicatedCount: 0, invalidIds };
+//     }
+
+//     const duplicatedProducts = [];
+
+//     for (const original of originalProducts) {
+//       const originalData = original.toObject();
+
+//       // Optional: duplicate photo array if needed
+//       let duplicatedImages = [];
+//       if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
+//         duplicatedImages = await uploadAdapter.duplicateImages(
+//           originalData.photo
+//         );
+//       }
+
+//       const duplicated = {
+//         ...originalData,
+//         _id: undefined, // allow Mongo to generate new ID
+//         createdAt: undefined,
+//         updatedAt: undefined,
+//         name: `${originalData.name} (Copy)`,
+//         photo: duplicatedImages,
+//       };
+
+//       duplicatedProducts.push(duplicated);
+//     }
+
+//     const newProducts = await Product.insertMany(duplicatedProducts, {
+//       session,
+//     });
+
+//     await session.commitTransaction();
+//     await clearProductCache();
+
+//     return {
+//       duplicatedCount: newProducts.length,
+//       invalidIds,
+//       newProducts,
+//     };
+//   } catch (error) {
+//     await session.abortTransaction();
+//     throw error;
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
+const duplicateProducts = async (ids, storeId) => {
   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
 
@@ -337,9 +402,12 @@ const duplicateProduct = async (ids) => {
   session.startTransaction();
 
   try {
-    const originalProducts = await Product.find({
-      _id: { $in: validIds },
-    }).session(session);
+    const originalProducts = await ProductRepo.findByIds(
+      validIds,
+      storeId,
+      session
+    );
+    console.log("originalProducts",originalProducts);
     if (originalProducts.length === 0) {
       await session.abortTransaction();
       return { duplicatedCount: 0, invalidIds };
@@ -350,7 +418,7 @@ const duplicateProduct = async (ids) => {
     for (const original of originalProducts) {
       const originalData = original.toObject();
 
-      // Optional: duplicate photo array if needed
+      // handle photos (if needed)
       let duplicatedImages = [];
       if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
         duplicatedImages = await uploadAdapter.duplicateImages(
@@ -360,7 +428,7 @@ const duplicateProduct = async (ids) => {
 
       const duplicated = {
         ...originalData,
-        _id: undefined, // allow Mongo to generate new ID
+        _id: undefined,
         createdAt: undefined,
         updatedAt: undefined,
         name: `${originalData.name} (Copy)`,
@@ -370,13 +438,15 @@ const duplicateProduct = async (ids) => {
       duplicatedProducts.push(duplicated);
     }
 
-    const newProducts = await Product.insertMany(duplicatedProducts, {
-      session,
-    });
+    const newProducts = await ProductRepo.insertMany(
+      duplicatedProducts,
+      session
+    );
 
     await session.commitTransaction();
-    await clearProductCache();
+    await clearCache(storeId, "products");
 
+    console.log("newProducts",newProducts);
     return {
       duplicatedCount: newProducts.length,
       invalidIds,
@@ -401,6 +471,7 @@ module.exports = {
   // updateProduct,
   // updateCategories,
   updateProductWithCategories,
-  duplicateProduct,
+  duplicateProducts,
+  // duplicateProduct,
   updateVisibility,
 };

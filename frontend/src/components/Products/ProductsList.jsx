@@ -42,6 +42,7 @@ export default function ProductsList({
   } = useProductActions(onSelectProducts);
 
   const handleDuplicate = () => {
+    console.log(selectedProducts);
     duplicateMutation.mutate(selectedProducts);
   };
 

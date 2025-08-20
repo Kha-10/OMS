@@ -224,16 +224,35 @@ const ProductsController = {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
+  // duplicate: async (req, res) => {
+  //   const { ids } = req.body;
+  //   console.log("ids", ids);
+  //   try {
+  //     const duplicatedProduct = await productService.duplicateProduct(ids);
+  //     await clearProductCache();
+  //     return res.json(duplicatedProduct);
+  //   } catch (error) {
+  //     console.error("Transaction failed:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   duplicate: async (req, res) => {
     const { ids } = req.body;
-    console.log("ids", ids);
+    const storeId  = req.params.storeId;
+    console.log("duplicate",ids);
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ msg: "ids must be an array" });
+    }
+
     try {
-      const duplicatedProduct = await productService.duplicateProduct(ids);
-      await clearProductCache();
-      return res.json(duplicatedProduct);
+      const duplicatedResult = await productService.duplicateProducts(
+        ids,
+        storeId
+      );
+      return res.json(duplicatedResult);
     } catch (error) {
       console.error("Transaction failed:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
 };

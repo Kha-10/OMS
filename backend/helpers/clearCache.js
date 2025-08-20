@@ -1,7 +1,6 @@
 const redis = require("../config/redisClient");
 
 const clearCache = async (storeId, mainKey) => {
-  console.log("CLEAR");
   const keys = await redis.keys(`${mainKey}:store${storeId}:page*`);
   if (keys.length > 0) {
     await redis.del(...keys);
