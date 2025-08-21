@@ -15,12 +15,6 @@ const deleteProducts = async (id) => {
   return res.data;
 };
 
-const updateProductVisibility = async (id, visibility) => {
-  const res = await axios.patch(`/api/categories/${id}`, {
-    visibility,
-  });
-  return res.data;
-};
 const updateCategoryVisibility = async (
   selectedCategories,
   storeId,
@@ -129,7 +123,6 @@ const useCategoriesActions = (
   });
 
   const updateSequenceMutation = useMutation({
-    // mutationFn: updateSequenceProducts,
     mutationFn: async (updatedCategories) => {
       console.log("updatedCategories", updatedCategories);
       return await updateSequenceProducts(storeId, updatedCategories);

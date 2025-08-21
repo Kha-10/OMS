@@ -94,15 +94,6 @@ export function SequenceDialog({ open, onOpenChange, categories }) {
     }
   }
 
-  // Save the updated sequence
-  // const handleSave = async () => {
-  //   const updatedCategories = [
-  //     ...items,
-  //     ...categories.filter((category) => category.visibility !== "visible"),
-  //   ];
-  //   updateSequenceMutation.mutate(updatedCategories);
-  //   onOpenChange(false);
-  // };
   const handleSave = async () => {
     const updatedCategories = items.map((item) => {
       const original = categories.find(c => c._id === item._id);

@@ -157,33 +157,6 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internet Server Error" });
     }
   },
-  // updateVisibility: async (req, res) => {
-  //   const { ids, visibility } = req.body;
-  //   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-  //   if (invalidIds.length > 0) {
-  //     return res.status(400).json({ msg: "Invalid category ids" });
-  //   }
-  //   try {
-  //     const bulkOps = ids.map((id) => ({
-  //       updateOne: {
-  //         filter: { _id: id },
-  //         update: { $set: { visibility: visibility } },
-  //       },
-  //     }));
-
-  //     const result = await Category.bulkWrite(bulkOps);
-
-  //     await clearProductCache();
-
-  //     return res.json({
-  //       modifiedCount: result.modifiedCount,
-  //       message: "Category visibility updated successfully",
-  //     });
-  //   } catch (error) {
-  //     console.error("Error updating product:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   updateVisibility: async (req, res) => {
     try {
       const { ids, visibility } = req.body;
