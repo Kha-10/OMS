@@ -34,10 +34,10 @@ const create = async (storeId, data) => {
   return Product.create({ ...data, storeId });
 };
 
-const addProductToCategories = async (categoryIds, productId) => {
+const addProductToCategories = async (categoryIds, productId, storeId) => {
   return Category.updateMany(
-    { _id: { $in: categoryIds } },
-    { $push: { products: productId } }
+    { _id: { $in: categoryIds }, storeId },
+    { $push: { products: { $each: productId } } }
   );
 };
 

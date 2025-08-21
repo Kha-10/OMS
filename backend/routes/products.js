@@ -71,7 +71,6 @@ router.post(
     body("ids")
       .isArray({ min: 1 })
       .withMessage("Product IDs must be a non-empty array"),
-    body("visibility").notEmpty(),
   ],
   handleErrorMessage,
   checkMemberMiddleware,

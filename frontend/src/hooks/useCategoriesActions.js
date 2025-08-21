@@ -1,17 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
+import { errorToast, successToast } from "@/helper/showToast";
 
 const addCategory = async (storeId, newCategory) => {
   const { data } = await axios.post(
     `/api/stores/${storeId}/categories`,
     newCategory
   );
-  return data; // Assuming backend returns `{ _id, name }`
+  return data;
 };
 
-const deleteProducts = async (id) => {
-  const res = await axios.delete(`/api/categories/${id}`);
+const deleteCategories = async (selectedCategories, storeId) => {
+  const res = await axios.post(`/api/stores/${storeId}/categories/bulk`, {
+    ids: selectedCategories,
+  });
   return res.data;
 };
 
@@ -68,11 +71,13 @@ const useCategoriesActions = (
           category._id === context.tempId ? savedCategory : category
         )
       );
+      successToast("Category added successfully");
     },
 
     onError: (error, newCategory, context) => {
       console.error("Category creation failed:", error);
       setSelectedCategories(context.previousCategories);
+      errorToast(error.response.data.msg);
     },
 
     onSettled: () => {
@@ -82,23 +87,28 @@ const useCategoriesActions = (
 
   const deleteMutation = useMutation({
     mutationFn: async (selectedCategories) => {
-      const responses = await Promise.all(
-        selectedCategories.map((id) => deleteProducts(id))
-      );
-      return responses;
+      if (Array.isArray(selectedCategories) && selectedCategories.length > 0) {
+        console.log("Using bulk delete for:", selectedCategories);
+        return await deleteCategories(selectedCategories, storeId);
+      } else {
+        throw new Error("No valid category(ies) provided");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["categories", storeId]);
       setSelectedCategoriesId([]);
+      successToast("Category deleted successfully");
     },
     onError: (error) => {
-      console.error("Deleting products failed:", error);
+      console.error("Deleting categories failed:", error);
+      errorToast(
+        error.response.data.msg || error.response?.data?.errors?.ids?.msg
+      );
     },
   });
 
   const updateVisibilityMutation = useMutation({
     mutationFn: async ({ selectedCategoriesId, visibility }) => {
-      console.log("selectedCategoriesId", selectedCategoriesId);
       if (
         Array.isArray(selectedCategoriesId) &&
         selectedCategoriesId.length > 0
@@ -116,9 +126,13 @@ const useCategoriesActions = (
     onSuccess: () => {
       queryClient.invalidateQueries(["categories", storeId]);
       setSelectedCategoriesId([]);
+      successToast("Category updated successfully");
     },
     onError: (error, { visibility }) => {
       console.error(`Updating visibility to '${visibility}' failed:`, error);
+      errorToast(
+        error.response.data.msg || error.response?.data?.errors?.ids?.msg
+      );
     },
   });
 
@@ -133,9 +147,11 @@ const useCategoriesActions = (
 
     onSuccess: () => {
       queryClient.invalidateQueries(["categories", storeId]);
+      successToast("Category Order updated successfully");
     },
     onError: (error) => {
       console.error("updating SequenceProducts products failed:", error);
+      errorToast(error.response.data.msg);
     },
   });
 

@@ -119,6 +119,7 @@ const createProduct = async (storeId, userId, productData) => {
   const existing = await ProductRepo.findByName(storeId, productData.name);
   if (existing) throw handler.conflictError("Product already exists");
 
+  // Handle sample product case
   let data = { ...productData };
   if (productData.addSamples) {
     data = {
@@ -128,32 +129,42 @@ const createProduct = async (storeId, userId, productData) => {
       price: "20",
     };
   }
-  console.log("data", data);
+
   const storeCategoryIds = await CategoryService.ensureTenantCategories(
     storeId,
     userId,
     data.categories
   );
-
+  console.log("IDOWOEK");
+    console.log("storeCategoryIds",storeCategoryIds);
   const categoryIds = validateCategoryIds(storeCategoryIds);
+
   const product = await ProductRepo.create(storeId, {
     ...data,
-    categories: storeCategoryIds,
+    categories: categoryIds,
     createdBy: userId,
   });
 
-  await ProductRepo.addProductToCategories(categoryIds, product._id);
+  const productIds = [product._id];
+  const categoryIdsArray = categoryIds.length ? categoryIds : [];
 
-  let existingUser = await User.findById(userId);
-  if (!existingUser) {
-    throw handler.notFoundError("User not found");
+  console.log("categoryIdsArray",categoryIdsArray);
+  if (categoryIdsArray.length > 0) {
+    await ProductRepo.addProductToCategories(categoryIdsArray, productIds,storeId);
   }
+
+  // Onboarding step update
+  const existingUser = await User.findById(userId);
+  if (!existingUser) throw handler.notFoundError("User not found");
+
   if (existingUser.onboarding_step < 7) {
     await User.findByIdAndUpdate(userId, { onboarding_step: 5 });
   }
+
   await StoreRepo.update(storeId, {
     "settings.currency": data.currency,
   });
+
   return product;
 };
 
@@ -192,13 +203,15 @@ const updateCategories = async (
     (catId) => !oldCategoryIds.includes(catId)
   );
 
+  const productIds = [productId];
+
   const ops = [];
 
   if (categoriesToRemove.length > 0) {
     ops.push(
       CategoryRepo.removeProductFromCategories(
         categoriesToRemove,
-        productId,
+        productIds,
         storeId
       )
     );
@@ -206,7 +219,7 @@ const updateCategories = async (
 
   if (categoriesToAdd.length > 0) {
     ops.push(
-      CategoryRepo.addProductToCategories(categoriesToAdd, productId, storeId)
+      CategoryRepo.addProductToCategories(categoriesToAdd, productIds, storeId)
     );
   }
 

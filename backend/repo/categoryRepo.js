@@ -39,7 +39,6 @@ const findLastCategory = async (storeId) => {
 };
 
 const addCategoryToProducts = async (productIds, categoryIds, storeId) => {
-  console.log("categoryIds",categoryIds);
   return Product.updateMany(
     { _id: { $in: productIds }, storeId },
     { $push: { categories: { $each: categoryIds } } }
@@ -50,17 +49,6 @@ const addProductToCategories = async (categoryIds, productIds, storeId) => {
   return Category.updateMany(
     { _id: { $in: categoryIds }, storeId },
     { $addToSet: { products: { $each: productIds } } }
-  );
-};
-
-const removeProductFromCategories = async (
-  categoryIds,
-  productIds,
-  storeId
-) => {
-  return Category.updateMany(
-    { _id: { $in: categoryIds }, storeId },
-    { $pull: { products: { $in: productIds } } }
   );
 };
 
@@ -92,6 +80,39 @@ const updateById = async (id, storeId, updateData) => {
   });
 };
 
+const findByIds = async (ids, storeId, session) => {
+  return Category.find({ _id: { $in: ids }, storeId }).session(session);
+};
+
+const deleteMany = async (ids, storeId, session) => {
+  return Category.deleteMany({ _id: { $in: ids }, storeId }).session(session);
+};
+
+const removeCategoriesFromProducts = async (ids, storeId, session) => {
+  return Product.updateMany(
+    { storeId, categories: { $in: ids } },
+    { $pull: { categories: { $in: ids } } }
+  ).session(session);
+};
+
+const removeCategoryFromProducts = async (categoryIds, storeId) => {
+  return Product.updateMany(
+    { storeId, categories: { $in: categoryIds } },
+    { $pull: { categories: { $in: categoryIds } } }
+  );
+};
+
+const removeProductFromCategories = async (
+  categoryIds,
+  productIds,
+  storeId
+) => {
+  return Category.updateMany(
+    { _id: { $in: categoryIds }, storeId },
+    { $pull: { products: { $in: productIds } } }
+  );
+};
+
 module.exports = {
   findByName,
   findById,
@@ -100,8 +121,12 @@ module.exports = {
   findLastCategory,
   addCategoryToProducts,
   addProductToCategories,
-  removeProductFromCategories,
   bulkUpdateVisibility,
   bulkUpdateOrder,
   updateById,
+  findByIds,
+  deleteMany,
+  removeCategoriesFromProducts,
+  removeCategoryFromProducts,
+  removeProductFromCategories,
 };

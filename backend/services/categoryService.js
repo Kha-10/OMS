@@ -75,10 +75,15 @@ const createCategory = async ({
   const lastCategory = await CategoryRepo.findLastCategory();
   const newOrderIndex = lastCategory ? lastCategory.orderIndex + 1 : 0;
 
-  const extractedProductIds = products?.map((p) => p._id) || [];
+  // Extract product IDs if products provided
+  const extractedProductIds =
+    products?.map((p) =>
+      typeof p === "object" && p._id ? p._id.toString() : p.toString()
+    ) || [];
 
   const productIds = validateProductIds(extractedProductIds);
 
+  // Create category with initial products
   const category = await CategoryRepo.create(storeId, {
     name,
     visibility,
@@ -88,7 +93,13 @@ const createCategory = async ({
     createdBy: userId,
   });
 
-  await CategoryRepo.addCategoryToProducts(productIds, category._id, storeId);
+  // Keep consistent: always wrap categoryId in array
+  const categoryIds = [category._id];
+
+  if (productIds.length > 0) {
+    await CategoryRepo.addCategoryToProducts(productIds, categoryIds, storeId);
+  }
+
   return category;
 };
 
@@ -108,87 +119,6 @@ const findCategoryById = async (storeId, id) => {
     throw handler.notFoundError("Category not found");
   }
   return category;
-};
-
-// UPDATE
-const updateProducts = async (existingCategory, newProductIds, id) => {
-  const oldProductIds = existingCategory.products || [];
-
-  // Products to remove (exist in old but not in new)
-  const productsToRemove = oldProductIds.filter(
-    (pId) => !newProductIds.includes(pId.toString())
-  );
-
-  // Products to add (exist in new but not in old)
-  const productsToAdd = newProductIds.filter(
-    (pId) => !oldProductIds.includes(pId.toString())
-  );
-
-  // Only update Products if necessary
-  const updateOperations = [];
-  if (productsToRemove.length > 0) {
-    updateOperations.push(
-      Product.updateMany(
-        { _id: { $in: productsToRemove } },
-        { $pull: { categories: id } }
-      )
-    );
-  }
-  if (productsToAdd.length > 0) {
-    updateOperations.push(
-      Product.updateMany(
-        { _id: { $in: productsToAdd } },
-        { $addToSet: { categories: id } }
-      )
-    );
-  }
-
-  await Promise.all(updateOperations);
-};
-
-const deleteCategories = async (ids) => {
-  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-  if (invalidIds.length > 0) {
-    return { deletedCount: 0, invalidIds };
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const categories = await Category.find({ _id: { $in: ids } }).session(
-      session
-    );
-    console.log("categories", categories);
-    if (categories.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
-      return { deletedCount: 0, invalidIds: [] };
-    }
-
-    await Category.deleteMany({ _id: { $in: ids } }).session(session);
-
-    await Promise.all([
-      Product.updateMany(
-        { categories: { $in: ids } },
-        { $pull: { categories: { $in: ids } } }
-      ).session(session),
-    ]);
-
-    await session.commitTransaction();
-    session.endSession();
-
-    await clearProductCache();
-
-    return {
-      deletedCount: categories.length,
-      invalidIds: [],
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
 };
 
 const updateVisibility = async (storeId, ids, visibility) => {
@@ -234,7 +164,6 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
     p._id.toString()
   );
 
-  // Determine products to add and remove
   const productsToAdd = newProductIds.filter(
     (id) => !oldProductIds.includes(id)
   );
@@ -242,20 +171,25 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
     (id) => !newProductIds.includes(id)
   );
 
+  const categoryIds = [categoryId];
+
   const ops = [];
   if (productsToAdd.length > 0)
     ops.push(
-      CategoryRepo.addProductToCategories(categoryId, productsToAdd, storeId),
-      CategoryRepo.addCategoryToProducts(productsToAdd, [categoryId], storeId)
+      CategoryRepo.addProductToCategories(categoryIds, productsToAdd, storeId),
+      CategoryRepo.addCategoryToProducts(productsToAdd, categoryIds, storeId)
     );
-  if (productsToRemove.length > 0)
+
+  if (productsToRemove.length > 0) {
     ops.push(
       CategoryRepo.removeProductFromCategories(
-        categoryId,
+        categoryIds,
         productsToRemove,
         storeId
-      )
+      ),
+      CategoryRepo.removeCategoryFromProducts(categoryIds, storeId)
     );
+  }
 
   await Promise.all(ops);
 
@@ -272,12 +206,47 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
   return updatedCategory;
 };
 
+const deleteCategories = async (storeId, ids) => {
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    return { deletedCount: 0, invalidIds };
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const categories = await CategoryRepo.findByIds(ids, storeId, session);
+
+    if (categories.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return { deletedCount: 0, invalidIds: [] };
+    }
+
+    await CategoryRepo.deleteMany(ids, storeId, session);
+
+    await CategoryRepo.removeCategoriesFromProducts(ids, storeId, session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    await clearCache(storeId, "products");
+    await clearCache(storeId, "categories");
+
+    return { deletedCount: categories.length, invalidIds: [] };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 module.exports = {
   findCategories,
   findCategoryById,
   createCategory,
   ensureTenantCategories,
-  updateProducts,
   deleteCategories,
   updateVisibility,
   updateCategorySequence,

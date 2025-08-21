@@ -97,11 +97,38 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
+  // bulkDestroy: async (req, res) => {
+  //   try {
+  //     const { ids } = req.body;
+  //     console.log("bulkDestroy", ids);
+  //     const result = await categoryService.deleteCategories(ids);
+
+  //     if (result.invalidIds.length > 0) {
+  //       return res.status(400).json({
+  //         msg: "Some IDs are invalid",
+  //         invalidIds: result.invalidIds,
+  //       });
+  //     }
+
+  //     if (result.deletedCount === 0) {
+  //       return res.status(404).json({ msg: "No categories found" });
+  //     }
+
+  //     return res.json({
+  //       msg: "Categories deleted successfully",
+  //       deletedCount: result.deletedCount,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error in bulkDestroy:", error);
+  //     return res.status(500).json({ msg: "Internal server error" });
+  //   }
+  // },
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
-      console.log("bulkDestroy", ids);
-      const result = await categoryService.deleteCategories(ids);
+      const storeId = req.params.storeId;
+      console.log("bulkDestroy",ids);
+      const result = await categoryService.deleteCategories(storeId, ids);
 
       if (result.invalidIds.length > 0) {
         return res.status(400).json({
@@ -123,40 +150,6 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  // update: async (req, res) => {
-  //   try {
-  //     let id = req.params.id;
-  //     if (!mongoose.Types.ObjectId.isValid(id)) {
-  //       return res.status(400).json({ msg: "invalid id" });
-  //     }
-
-  //     let newProductIds = req.body.products || [];
-  //     if (!Array.isArray(newProductIds)) {
-  //       return res.status(400).json({ msg: "invalid product id" });
-  //     }
-
-  //     newProductIds = newProductIds.map((p) => p._id);
-
-  //     // Get existing product with categories
-  //     const existingCategory = await Category.findById(id);
-  //     if (!existingCategory) {
-  //       return res.status(404).json({ msg: "Category not found" });
-  //     }
-
-  //     await categoryService.updateProducts(existingCategory, newProductIds, id);
-
-  //     let category = await Category.findByIdAndUpdate(id, {
-  //       ...req.body,
-  //     });
-
-  //     await clearProductCache();
-  //     // await redisClient.del("products:*");
-
-  //     return res.json(category);
-  //   } catch (error) {
-  //     return res.status(500).json({ msg: "Internet Server Error" });
-  //   }
-  // },
   updateCategory: async (req, res) => {
     try {
       const storeId = req.params.storeId;

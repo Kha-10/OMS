@@ -34,9 +34,21 @@ router.post(
 
 router.get("/:id", CategoriesController.show);
 
-router.delete(
+// router.delete(
+//   "/bulk",
+//   // RoleMiddleware(["admin", "superadmin"]),
+//   CategoriesController.bulkDestroy
+// );
+router.post(
   "/bulk",
-  // RoleMiddleware(["admin", "superadmin"]),
+  [
+    body("ids")
+      .isArray({ min: 1 })
+      .withMessage("Category IDs must be a non-empty array"),
+  ],
+  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   CategoriesController.bulkDestroy
 );
 
