@@ -175,72 +175,6 @@ const findProductById = async (storeId, id) => {
   return product;
 };
 
-const deleteProducts = async (ids) => {
-  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-  if (invalidIds.length > 0) {
-    return { deletedCount: 0, invalidIds };
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const products = await Product.find({ _id: { $in: ids } }).session(session);
-
-    if (products.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
-      return { deletedCount: 0, invalidIds: [] };
-    }
-
-    const photosToDelete = products.flatMap((product) => product.photo || []);
-
-    await Product.deleteMany({ _id: { $in: ids } }).session(session);
-
-    await Promise.all([
-      Category.updateMany(
-        { products: { $in: ids } },
-        { $pull: { products: { $in: ids } } }
-      ).session(session),
-
-      Order.updateMany(
-        { "items.productId": { $in: ids } },
-        {
-          $set: {
-            "items.$[elem].productId": null,
-            "items.$[elem]._id": null,
-          },
-        },
-        {
-          arrayFilters: [{ "elem.productId": { $in: ids } }],
-          session,
-        }
-      ),
-    ]);
-
-    await session.commitTransaction();
-    session.endSession();
-
-    // AWS removal and cache clearing outside the transaction
-    if (photosToDelete.length > 0) {
-      // await awsRemove(photosToDelete);
-      // await invalidateCloudFrontCache(photosToDelete);
-      uploadAdapter.removeImages(photosToDelete);
-    }
-
-    await clearProductCache();
-
-    return {
-      deletedCount: products.length,
-      invalidIds: [],
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
-};
-
 const updateCategories = async (
   existingProduct,
   newCategoryIds,
@@ -324,72 +258,6 @@ const updateVisibility = async (storeId, ids, visibility) => {
   return result;
 };
 
-// Duplicate
-// const duplicateProduct = async (ids) => {
-//   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-//   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
-
-//   if (validIds.length === 0) {
-//     return { duplicatedCount: 0, invalidIds };
-//   }
-
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
-
-//   try {
-//     const originalProducts = await Product.find({
-//       _id: { $in: validIds },
-//     }).session(session);
-//     if (originalProducts.length === 0) {
-//       await session.abortTransaction();
-//       return { duplicatedCount: 0, invalidIds };
-//     }
-
-//     const duplicatedProducts = [];
-
-//     for (const original of originalProducts) {
-//       const originalData = original.toObject();
-
-//       // Optional: duplicate photo array if needed
-//       let duplicatedImages = [];
-//       if (Array.isArray(originalData.photo) && originalData.photo.length > 0) {
-//         duplicatedImages = await uploadAdapter.duplicateImages(
-//           originalData.photo
-//         );
-//       }
-
-//       const duplicated = {
-//         ...originalData,
-//         _id: undefined, // allow Mongo to generate new ID
-//         createdAt: undefined,
-//         updatedAt: undefined,
-//         name: `${originalData.name} (Copy)`,
-//         photo: duplicatedImages,
-//       };
-
-//       duplicatedProducts.push(duplicated);
-//     }
-
-//     const newProducts = await Product.insertMany(duplicatedProducts, {
-//       session,
-//     });
-
-//     await session.commitTransaction();
-//     await clearProductCache();
-
-//     return {
-//       duplicatedCount: newProducts.length,
-//       invalidIds,
-//       newProducts,
-//     };
-//   } catch (error) {
-//     await session.abortTransaction();
-//     throw error;
-//   } finally {
-//     session.endSession();
-//   }
-// };
-
 const duplicateProducts = async (ids, storeId) => {
   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
   const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
@@ -407,7 +275,7 @@ const duplicateProducts = async (ids, storeId) => {
       storeId,
       session
     );
-    console.log("originalProducts",originalProducts);
+    console.log("originalProducts", originalProducts);
     if (originalProducts.length === 0) {
       await session.abortTransaction();
       return { duplicatedCount: 0, invalidIds };
@@ -439,14 +307,15 @@ const duplicateProducts = async (ids, storeId) => {
     }
 
     const newProducts = await ProductRepo.insertMany(
+      storeId,
       duplicatedProducts,
       session
     );
 
     await session.commitTransaction();
     await clearCache(storeId, "products");
+    await clearCache(storeId, "categories");
 
-    console.log("newProducts",newProducts);
     return {
       duplicatedCount: newProducts.length,
       invalidIds,
@@ -457,6 +326,48 @@ const duplicateProducts = async (ids, storeId) => {
     throw error;
   } finally {
     session.endSession();
+  }
+};
+
+const deleteProducts = async (storeId, ids) => {
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    return { deletedCount: 0, invalidIds };
+  }
+  console.log("invalidIds", invalidIds);
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const products = await ProductRepo.findByIds(ids, storeId, session);
+    if (products.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return { deletedCount: 0, invalidIds: [] };
+    }
+    console.log("products", products);
+
+    const photosToDelete = products.flatMap((p) => p.photo || []);
+
+    await ProductRepo.deleteMany(storeId, ids, session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    if (photosToDelete.length > 0) {
+      uploadAdapter.removeImages(photosToDelete);
+    }
+
+    console.log("products.length", products.length);
+    await clearCache(storeId, "products");
+    await clearCache(storeId, "categories");
+
+    return { deletedCount: products.length, invalidIds: [] };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
 };
 

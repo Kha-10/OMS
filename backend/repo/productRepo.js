@@ -72,15 +72,26 @@ const bulkUpdateVisibility = async (storeId, ids, visibility) => {
   return Product.bulkWrite(bulkOps);
 };
 
-const findByIds = async (ids, storeId, session = null) => {
+const findByIds = async (ids, storeId, session) => {
   return Product.find({
     _id: { $in: ids },
-    storeId: storeId, // ensure store ownership
+    storeId: storeId,
   }).session(session);
 };
 
-const insertMany = async (products, session = null) => {
-  return Product.insertMany(products, { session });
+const insertMany = async (storeId, products, session) => {
+  const productsWithStore = products.map((p) => ({
+    ...p,
+    storeId,
+  }));
+  return Product.insertMany(productsWithStore, { session });
+};
+
+const deleteMany = async (storeId, ids, session) => {
+  return Product.deleteMany({
+    _id: { $in: ids },
+    storeId,
+  }).session(session);
 };
 
 module.exports = {
@@ -93,4 +104,5 @@ module.exports = {
   bulkUpdateVisibility,
   findByIds,
   insertMany,
+  deleteMany,
 };

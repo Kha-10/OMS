@@ -19,6 +19,8 @@ router.post(
   "",
   [body("name").notEmpty(), body("phone").notEmpty()],
   handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   StoreController.store
 );
 
@@ -26,8 +28,8 @@ router.post(
   "/:id/upload",
   // [upload.array("photo"), validatePhotoUpload],
   [upload.array("photo"), uploadAdapter.uploadImages],
-  // RoleMiddleware(["admin", "superadmin"]),
-  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   StoreController.upload
 );
 
@@ -134,8 +136,8 @@ router.post(
   "/:storeId/products/:id/upload",
   // [upload.array("photo"), validatePhotoUpload],
   [upload.array("photo"), uploadAdapter.uploadImages],
-  // RoleMiddleware(["admin", "superadmin"]),
-  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.upload
 );
 

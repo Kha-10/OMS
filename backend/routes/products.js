@@ -20,8 +20,9 @@ router.post(
   body("ids")
     .isArray({ min: 1 })
     .withMessage("Product IDs must be a non-empty array"),
-  // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.duplicate
 );
 
@@ -33,8 +34,9 @@ router.post(
       .withMessage("Product IDs must be a non-empty array"),
     body("visibility").notEmpty(),
   ],
-  // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.updateVisibility
 );
 
@@ -56,28 +58,31 @@ router.post(
   "/:id/upload",
   // [upload.array("photo"), validatePhotoUpload],
   [upload.array("photo"), uploadAdapter.uploadImages],
-  // RoleMiddleware(["admin", "superadmin"]),
-  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.upload
 );
 
 router.get("/:id", ProductsController.show);
 
-router.delete(
+router.post(
   "/bulk",
-  // RoleMiddleware(["admin", "superadmin"]),
+  [
+    body("ids")
+      .isArray({ min: 1 })
+      .withMessage("Product IDs must be a non-empty array"),
+    body("visibility").notEmpty(),
+  ],
+  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.bulkDestroy
-);
-
-router.delete(
-  "/:id",
-  // RoleMiddleware(["admin", "superadmin"]),
-  ProductsController.destroy
 );
 
 router.patch(
   "/:id",
-  // RoleMiddleware(["admin", "superadmin"]),
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   ProductsController.update
 );
 

@@ -9,8 +9,10 @@ const duplicateProducts = async (ids, storeId) => {
   return res.data;
 };
 
-const deleteProducts = async (id) => {
-  const res = await axios.delete(`/api/products/${id}`);
+const deleteProducts = async (ids, storeId) => {
+  const res = await axios.post(`/api/stores/${storeId}/products/bulk`, {
+    ids: ids,
+  });
   return res.data;
 };
 
@@ -57,11 +59,19 @@ const useProductActions = (onSelectProducts) => {
   });
 
   const deleteMutation = useMutation({
+    // mutationFn: async (selectedProducts) => {
+    //   const responses = await Promise.all(
+    //     selectedProducts.map((id) => deleteProducts(id))
+    //   );
+    //   return responses;
+    // },
     mutationFn: async (selectedProducts) => {
-      const responses = await Promise.all(
-        selectedProducts.map((id) => deleteProducts(id))
-      );
-      return responses;
+      if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+        console.log("Using bulk date for:", selectedProducts);
+        return await deleteProducts(selectedProducts, storeId);
+      } else {
+        throw new Error("No valid product(s) provided");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);

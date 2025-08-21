@@ -76,31 +76,13 @@ const ProductsController = {
       res.status(status).json({ msg: message });
     }
   },
-  destroy: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const result = await productService.deleteProducts([id]);
-
-      if (result.invalidIds.length > 0) {
-        return res.status(400).json({ msg: "Invalid product ID" });
-      }
-
-      if (result.deletedCount === 0) {
-        return res.status(404).json({ msg: "Product not found" });
-      }
-
-      return res.json({ msg: "Product deleted successfully" });
-    } catch (error) {
-      console.error("Error in destroy:", error);
-      return res.status(500).json({ msg: "Internal server error" });
-    }
-  },
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
-
-      const result = await productService.deleteProducts(ids);
+      const storeId = req.params.storeId;
+      console.log("ids",ids);
+      console.log("storeId",storeId);
+      const result = await productService.deleteProducts(storeId, ids);
 
       if (result.invalidIds.length > 0) {
         return res.status(400).json({
@@ -224,22 +206,10 @@ const ProductsController = {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
-  // duplicate: async (req, res) => {
-  //   const { ids } = req.body;
-  //   console.log("ids", ids);
-  //   try {
-  //     const duplicatedProduct = await productService.duplicateProduct(ids);
-  //     await clearProductCache();
-  //     return res.json(duplicatedProduct);
-  //   } catch (error) {
-  //     console.error("Transaction failed:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   duplicate: async (req, res) => {
     const { ids } = req.body;
-    const storeId  = req.params.storeId;
-    console.log("duplicate",ids);
+    const storeId = req.params.storeId;
+    console.log("duplicate", ids);
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ msg: "ids must be an array" });
     }
