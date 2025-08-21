@@ -9,28 +9,29 @@ const uploadImages = async (req, res, next) => {
   }
 
   try {
-    req.randomImageNames = [];
+    const folder = req.query.type || "products"; // dynamic folder
 
-    for (const file of req.files) {
+    // Upload all in parallel instead of sequentially
+    const uploadPromises = req.files.map((file) => {
       const buffer = file.buffer;
-      // Optional: compress with sharp before uploading
+      // If you want compression, uncomment:
       // const buffer = await sharp(file.buffer).webp({ quality: 70 }).toBuffer();
 
-      const folder = req.query.type || "products"; // dynamic folder
-
-      const uploadResult = await new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const uploadStream = cloudinaryClient.uploader.upload_stream(
           { folder, resource_type: "image", format: "webp" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         streamifier.createReadStream(buffer).pipe(uploadStream);
       });
+    });
 
-      req.randomImageNames.push({
-        public_id: uploadResult.public_id,
-        url: uploadResult.secure_url,
-      });
-    }
+    const results = await Promise.all(uploadPromises);
+
+    req.randomImageNames = results.map((uploadResult) => ({
+      public_id: uploadResult.public_id,
+      url: uploadResult.secure_url,
+    }));
 
     next();
   } catch (error) {
@@ -43,13 +44,12 @@ const duplicateImages = async (originalPublicIds) => {
   const uploadPromises = originalPublicIds.map(async (originalPublicId) => {
     const newPublicId = `${originalPublicId}_copy_${Date.now()}`;
 
-    const url = cloudinaryClient.url(originalPublicId, { format: "webp" });
-
-    const result = await cloudinaryClient.uploader.upload(url, {
-      public_id: newPublicId,
-      overwrite: true,
-      resource_type: "image",
-    });
+    // Use explicit with 'public_id' to duplicate faster
+    const result = await cloudinaryClient.uploader.rename(
+      originalPublicId,
+      newPublicId,
+      { overwrite: false } // keeps original, makes a new copy
+    );
 
     return result.public_id;
   });
