@@ -135,8 +135,6 @@ const createProduct = async (storeId, userId, productData) => {
     userId,
     data.categories
   );
-  console.log("IDOWOEK");
-    console.log("storeCategoryIds",storeCategoryIds);
   const categoryIds = validateCategoryIds(storeCategoryIds);
 
   const product = await ProductRepo.create(storeId, {
@@ -148,9 +146,12 @@ const createProduct = async (storeId, userId, productData) => {
   const productIds = [product._id];
   const categoryIdsArray = categoryIds.length ? categoryIds : [];
 
-  console.log("categoryIdsArray",categoryIdsArray);
   if (categoryIdsArray.length > 0) {
-    await ProductRepo.addProductToCategories(categoryIdsArray, productIds,storeId);
+    await ProductRepo.addProductToCategories(
+      categoryIdsArray,
+      productIds,
+      storeId
+    );
   }
 
   // Onboarding step update
@@ -325,6 +326,12 @@ const duplicateProducts = async (ids, storeId) => {
       session
     );
 
+    const categoryIds = originalProducts.flatMap((org) => org.categories);
+
+    const productIds = newProducts.map((p) => p._id);
+
+    await CategoryRepo.addProductToCategories(categoryIds, productIds, storeId);
+
     await session.commitTransaction();
     await clearCache(storeId, "products");
     await clearCache(storeId, "categories");
@@ -392,10 +399,7 @@ module.exports = {
   createProduct,
   findProductById,
   deleteProducts,
-  // updateProduct,
-  // updateCategories,
   updateProductWithCategories,
   duplicateProducts,
-  // duplicateProduct,
   updateVisibility,
 };
