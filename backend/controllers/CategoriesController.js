@@ -97,32 +97,6 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  // bulkDestroy: async (req, res) => {
-  //   try {
-  //     const { ids } = req.body;
-  //     console.log("bulkDestroy", ids);
-  //     const result = await categoryService.deleteCategories(ids);
-
-  //     if (result.invalidIds.length > 0) {
-  //       return res.status(400).json({
-  //         msg: "Some IDs are invalid",
-  //         invalidIds: result.invalidIds,
-  //       });
-  //     }
-
-  //     if (result.deletedCount === 0) {
-  //       return res.status(404).json({ msg: "No categories found" });
-  //     }
-
-  //     return res.json({
-  //       msg: "Categories deleted successfully",
-  //       deletedCount: result.deletedCount,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error in bulkDestroy:", error);
-  //     return res.status(500).json({ msg: "Internal server error" });
-  //   }
-  // },
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;

@@ -95,9 +95,13 @@ const removeCategoriesFromProducts = async (ids, storeId, session) => {
   ).session(session);
 };
 
-const removeCategoryFromProducts = async (categoryIds, storeId) => {
+const removeCategoryFromProducts = async (
+  categoryIds,
+  productsToRemove,
+  storeId
+) => {
   return Product.updateMany(
-    { storeId, categories: { $in: categoryIds } },
+    { _id: { $in: productsToRemove }, storeId },
     { $pull: { categories: { $in: categoryIds } } }
   );
 };

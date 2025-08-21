@@ -187,7 +187,7 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
         productsToRemove,
         storeId
       ),
-      CategoryRepo.removeCategoryFromProducts(categoryIds, storeId)
+      CategoryRepo.removeCategoryFromProducts(categoryIds,productsToRemove, storeId)
     );
   }
 
