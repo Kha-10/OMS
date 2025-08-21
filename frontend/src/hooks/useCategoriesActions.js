@@ -1,8 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { useSelector } from "react-redux";
 
-const addCategory = async (category) => {
-  const { data } = await axios.post("/api/categories", category);
+const addCategory = async (storeId, newCategory) => {
+  const { data } = await axios.post(
+    `/api/stores/${storeId}/categories`,
+    newCategory
+  );
   return data; // Assuming backend returns `{ _id, name }`
 };
 
@@ -29,12 +33,16 @@ const useCategoriesActions = (
   setSelectedCategoriesId = null
 ) => {
   const queryClient = useQueryClient();
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const addMutation = useMutation({
-    mutationFn: addCategory,
+    mutationFn: async (newCategory) => {
+      return await addCategory(storeId, newCategory);
+    },
 
     onMutate: async (newCategory) => {
-      await queryClient.cancelQueries(["categories"]);
+      await queryClient.cancelQueries(["categories", storeId]);
 
       const tempId = Date.now();
       const previousCategories = selectedCategories;
@@ -61,7 +69,7 @@ const useCategoriesActions = (
     },
 
     onSettled: () => {
-      queryClient.invalidateQueries(["categories"]);
+      queryClient.invalidateQueries(["categories", storeId]);
     },
   });
 
@@ -73,7 +81,7 @@ const useCategoriesActions = (
       return responses;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["categories"]);
+      queryClient.invalidateQueries(["categories", storeId]);
       setSelectedCategoriesId([]);
     },
     onError: (error) => {
@@ -94,7 +102,7 @@ const useCategoriesActions = (
       return responses;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["categories"]);
+      queryClient.invalidateQueries(["categories", storeId]);
       setSelectedCategoriesId([]);
     },
     onError: (error, { visibility }) => {
@@ -105,11 +113,11 @@ const useCategoriesActions = (
   const updateSequenceMutation = useMutation({
     mutationFn: updateSequenceProducts,
     onMutate: async () => {
-      await queryClient.cancelQueries(["categories"]);
+      await queryClient.cancelQueries(["categories", storeId]);
     },
 
     onSuccess: () => {
-      queryClient.invalidateQueries(["categories"]);
+      queryClient.invalidateQueries(["categories", storeId]);
     },
     onError: (error) => {
       console.error("updating SequenceProducts products failed:", error);

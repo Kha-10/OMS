@@ -28,6 +28,7 @@ import { showToast } from "@/helper/showToast";
 import axios from "@/helper/axios";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
+import { useSelector } from "react-redux";
 
 export default function NewCategory() {
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -35,6 +36,8 @@ export default function NewCategory() {
   const { data } = useProducts({});
   const products = data?.data || [];
   let { data: categories = [] } = useCategories({ id });
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const form = useForm({
     defaultValues: {
@@ -53,9 +56,9 @@ export default function NewCategory() {
 
   const handleRequest = async (data) => {
     if (id) {
-      return await axios.patch(`/api/categories/${id}`, data);
+      return await axios.patch(`categories/${id}`, data);
     } else {
-      return await axios.post("/api/categories", data);
+      return await axios.post(`/api/stores/${storeId}/categories`, data);
     }
   };
 
@@ -79,7 +82,7 @@ export default function NewCategory() {
       }
     } catch (error) {
       console.log(error);
-      console.error("Error handling category:", error.response?.data);
+      console.error("Error handling category:", error.response?.data.msg);
       showToast(toastId, error.response?.data.msg, "error");
     }
   };

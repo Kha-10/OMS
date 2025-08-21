@@ -2,7 +2,7 @@ const Category = require("../models/Category");
 const Product = require("../models/Product");
 
 const findByName = async (storeId, name) => {
-  return Category.findOne({ storeId, name, id });
+  return Category.findOne({ storeId, name });
 };
 
 const findById = async (storeId, id) => {

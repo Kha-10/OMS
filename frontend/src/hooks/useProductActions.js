@@ -34,12 +34,6 @@ const useProductActions = (onSelectProducts) => {
   const storeId = stores?.[0]?._id;
 
   const duplicateMutation = useMutation({
-    // mutationFn: async (selectedProducts) => {
-    //   const responses = await Promise.all(
-    //     selectedProducts.map((id) => duplicateProducts(id))
-    //   );
-    //   return responses;
-    // },
     mutationFn: async (selectedProducts) => {
       console.log(selectedProducts);
       if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
@@ -50,7 +44,7 @@ const useProductActions = (onSelectProducts) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["products",storeId]);
       onSelectProducts([]);
     },
     onError: (error) => {
@@ -59,12 +53,6 @@ const useProductActions = (onSelectProducts) => {
   });
 
   const deleteMutation = useMutation({
-    // mutationFn: async (selectedProducts) => {
-    //   const responses = await Promise.all(
-    //     selectedProducts.map((id) => deleteProducts(id))
-    //   );
-    //   return responses;
-    // },
     mutationFn: async (selectedProducts) => {
       if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
         console.log("Using bulk date for:", selectedProducts);
@@ -74,7 +62,7 @@ const useProductActions = (onSelectProducts) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["products",storeId]);
       onSelectProducts([]);
     },
     onError: (error) => {
@@ -96,7 +84,7 @@ const useProductActions = (onSelectProducts) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["products",storeId]);
       onSelectProducts([]);
     },
     onError: (error, { visibility }) => {
