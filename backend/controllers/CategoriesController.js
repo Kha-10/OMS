@@ -61,24 +61,6 @@ const CategoriesController = {
       res.status(status).json({ msg: message });
     }
   },
-  // show: async (req, res) => {
-  //   try {
-  //     let id = req.params.id;
-  //     if (!mongoose.Types.ObjectId.isValid(id)) {
-  //       return res.status(400).json({ msg: "Invalid id" });
-  //     }
-  //     let category = await Category.findById(id).populate("products");
-  //     if (!category) {
-  //       return handler.handleResponse(res, {
-  //         status: 404,
-  //         message: "category not found",
-  //       });
-  //     }
-  //     return res.json(category);
-  //   } catch (error) {
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   show: async (req, res) => {
     try {
       const storeId = req.params.storeId;
@@ -175,31 +157,55 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internet Server Error" });
     }
   },
+  // updateVisibility: async (req, res) => {
+  //   const { ids, visibility } = req.body;
+  //   const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  //   if (invalidIds.length > 0) {
+  //     return res.status(400).json({ msg: "Invalid category ids" });
+  //   }
+  //   try {
+  //     const bulkOps = ids.map((id) => ({
+  //       updateOne: {
+  //         filter: { _id: id },
+  //         update: { $set: { visibility: visibility } },
+  //       },
+  //     }));
+
+  //     const result = await Category.bulkWrite(bulkOps);
+
+  //     await clearProductCache();
+
+  //     return res.json({
+  //       modifiedCount: result.modifiedCount,
+  //       message: "Category visibility updated successfully",
+  //     });
+  //   } catch (error) {
+  //     console.error("Error updating product:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   updateVisibility: async (req, res) => {
-    const { ids, visibility } = req.body;
-    const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
-    if (invalidIds.length > 0) {
-      return res.status(400).json({ msg: "Invalid category ids" });
-    }
     try {
-      const bulkOps = ids.map((id) => ({
-        updateOne: {
-          filter: { _id: id },
-          update: { $set: { visibility: visibility } },
-        },
-      }));
+      const { ids, visibility } = req.body;
+      const storeId = req.params.storeId;
 
-      const result = await Category.bulkWrite(bulkOps);
-
-      await clearProductCache();
+      const result = await categoryService.updateVisibility(
+        storeId,
+        ids,
+        visibility
+      );
 
       return res.json({
         modifiedCount: result.modifiedCount,
-        message: "Category visibility updated successfully",
+        message: "Cateogry visibility updated successfully",
       });
     } catch (error) {
-      console.error("Error updating product:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error updating category visibility:", error);
+
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   updateSequence: async (req, res) => {

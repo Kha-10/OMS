@@ -21,6 +21,17 @@ const updateProductVisibility = async (id, visibility) => {
   });
   return res.data;
 };
+const updateCategoryVisibility = async (
+  selectedCategories,
+  storeId,
+  visibility
+) => {
+  const res = await axios.post(`/api/stores/${storeId}/categories/visibility`, {
+    ids: selectedCategories,
+    visibility,
+  });
+  return res.data;
+};
 
 const updateSequenceProducts = async (updatedCategories) => {
   const res = await axios.patch(`/api/categories`, updatedCategories);
@@ -90,16 +101,29 @@ const useCategoriesActions = (
   });
 
   const updateVisibilityMutation = useMutation({
+    // mutationFn: async ({ selectedCategoriesId, visibility }) => {
+    //   const responses = await Promise.all(
+    //     selectedCategoriesId.map((id) =>
+    //       updateProductVisibility(
+    //         id,
+    //         visibility === "visible" ? "hidden" : "visible"
+    //       )
+    //     )
+    //   );
+    //   return responses;
+    // },
     mutationFn: async ({ selectedCategoriesId, visibility }) => {
-      const responses = await Promise.all(
-        selectedCategoriesId.map((id) =>
-          updateProductVisibility(
-            id,
-            visibility === "visible" ? "hidden" : "visible"
-          )
-        )
-      );
-      return responses;
+      console.log("selectedCategoriesId",selectedCategoriesId);
+      if (Array.isArray(selectedCategoriesId) && selectedCategoriesId.length > 0) {
+        console.log("Using bulk update for:", selectedCategoriesId);
+        return await updateCategoryVisibility(
+          selectedCategoriesId,
+          storeId,
+          visibility
+        );
+      } else {
+        throw new Error("No valid category(ies) provided");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["categories", storeId]);

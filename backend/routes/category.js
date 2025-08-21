@@ -14,11 +14,12 @@ router.post(
   [
     body("ids")
       .isArray({ min: 1 })
-      .withMessage("Product IDs must be a non-empty array"),
+      .withMessage("Category IDs must be a non-empty array"),
     body("visibility").notEmpty(),
   ],
   handleErrorMessage,
-  // RoleMiddleware(["tenant", "superadmin"]),
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   CategoriesController.updateVisibility
 );
 

@@ -6,6 +6,7 @@ const CategoryRepo = require("../repo/categoryRepo");
 const clearProductCache = require("../helpers/clearProductCache");
 const generateCacheKey = require("../helpers/generateCacheKey");
 const handler = require("../helpers/handler");
+const clearCache = require("../helpers/clearCache");
 
 const findCategories = async (storeId, queryParams) => {
   const cacheKey = generateCacheKey(storeId, "categories", queryParams);
@@ -190,6 +191,25 @@ const deleteCategories = async (ids) => {
   }
 };
 
+const updateVisibility = async (storeId, ids, visibility) => {
+  // Validate IDs
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    throw handler.invalidError("Invalid product ids");
+  }
+
+  // Call repo with storeId
+  const result = await CategoryRepo.bulkUpdateVisibility(
+    storeId,
+    ids,
+    visibility
+  );
+
+  await clearCache(storeId, "categories");
+  console.log("result", result);
+  return result;
+};
+
 module.exports = {
   findCategories,
   findCategoryById,
@@ -197,4 +217,5 @@ module.exports = {
   ensureTenantCategories,
   updateProducts,
   deleteCategories,
+  updateVisibility,
 };

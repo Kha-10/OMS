@@ -94,10 +94,10 @@ export default function CategoryPage() {
     deleteMutation.mutate(selectedCategoriesId);
   };
 
-  const handleHideAndShow = () => {
+  const handleHideAndShow = (visibility) => {
     updateVisibilityMutation.mutate({
       selectedCategoriesId,
-      visibility: activeTab,
+      visibility: visibility,
     });
   };
 
@@ -195,7 +195,13 @@ export default function CategoryPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={handleHideAndShow}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleHideAndShow(
+                        activeTab === "visible" ? "hidden" : "visible"
+                      )
+                    }
+                  >
                     {activeTab === "visible" ? "Hide" : "Show"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -295,7 +301,7 @@ export default function CategoryPage() {
         onOpenChange={setIsSequenceDialogOpen}
         categories={categories}
       />
-       <ToastContainer />
+      <ToastContainer />
     </div>
   );
 }
