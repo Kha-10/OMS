@@ -60,11 +60,21 @@ const removeProductFromCategories = async (categoryIds, productId, storeId) => {
 };
 
 const bulkUpdateVisibility = async (storeId, ids, visibility) => {
-  console.log("visibility",visibility);
   const bulkOps = ids.map((id) => ({
     updateOne: {
       filter: { _id: id, storeId },
       update: { $set: { visibility } },
+    },
+  }));
+
+  return Category.bulkWrite(bulkOps);
+};
+
+const bulkUpdateOrder = async (storeId, categories) => {
+  const bulkOps = categories.map((c, index) => ({
+    updateOne: {
+      filter: { _id: c._id, storeId },
+      update: { $set: { orderIndex: index } },
     },
   }));
 
@@ -81,4 +91,5 @@ module.exports = {
   addProductToCategories,
   removeProductFromCategories,
   bulkUpdateVisibility,
+  bulkUpdateOrder
 };

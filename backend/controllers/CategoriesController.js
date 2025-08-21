@@ -210,30 +210,22 @@ const CategoriesController = {
   },
   updateSequence: async (req, res) => {
     try {
-      const categories = req.body;
+      const storeId = req.params.storeId;
+      const categories = req.body.categories;
 
-      const validCategories = categories.filter((c) => c._id);
-      if (validCategories.length === 0) {
-        return res.status(400).json({ msg: "Invalid or empty category list." });
-      }
+      const result = await categoryService.updateCategorySequence(
+        storeId,
+        categories
+      );
 
-      const bulkOps = validCategories.map((c, index) => ({
-        updateOne: {
-          filter: { _id: c._id },
-          update: { $set: { orderIndex: index } },
-        },
-      }));
+      return res.json(result);
+    } catch (err) {
+      console.error("Error updating Category:", err);
 
-      const result = await Category.bulkWrite(bulkOps);
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
 
-      await clearProductCache();
-
-      return res.json({
-        modifiedCount: result.modifiedCount,
-        message: "Category sequence updated successfully",
-      });
-    } catch (error) {
-      return res.status(500).json({ msg: "internet server error" });
+      res.status(status).json({ msg: message });
     }
   },
 };

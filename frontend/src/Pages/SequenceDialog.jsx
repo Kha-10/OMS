@@ -69,9 +69,7 @@ export function SequenceDialog({ open, onOpenChange, categories }) {
   const { updateSequenceMutation } = useCategoriesActions();
 
   useEffect(() => {
-    setItems(
-      categories.filter((category) => category.visibility === "visible")
-    );
+    setItems(categories);
   }, [categories]);
 
   // Setup sensors for drag and drop
@@ -97,15 +95,23 @@ export function SequenceDialog({ open, onOpenChange, categories }) {
   }
 
   // Save the updated sequence
+  // const handleSave = async () => {
+  //   const updatedCategories = [
+  //     ...items,
+  //     ...categories.filter((category) => category.visibility !== "visible"),
+  //   ];
+  //   updateSequenceMutation.mutate(updatedCategories);
+  //   onOpenChange(false);
+  // };
   const handleSave = async () => {
-    const updatedCategories = [
-      ...items,
-      ...categories.filter((category) => category.visibility !== "visible"),
-    ];
+    const updatedCategories = items.map((item) => {
+      const original = categories.find(c => c._id === item._id);
+      return original ? { ...item, visibility: original.visibility } : item;
+    });
     updateSequenceMutation.mutate(updatedCategories);
     onOpenChange(false);
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">

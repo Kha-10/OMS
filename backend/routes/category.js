@@ -49,12 +49,13 @@ router.delete(
 router.patch(
   "/",
   [
-    body("name").notEmpty(),
     body("categories")
       .isArray({ min: 1 })
       .withMessage("Category must be a non-empty array"),
   ],
-  // RoleMiddleware(["admin", "superadmin"]),
+  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   CategoriesController.updateSequence
 );
 

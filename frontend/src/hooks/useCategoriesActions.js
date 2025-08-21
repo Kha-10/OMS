@@ -33,8 +33,10 @@ const updateCategoryVisibility = async (
   return res.data;
 };
 
-const updateSequenceProducts = async (updatedCategories) => {
-  const res = await axios.patch(`/api/categories`, updatedCategories);
+const updateSequenceProducts = async (storeId, updatedCategories) => {
+  const res = await axios.patch(`/api/stores/${storeId}/categories`, {
+    categories: updatedCategories,
+  });
   return res.data;
 };
 
@@ -101,20 +103,12 @@ const useCategoriesActions = (
   });
 
   const updateVisibilityMutation = useMutation({
-    // mutationFn: async ({ selectedCategoriesId, visibility }) => {
-    //   const responses = await Promise.all(
-    //     selectedCategoriesId.map((id) =>
-    //       updateProductVisibility(
-    //         id,
-    //         visibility === "visible" ? "hidden" : "visible"
-    //       )
-    //     )
-    //   );
-    //   return responses;
-    // },
     mutationFn: async ({ selectedCategoriesId, visibility }) => {
-      console.log("selectedCategoriesId",selectedCategoriesId);
-      if (Array.isArray(selectedCategoriesId) && selectedCategoriesId.length > 0) {
+      console.log("selectedCategoriesId", selectedCategoriesId);
+      if (
+        Array.isArray(selectedCategoriesId) &&
+        selectedCategoriesId.length > 0
+      ) {
         console.log("Using bulk update for:", selectedCategoriesId);
         return await updateCategoryVisibility(
           selectedCategoriesId,
@@ -135,7 +129,11 @@ const useCategoriesActions = (
   });
 
   const updateSequenceMutation = useMutation({
-    mutationFn: updateSequenceProducts,
+    // mutationFn: updateSequenceProducts,
+    mutationFn: async (updatedCategories) => {
+      console.log("updatedCategories", updatedCategories);
+      return await updateSequenceProducts(storeId, updatedCategories);
+    },
     onMutate: async () => {
       await queryClient.cancelQueries(["categories", storeId]);
     },

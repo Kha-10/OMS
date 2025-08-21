@@ -206,8 +206,25 @@ const updateVisibility = async (storeId, ids, visibility) => {
   );
 
   await clearCache(storeId, "categories");
-  console.log("result", result);
   return result;
+};
+
+const updateCategorySequence = async (storeId, categories) => {
+  console.log("categories",categories);
+  const validCategories = categories.filter((c) => c._id);
+  if (validCategories.length === 0) {
+    throw handler.invalidError("Invalid or empty category list.");
+  }
+
+  const result = await CategoryRepo.bulkUpdateOrder(storeId, validCategories);
+
+  // clear cache after updating sequence
+  await clearCache(storeId, "categories");
+
+  return {
+    modifiedCount: result.modifiedCount,
+    message: "Category sequence updated successfully",
+  };
 };
 
 module.exports = {
@@ -218,4 +235,5 @@ module.exports = {
   updateProducts,
   deleteCategories,
   updateVisibility,
+  updateCategorySequence,
 };
