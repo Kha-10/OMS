@@ -61,8 +61,9 @@ router.patch(
 
 router.patch(
   "/:id",
-  // RoleMiddleware(["admin", "superadmin"]),
-  CategoriesController.update
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
+  CategoriesController.updateCategory
 );
 
 module.exports = router;

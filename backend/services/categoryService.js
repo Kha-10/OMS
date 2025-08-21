@@ -88,7 +88,7 @@ const createCategory = async ({
     createdBy: userId,
   });
 
-  await CategoryRepo.addCategoryToProducts(productIds, category._id);
+  await CategoryRepo.addCategoryToProducts(productIds, category._id, storeId);
   return category;
 };
 
@@ -210,7 +210,6 @@ const updateVisibility = async (storeId, ids, visibility) => {
 };
 
 const updateCategorySequence = async (storeId, categories) => {
-  console.log("categories",categories);
   const validCategories = categories.filter((c) => c._id);
   if (validCategories.length === 0) {
     throw handler.invalidError("Invalid or empty category list.");
@@ -227,6 +226,52 @@ const updateCategorySequence = async (storeId, categories) => {
   };
 };
 
+const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
+  const existingCategory = await CategoryRepo.findById(storeId, categoryId);
+  if (!existingCategory) throw handler.notFoundError("Category not found");
+
+  const oldProductIds = (existingCategory.products || []).map((p) =>
+    p._id.toString()
+  );
+
+  // Determine products to add and remove
+  const productsToAdd = newProductIds.filter(
+    (id) => !oldProductIds.includes(id)
+  );
+  const productsToRemove = oldProductIds.filter(
+    (id) => !newProductIds.includes(id)
+  );
+
+  const ops = [];
+  if (productsToAdd.length > 0)
+    ops.push(
+      CategoryRepo.addProductToCategories(categoryId, productsToAdd, storeId),
+      CategoryRepo.addCategoryToProducts(productsToAdd, [categoryId], storeId)
+    );
+  if (productsToRemove.length > 0)
+    ops.push(
+      CategoryRepo.removeProductFromCategories(
+        categoryId,
+        productsToRemove,
+        storeId
+      )
+    );
+
+  await Promise.all(ops);
+
+  const categoryUpdateData = {};
+  const updatedCategory = await CategoryRepo.updateById(
+    categoryId,
+    storeId,
+    categoryUpdateData
+  );
+
+  await clearCache(storeId, "products");
+  await clearCache(storeId, "categories");
+
+  return updatedCategory;
+};
+
 module.exports = {
   findCategories,
   findCategoryById,
@@ -236,4 +281,5 @@ module.exports = {
   deleteCategories,
   updateVisibility,
   updateCategorySequence,
+  updateCategoryProducts,
 };

@@ -56,7 +56,7 @@ export default function NewCategory() {
 
   const handleRequest = async (data) => {
     if (id) {
-      return await axios.patch(`categories/${id}`, data);
+      return await axios.patch(`/api/stores/${storeId}/categories/${id}`, data);
     } else {
       return await axios.post(`/api/stores/${storeId}/categories`, data);
     }

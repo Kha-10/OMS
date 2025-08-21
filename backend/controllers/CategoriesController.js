@@ -123,38 +123,68 @@ const CategoriesController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  update: async (req, res) => {
+  // update: async (req, res) => {
+  //   try {
+  //     let id = req.params.id;
+  //     if (!mongoose.Types.ObjectId.isValid(id)) {
+  //       return res.status(400).json({ msg: "invalid id" });
+  //     }
+
+  //     let newProductIds = req.body.products || [];
+  //     if (!Array.isArray(newProductIds)) {
+  //       return res.status(400).json({ msg: "invalid product id" });
+  //     }
+
+  //     newProductIds = newProductIds.map((p) => p._id);
+
+  //     // Get existing product with categories
+  //     const existingCategory = await Category.findById(id);
+  //     if (!existingCategory) {
+  //       return res.status(404).json({ msg: "Category not found" });
+  //     }
+
+  //     await categoryService.updateProducts(existingCategory, newProductIds, id);
+
+  //     let category = await Category.findByIdAndUpdate(id, {
+  //       ...req.body,
+  //     });
+
+  //     await clearProductCache();
+  //     // await redisClient.del("products:*");
+
+  //     return res.json(category);
+  //   } catch (error) {
+  //     return res.status(500).json({ msg: "Internet Server Error" });
+  //   }
+  // },
+  updateCategory: async (req, res) => {
     try {
-      let id = req.params.id;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "invalid id" });
-      }
+      const storeId = req.params.storeId;
+      const categoryId = req.params.id;
+      if (!categoryId)
+        return res.status(400).json({ msg: "Invalid category ID" });
 
       let newProductIds = req.body.products || [];
       if (!Array.isArray(newProductIds)) {
-        return res.status(400).json({ msg: "invalid product id" });
+        return res.status(400).json({ msg: "Invalid product IDs" });
       }
 
-      newProductIds = newProductIds.map((p) => p._id);
+      newProductIds = newProductIds.map((p) => p._id || p);
 
-      // Get existing product with categories
-      const existingCategory = await Category.findById(id);
-      if (!existingCategory) {
-        return res.status(404).json({ msg: "Category not found" });
-      }
+      const updatedCategory = await categoryService.updateCategoryProducts(
+        storeId,
+        categoryId,
+        newProductIds
+      );
 
-      await categoryService.updateProducts(existingCategory, newProductIds, id);
-
-      let category = await Category.findByIdAndUpdate(id, {
-        ...req.body,
-      });
-
-      await clearProductCache();
-      // await redisClient.del("products:*");
-
-      return res.json(category);
+      return res.json(updatedCategory);
     } catch (error) {
-      return res.status(500).json({ msg: "Internet Server Error" });
+      console.error("Error updating category visibility:", error);
+
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   updateVisibility: async (req, res) => {
@@ -192,11 +222,11 @@ const CategoriesController = {
       );
 
       return res.json(result);
-    } catch (err) {
-      console.error("Error updating Category:", err);
+    } catch (error) {
+      console.error("Error updating Category:", error);
 
-      const status = err.statusCode || 500;
-      const message = err.message || "Internal server error";
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
 
       res.status(status).json({ msg: message });
     }
