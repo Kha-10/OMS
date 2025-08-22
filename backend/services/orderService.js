@@ -13,111 +13,6 @@ const CustomerRepo = require("../repo/customerRepo");
 const redisClient = require("../config/redisClient");
 
 // GET
-const buildSort = (sortBy, sortDirection) => {
-  const direction = sortDirection === "asc" ? 1 : -1;
-  return sortBy === "amount"
-    ? { totalAmount: direction }
-    : { createdAt: direction };
-};
-
-const buildMatchStage = (queryParams) => {
-  let match = {};
-  if (queryParams.orderStatus) {
-    match.orderStatus = { $in: queryParams.orderStatus.split(",") };
-  }
-  if (queryParams.paymentStatus) {
-    match.paymentStatus = queryParams.paymentStatus;
-  }
-  if (queryParams.fulfillmentStatus) {
-    match.fulfillmentStatus = queryParams.fulfillmentStatus;
-  }
-
-  if (queryParams.search) {
-    const regex = new RegExp(queryParams.search, "i");
-    match.$or = [
-      { orderNumber: regex },
-      { "customer.name": regex },
-      { "manualCustomer.name": regex },
-      { "items.productName": regex },
-    ];
-  }
-
-  return match;
-};
-
-const fetchOrdersFromDB = async (queryParams) => {
-  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
-  const matchStage = buildMatchStage(queryParams);
-
-  const [orders, totalOrdersData] = await Promise.all([
-    Order.aggregate([
-      {
-        $lookup: {
-          from: "customers", // collection name
-          localField: "customer",
-          foreignField: "_id",
-          as: "customer",
-        },
-      },
-      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
-      { $match: matchStage },
-      { $sort: sort },
-      { $skip: skip },
-      { $limit: limit },
-    ]),
-    Order.aggregate([
-      {
-        $lookup: {
-          from: "customers",
-          localField: "customer",
-          foreignField: "_id",
-          as: "customer",
-        },
-      },
-      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
-      { $match: matchStage },
-      { $count: "count" },
-    ]),
-  ]);
-
-  const totalOrders = totalOrdersData[0]?.count || 0;
-
-  return { orders, totalOrders, page, limit };
-};
-
-// const enhanceProductImages = (input) => {
-//   if (!input) return input;
-
-//   const processProduct = (product) => {
-//     if (Array.isArray(product.items)) {
-//       product.items.forEach((item) => {
-//         if (Array.isArray(item.photo) && item.photo.length > 0) {
-//           item.imgUrls = item.photo.map((image) =>
-//             getSignedUrl({
-//               url: `https://d1pgjvyfhid4er.cloudfront.net/${image}`,
-//               dateLessThan: new Date(Date.now() + 1000 * 60 * 60),
-//               privateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
-//               keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
-//             })
-//           );
-//         }
-//       });
-//     }
-//     return product;
-//   };
-
-//   return Array.isArray(input)
-//     ? input.map(processProduct)
-//     : processProduct(input);
-// };
-
-// const findOrders = async (queryParams) => {
-//   const orderData = await fetchOrdersFromDB(queryParams);
-//   return orderData;
-// };
 
 const findOrders = async (queryParams) => {
   const orderData = await OrderRepo.fetchOrders(queryParams);
@@ -126,32 +21,6 @@ const findOrders = async (queryParams) => {
 
   return orderData;
 };
-
-// const enhanceProductImages = (input) => {
-//   if (!input) return input;
-
-//   const processProduct = (product) => {
-//     if (Array.isArray(product.items)) {
-//       product.items.forEach((item) => {
-//         if (Array.isArray(item.photo) && item.photo.length > 0) {
-//           item.imgUrls = item.photo.map((image) =>
-//             getSignedUrl({
-//               url: `https://d1pgjvyfhid4er.cloudfront.net/${image}`,
-//               dateLessThan: new Date(Date.now() + 1000 * 60 * 60),
-//               privateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
-//               keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
-//             })
-//           );
-//         }
-//       });
-//     }
-//     return product;
-//   };
-
-//   return Array.isArray(input)
-//     ? input.map(processProduct)
-//     : processProduct(input);
-// };
 
 const enhanceProductImages = (input) => {
   if (!input) return input;
@@ -209,17 +78,25 @@ const createOrder = async ({
     }
 
     // Generate sequential order + invoice numbers
-    const orderNumber = await CounterRepo.getNext("orderNumber",storeId,createdBy);
-    const invoiceNumber = await CounterRepo.getNext("invoiceNumber",storeId,createdBy);
+    const orderNumber = await CounterRepo.getNext(
+      "orderNumber",
+      storeId,
+      createdBy
+    );
+    const invoiceNumber = await CounterRepo.getNext(
+      "invoiceNumber",
+      storeId,
+      createdBy
+    );
 
     // Validate inventory + decrement stock
     for (const item of items) {
-      await ProductRepo.validateAndDecrementInventory(item, session,storeId);
+      await ProductRepo.validateAndDecrementInventory(item, session, storeId);
     }
 
     // Update existing customer if needed
     if (customerId) {
-      await CustomerRepo.updateCustomer(customerId, customer, session,storeId);
+      await CustomerRepo.updateCustomer(customerId, customer, session, storeId);
     }
 
     const order = await OrderRepo.createOrder(
@@ -249,8 +126,6 @@ const createOrder = async ({
     await session.commitTransaction();
     session.endSession();
 
-    // Clear caches
-    // await clearProductCache();
     await clearCache(storeId, "products");
     await clearCartCache(`cart:storeId:${storeId}cartId:${cartId}`);
     await redisClient.del(cartLockKey);
