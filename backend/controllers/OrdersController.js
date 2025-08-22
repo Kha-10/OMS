@@ -251,132 +251,176 @@ const OrdersController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  singleOrderedit: async (req, res) => {
+  // singleOrderedit: async (req, res) => {
+  //   const { id } = req.params;
+  //   const { customer, items, notes, orderStatus, pricing } = req.body;
+  //   if (!mongoose.Types.ObjectId.isValid(id)) {
+  //     return res.status(400).json({ msg: "Invalid order ID" });
+  //   }
+
+  //   try {
+  //     const order = await Order.findById(id);
+  //     if (!order) return res.status(404).json({ msg: "Order not found" });
+
+  //     let customerId = null;
+  //     let manualCustomer = null;
+
+  //     if (
+  //       customer.customerId &&
+  //       mongoose.Types.ObjectId.isValid(customer.customerId)
+  //     ) {
+  //       customerId = customer.customerId;
+  //     } else {
+  //       manualCustomer = {
+  //         name: customer.name?.trim() || "",
+  //         phone: customer.phone?.trim() || "",
+  //         email: customer.email,
+  //         deliveryAddress: customer.deliveryAddress,
+  //       };
+  //     }
+
+  //     if (!customerId && !manualCustomer) {
+  //       return res.status(400).json({ error: "Customer info is required." });
+  //     }
+
+  //     const originalItems = order.items;
+  //     let needRestockAndDeduct = false;
+  //     for (const originalItem of originalItems) {
+  //       if (originalItem.trackQuantityEnabled) {
+  //         needRestockAndDeduct = true;
+  //         break;
+  //       }
+  //     }
+
+  //     const existingCustomer = await Customer.findById(customerId);
+  //     if (existingCustomer) {
+  //       existingCustomer.name = customer.name;
+  //       existingCustomer.email = customer.email;
+  //       existingCustomer.phone = customer.phone;
+  //       existingCustomer.deliveryAddress = customer.deliveryAddress;
+
+  //       await existingCustomer.save();
+  //     }
+
+  //     if (!needRestockAndDeduct) {
+  //       await Order.updateOne(
+  //         { _id: id },
+  //         {
+  //           customer: customerId,
+  //           manualCustomer,
+  //           items,
+  //           notes,
+  //           orderStatus,
+  //           pricing,
+  //         }
+  //       );
+  //     }
+  //     res.status(200).json({
+  //       msg: "Order updated successfully",
+  //       needRestockAndDeduct,
+  //     });
+  //   } catch (error) {
+  //     console.error("Order edit failed:", error);
+  //     res.status(500).json({ msg: error.message || "Internal server error" });
+  //   } finally {
+  //     if (req.lockKey) {
+  //       await redisClient.del(req.lockKey);
+  //     }
+  //   }
+  // },
+  singleOrderEdit: async (req, res) => {
     const { id } = req.params;
-    const { customer, items, notes, orderStatus, pricing } = req.body;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ msg: "Invalid order ID" });
-    }
-
+    const storeId = req.storeId;
     try {
-      const order = await Order.findById(id);
-      if (!order) return res.status(404).json({ msg: "Order not found" });
-
-      let customerId = null;
-      let manualCustomer = null;
-
-      if (
-        customer.customerId &&
-        mongoose.Types.ObjectId.isValid(customer.customerId)
-      ) {
-        customerId = customer.customerId;
-      } else {
-        manualCustomer = {
-          name: customer.name?.trim() || "",
-          phone: customer.phone?.trim() || "",
-          email: customer.email,
-          deliveryAddress: customer.deliveryAddress,
-        };
-      }
-
-      if (!customerId && !manualCustomer) {
-        return res.status(400).json({ error: "Customer info is required." });
-      }
-
-      const originalItems = order.items;
-      let needRestockAndDeduct = false;
-      for (const originalItem of originalItems) {
-        if (originalItem.trackQuantityEnabled) {
-          needRestockAndDeduct = true;
-          break;
-        }
-      }
-
-      const existingCustomer = await Customer.findById(customerId);
-      if (existingCustomer) {
-        existingCustomer.name = customer.name;
-        existingCustomer.email = customer.email;
-        existingCustomer.phone = customer.phone;
-        existingCustomer.deliveryAddress = customer.deliveryAddress;
-
-        await existingCustomer.save();
-      }
-
-      if (!needRestockAndDeduct) {
-        await Order.updateOne(
-          { _id: id },
-          {
-            customer: customerId,
-            manualCustomer,
-            items,
-            notes,
-            orderStatus,
-            pricing,
-          }
-        );
-      }
-      res.status(200).json({
+      const result = await orderService.editSingleOrder(id, storeId, req.body);
+      return res.status(200).json({
         msg: "Order updated successfully",
-        needRestockAndDeduct,
+        needRestockAndDeduct: result.needRestockAndDeduct,
       });
     } catch (error) {
       console.error("Order edit failed:", error);
-      res.status(500).json({ msg: error.message || "Internal server error" });
+      return res.status(400).json({ msg: error.message });
     } finally {
       if (req.lockKey) {
         await redisClient.del(req.lockKey);
       }
     }
   },
+  // updateOrder: async (req, res) => {
+  //   const orderId = req.params.id;
+  //   const newItems = req.body.items;
+  //   const notes = req.body.notes;
+  //   const pricing = req.body.pricing;
+  //   const session = await mongoose.startSession();
+  //   session.startTransaction();
+  //   try {
+  //     // 1. Get original order
+  //     const originalOrder = await Order.findById(orderId).lean();
+  //     if (!originalOrder) {
+  //       return res.status(400).json({ msg: "Order not found" });
+  //     }
+  //     let product;
+  //     // 2. Restore previous quantities
+  //     for (const item of originalOrder.items) {
+  //       product = await Product.updateOne(
+  //         { _id: item.productId, trackQuantityEnabled: true },
+  //         { $inc: { "inventory.quantity": item.quantity } },
+  //         { session }
+  //       );
+  //     }
+
+  //     // 3. Deduct new quantities
+  //     for (const item of newItems) {
+  //       product = await Product.updateOne(
+  //         { _id: item.productId, trackQuantityEnabled: true },
+  //         { $inc: { "inventory.quantity": -item.quantity } },
+  //         { session }
+  //       );
+  //     }
+  //     // 4. Update the order document
+  //     await Order.updateOne(
+  //       {
+  //         _id: orderId,
+  //       },
+  //       { $set: { items: newItems, notes, pricing } },
+  //       { session }
+  //     );
+
+  //     await clearProductCache();
+  //     await session.commitTransaction();
+  //     session.endSession();
+  //     return res.json({ success: true });
+  //   } catch (error) {
+  //     console.error("Order edit failed:", error);
+  //     res.status(500).json({ msg: error.message || "Internal server error" });
+  //     await session.abortTransaction();
+  //     session.endSession();
+  //   }
+  // },
   updateOrder: async (req, res) => {
     const orderId = req.params.id;
-    const newItems = req.body.items;
-    const notes = req.body.notes;
-    const pricing = req.body.pricing;
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-      // 1. Get original order
-      const originalOrder = await Order.findById(orderId).lean();
-      if (!originalOrder) {
-        return res.status(400).json({ msg: "Order not found" });
-      }
-      let product;
-      // 2. Restore previous quantities
-      for (const item of originalOrder.items) {
-        product = await Product.updateOne(
-          { _id: item.productId, trackQuantityEnabled: true },
-          { $inc: { "inventory.quantity": item.quantity } },
-          { session }
-        );
-      }
+    const { items, notes, pricing } = req.body;
+    const storeId = req.storeId;
 
-      // 3. Deduct new quantities
-      for (const item of newItems) {
-        product = await Product.updateOne(
-          { _id: item.productId, trackQuantityEnabled: true },
-          { $inc: { "inventory.quantity": -item.quantity } },
-          { session }
-        );
-      }
-      // 4. Update the order document
-      await Order.updateOne(
-        {
-          _id: orderId,
-        },
-        { $set: { items: newItems, notes, pricing } },
-        { session }
+    try {
+      const result = await orderService.updateOrderService(
+        orderId,
+        storeId,
+        items,
+        notes,
+        pricing
       );
 
-      await clearProductCache();
-      await session.commitTransaction();
-      session.endSession();
+      if (!result.success) {
+        return res.status(404).json({ msg: result.msg });
+      }
+
       return res.json({ success: true });
     } catch (error) {
-      console.error("Order edit failed:", error);
-      res.status(500).json({ msg: error.message || "Internal server error" });
-      await session.abortTransaction();
-      session.endSession();
+      console.error("Order update failed:", error);
+      return res
+        .status(500)
+        .json({ msg: error.message || "Internal server error" });
     }
   },
   deduct: async (req, res) => {

@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const Customer = require("../models/Customer");
 const mongoose = require("mongoose");
 
 const fetchOrders = async (queryParams) => {
@@ -88,12 +89,18 @@ const createOrder = async (orderData, session) => {
   return order;
 };
 
-const findById = async (orderId, storeId) => {
+const findById = async (orderId, storeId, session = null) => {
   if (!mongoose.Types.ObjectId.isValid(orderId)) {
     return null;
   }
 
-  return Order.findOne({ _id: orderId, storeId }).populate("customer");
+  const query = Order.findOne({ _id: orderId, storeId }).populate("customer");
+
+  if (session) {
+    query.session(session);
+  }
+
+  return query;
 };
 
 const findProductById = async (productId, storeId) => {
@@ -108,10 +115,55 @@ const saveOrder = async (order) => {
   return order.save();
 };
 
+const findCustomerById = async (id, storeId) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  return Customer.findOne({ _id: id, storeId });
+};
+
+const saveCustomer = async (customer) => {
+  return customer.save();
+};
+
+const updateOrder = async (id, storeId, updateData, session = null) => {
+  const query = Order.updateOne({ _id: id, storeId }, { $set: updateData });
+
+  if (session) {
+    query.session(session);
+  }
+
+  return query;
+};
+
+const restoreProductQuantity = async (
+  productId,
+  quantity,
+  storeId,
+  session
+) => {
+  return Product.updateOne(
+    { _id: productId, storeId, trackQuantityEnabled: true },
+    { $inc: { "inventory.quantity": quantity } },
+    { session }
+  );
+};
+
+const deductProductQuantity = async (productId, quantity, storeId, session) => {
+  return Product.updateOne(
+    { _id: productId, storeId, trackQuantityEnabled: true },
+    { $inc: { "inventory.quantity": -quantity } },
+    { session }
+  );
+};
+
 module.exports = {
   fetchOrders,
   createOrder,
   findById,
   findProductById,
   saveOrder,
+  findCustomerById,
+  saveCustomer,
+  updateOrder,
+  restoreProductQuantity,
+  deductProductQuantity,
 };

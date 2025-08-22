@@ -860,7 +860,10 @@ export default function AddToCart() {
 
           if (confirmRestockAndDeduct) {
             try {
-              let res = await axios.post(`/api/orders/${id}/update`, orderData);
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/${id}/update`,
+                orderData
+              );
               if (res.status === 200) {
                 toast.success("Inventory updated", {
                   position: "top-center",

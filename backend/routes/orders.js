@@ -15,10 +15,18 @@ router.get(
   RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.index
 );
-router.post("/:id/edit", lockOrderMiddleware, OrdersController.singleOrderedit);
+router.post(
+  "/:id/edit",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  lockOrderMiddleware,
+  OrdersController.singleOrderEdit
+);
 router.post(
   "/:id/update",
   // lockOrderMiddleware,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.updateOrder
 );
 router.post("/bulk-update", OrdersController.bulkUpdate);

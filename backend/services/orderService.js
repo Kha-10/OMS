@@ -232,10 +232,128 @@ const loadOrderAsCart = async (orderId, storeId) => {
     order,
     createdAt: Date.now(),
   };
-  console.log("cartKey",cartKey);
+  console.log("cartKey", cartKey);
   await redisClient.set(cartKey, JSON.stringify(cart), { EX: 86400 });
 
   return cart;
+};
+
+const editSingleOrder = async (id, storeId, payload) => {
+  const { customer, items, notes, orderStatus, pricing } = payload;
+
+  // 1. Find Order
+  const order = await OrderRepo.findById(id, storeId);
+  if (!order) throw new Error("Order not found");
+
+  // 2. Handle Customer
+  let customerId = null;
+  let manualCustomer = null;
+
+  if (customer?.customerId) {
+    customerId = customer.customerId;
+  } else {
+    manualCustomer = {
+      name: customer?.name?.trim() || "",
+      phone: customer?.phone?.trim() || "",
+      email: customer?.email,
+      deliveryAddress: customer?.deliveryAddress,
+    };
+  }
+
+  if (!customerId && !manualCustomer) {
+    throw new Error("Customer info is required.");
+  }
+
+  if (customerId) {
+    const existingCustomer = await OrderRepo.findCustomerById(
+      customerId,
+      storeId
+    );
+    if (existingCustomer) {
+      existingCustomer.name = customer.name;
+      existingCustomer.email = customer.email;
+      existingCustomer.phone = customer.phone;
+      existingCustomer.deliveryAddress = customer.deliveryAddress;
+      await OrderRepo.saveCustomer(existingCustomer);
+    }
+  }
+
+  // 3. Check Restock Logic
+  const originalItems = order.items;
+  let needRestockAndDeduct = originalItems.some((i) => i.trackQuantityEnabled);
+
+  // 4. Update Order
+  if (!needRestockAndDeduct) {
+    await OrderRepo.updateOrder(id, storeId, {
+      customer: customerId,
+      manualCustomer,
+      items,
+      notes,
+      orderStatus,
+      pricing,
+    });
+  }
+
+  return { needRestockAndDeduct };
+};
+
+const updateOrderService = async (
+  orderId,
+  storeId,
+  newItems,
+  notes,
+  pricing
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // 1. Get original order
+    const originalOrder = await OrderRepo.findById(orderId, storeId, session);
+    if (!originalOrder) {
+      await session.abortTransaction();
+      session.endSession();
+      return { success: false, msg: "Order not found" };
+    }
+
+    // 2. Restore old quantities
+    for (const item of originalOrder.items) {
+      await OrderRepo.restoreProductQuantity(
+        item.productId,
+        item.quantity,
+        storeId,
+        session
+      );
+    }
+
+    // 3. Deduct new quantities
+    for (const item of newItems) {
+      await OrderRepo.deductProductQuantity(
+        item.productId,
+        item.quantity,
+        storeId,
+        session
+      );
+    }
+
+    // 4. Update order
+    await OrderRepo.updateOrder(
+      orderId,
+      storeId,
+      { items: newItems, notes, pricing },
+      session
+    );
+
+    await clearCache(storeId, "products");
+    await session.commitTransaction();
+    session.endSession();
+
+    return { success: true };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 };
 
 // Delete
@@ -272,4 +390,6 @@ module.exports = {
   loadOrderAsCart,
   removeOrder,
   removeBulkOrders,
+  editSingleOrder,
+  updateOrderService,
 };
