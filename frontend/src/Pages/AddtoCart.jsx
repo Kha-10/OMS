@@ -266,16 +266,6 @@ export default function AddToCart() {
   const searchQuery = searchParams.get("search") || "";
 
   const { id } = useParams();
-  // const { data = {}, isPending } = useOrders(
-  //   { id },
-  //   {
-  //     enabled: !!id,
-  //   }
-  // );
-  // const orders = data.order || [];
-  // const cartData = data.cart || [];
-  // console.log("orders", orders);
-  // console.log("cartData", cartData);
 
   const { data: { data: customersfromDb = [] } = {} } = useCustomers({});
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =

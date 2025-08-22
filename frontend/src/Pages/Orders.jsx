@@ -6,7 +6,6 @@ import FilterPanel from "@/components/Orders/FilterPanel";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import SortControls from "@/components/Orders/SortControls";
-// import SortControls from "@/components/Orders/OrderSortControls";
 import {
   Popover,
   PopoverContent,
@@ -18,13 +17,14 @@ import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 import { Button } from "@/components/ui/button";
 import StatusDialog from "@/components/Orders/StatusDialog";
+import { useNavigationType } from "react-router-dom";
 
 export default function OrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
-
+  const navigationType = useNavigationType();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = new URLSearchParams(searchParams);
   const page = parseInt(params.get("page") || "1", 10);
@@ -196,7 +196,12 @@ export default function OrdersPage() {
     return `${typeLabel}: ${valuesLabel}`;
   };
 
-  console.log(orders);
+  useEffect(() => {
+    if (navigationType === "POP") {
+      sessionStorage.removeItem("adminCartId");
+    }
+  }, [navigationType]);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <OrdersHeader />
