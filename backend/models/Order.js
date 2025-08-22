@@ -179,6 +179,13 @@ const OrderSchema = new mongoose.Schema(
     },
     orderNumber: { type: String, required: true },
     invoiceNumber: { type: String, required: true },
+    storeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      index: true,
+    },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

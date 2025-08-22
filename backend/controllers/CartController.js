@@ -40,11 +40,12 @@ const CartController = {
           options,
         },
       } = req.body;
-
+      const storeId = req.storeId;
+      console.log("storeId", req.storeId);
       if (!cartId) {
         cartId = uuidv4();
       }
-      const cartKey = `cart:cartId:${cartId}`;
+      const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
 
       let cart;
@@ -100,6 +101,7 @@ const CartController = {
 
       // Save to Redis with TTL
       //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
+      console.log("cartKey", cartKey);
       await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ success: true, cart });
@@ -120,7 +122,7 @@ const CartController = {
         optionQuantity,
       } = req.body;
       console.log("req.body", req.body);
-      const cartKey = `cart:cartId:${cartId}`;
+      const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 

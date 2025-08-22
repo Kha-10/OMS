@@ -92,6 +92,26 @@ const deleteMany = async (storeId, ids, session) => {
   }).session(session);
 };
 
+const validateAndDecrementInventory = async (item, session,storeId) => {
+  const product = await Product.findOne({ _id: item.productId, storeId }).session(session);
+
+  if (!product) {
+    throw new Error("Product not found");
+  }
+
+  if (
+    product.trackQuantityEnabled &&
+    product.inventory.quantity < item.quantity
+  ) {
+    throw new Error(`Insufficient inventory for product ${product.name}`);
+  }
+
+  if (product.trackQuantityEnabled) {
+    product.inventory.quantity -= item.quantity;
+    await product.save({ session });
+  }
+};
+
 module.exports = {
   find,
   findById,
@@ -103,4 +123,5 @@ module.exports = {
   findByIds,
   insertMany,
   deleteMany,
+  validateAndDecrementInventory,
 };

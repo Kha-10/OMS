@@ -5,16 +5,17 @@ const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
 const idempotencyCheck = require("../middlewares/idempotencyCheck");
 const lockOrderMiddleware = require("../middlewares/lockOrder");
+const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-router.get("", OrdersController.index);
-router.post(
-  "/:id/edit",
-  handleErrorMessage,
-  lockOrderMiddleware,
-  OrdersController.singleOrderedit
+router.get(
+  "/",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.index
 );
+router.post("/:id/edit", lockOrderMiddleware, OrdersController.singleOrderedit);
 router.post(
   "/:id/update",
   // lockOrderMiddleware,
@@ -26,7 +27,13 @@ router.post("/deduct", OrdersController.deduct);
 router.post("/restock", OrdersController.restock);
 router.post("/refund", OrdersController.refund);
 router.post("/pay", OrdersController.pay);
-router.post("", handleErrorMessage, idempotencyCheck, OrdersController.store);
+router.post(
+  "/",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  idempotencyCheck,
+  OrdersController.store
+);
 
 router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
 router.get("/:id", OrdersController.show);

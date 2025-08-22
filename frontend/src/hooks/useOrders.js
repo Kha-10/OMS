@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { useSelector } from "react-redux";
 
 const fetchOrders = async ({ queryKey }) => {
   const [
     ,
     {
       id,
+      storeId,
       page,
       pageSize,
       sortBy,
@@ -18,8 +20,8 @@ const fetchOrders = async ({ queryKey }) => {
   ] = queryKey;
 
   const url = id
-    ? `/api/orders/${id || ""}`
-    : `/api/orders?page=${page}&limit=${pageSize}&sortBy=${sortBy}&sortDirection=${sortDirection}${
+    ? `/api/stores/${storeId}/orders/${id}`
+    : `/api/stores/${storeId}/orders?page=${page}&limit=${pageSize}&sortBy=${sortBy}&sortDirection=${sortDirection}${
         searchQuery ? `&search=${searchQuery}` : ""
       }${orderStatus ? `&orderStatus=${orderStatus}` : ""}${
         paymentStatus ? `&paymentStatus=${paymentStatus}` : ""
@@ -44,12 +46,16 @@ const useOrders = (
   options = {}
 ) => {
   const isSingle = !!id;
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
+
   return useQuery({
     queryKey: isSingle
-      ? ["orders", { id }]
+      ? ["orders", { id, storeId }]
       : [
           "orders",
           {
+            storeId,
             page,
             pageSize,
             sortBy,

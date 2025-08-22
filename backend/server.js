@@ -94,11 +94,11 @@ app.use("/api/stores/:storeId/products", authMiddleware, productRoutes);
 
 app.use("/api/stores/:storeId/categories", authMiddleware, categoryRoutes);
 
-app.use("/api/cart", authMiddleware, cartRoutes);
+app.use("/api/stores/:storeId/cart", authMiddleware, cartRoutes);
 
 app.use("/api/customers", authMiddleware, customerRoutes);
 
-app.use("/api/orders", authMiddleware, orderRoutes);
+app.use("/api/stores/:storeId/orders", authMiddleware, orderRoutes);
 
 app.use("/api/stores/:storeId/analytics", authMiddleware, analyticsRoutes);
 

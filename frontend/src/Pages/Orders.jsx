@@ -199,6 +199,7 @@ export default function OrdersPage() {
   useEffect(() => {
     if (navigationType === "POP") {
       sessionStorage.removeItem("adminCartId");
+      sessionStorage.removeItem("idempotencyKey");
     }
   }, [navigationType]);
 

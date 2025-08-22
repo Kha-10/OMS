@@ -52,6 +52,7 @@ import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
+import { useSelector } from "react-redux";
 
 // Form schemas
 const customerFormSchema = z.object({
@@ -271,6 +272,9 @@ export default function AddToCart() {
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =
     useProducts({ categories: selectedCategory._id, searchQuery });
   const { data: { data: categoriesfromDb = [] } = {} } = useCategories({});
+
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const containerRef = useRef(null);
 
@@ -496,7 +500,7 @@ export default function AddToCart() {
     sessionStorage.removeItem("adminCartId");
     sessionStorage.removeItem("idempotencyKey");
   }
-  console.log("cart", cart);
+
   const cartId = sessionStorage.getItem("adminCartId");
 
   const addToCart = async (formData) => {
@@ -549,12 +553,9 @@ export default function AddToCart() {
     };
 
     try {
-      console.log("Sending to backend:", cartItem);
-      const res = await axios.post("/api/cart", cartItem);
-      console.log("res", res);
+      const res = await axios.post(`/api/stores/${storeId}/cart`, cartItem);
       if (res.status === 200) {
         const data = id ? res.data.cart.order?.items : res.data.cart.items;
-        console.log("i did");
         sessionStorage.setItem("adminCartId", res.data.cart.id);
         setCart([...data]);
         setSelectedProduct(null);
@@ -828,7 +829,7 @@ export default function AddToCart() {
       notes: orderNotes,
     };
     try {
-      const endpoint = isEdit ? `/api/orders/${id}/edit` : "/api/orders";
+      const endpoint = isEdit ? `/api/stores/${storeId}/orders/${id}/edit` : `/api/stores/${storeId}/orders`;
       const headers = {};
 
       if (!isEdit) {
@@ -888,7 +889,6 @@ export default function AddToCart() {
   });
 
   const renderCartItemDetails = (item) => {
-    console.log(item);
     return (
       <div className="space-y-3">
         <div className="flex items-start justify-between">
@@ -1752,7 +1752,7 @@ export default function AddToCart() {
                           <div className="flex items-center justify-between">
                             <span className="font-medium">All Products</span>
                             <Badge variant="secondary" className="text-xs">
-                              {pagination.allProductsCount}
+                              {pagination.totalProducts}
                             </Badge>
                           </div>
                         </button>
