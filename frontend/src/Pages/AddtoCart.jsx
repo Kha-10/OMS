@@ -1085,11 +1085,8 @@ export default function AddToCart() {
   };
 
   const handleDiscard = async () => {
-    console.log("gg");
-    console.log("discardSuccess", discardSuccess);
     dispatch(discardCart(storeId));
     if (discardSuccess) {
-      console.log("discardSuccess", discardSuccess);
       window.history.back();
     }
   };

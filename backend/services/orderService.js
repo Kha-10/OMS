@@ -225,7 +225,7 @@ const loadOrderAsCart = async (orderId, storeId) => {
   await OrderRepo.saveOrder(order);
 
   const cartId = order._id;
-  const cartKey = `cart:store:${storeId}:cartId:${cartId}`;
+  const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
 
   const cart = {
     id: cartId,
