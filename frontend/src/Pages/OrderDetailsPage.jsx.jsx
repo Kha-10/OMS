@@ -47,7 +47,6 @@ export default function OrderDetailsPage() {
   );
 
   const navigationType = useNavigationType();
-  console.log("navigationType", navigationType);
 
   useEffect(() => {
     if (navigationType === "POP") {

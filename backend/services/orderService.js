@@ -148,6 +148,45 @@ const createOrder = async ({
     throw error;
   }
 };
+const getOrderWithEnhancedItems = async (orderId, storeId) => {
+  const order = await OrderRepo.findById(orderId, storeId);
+  if (!order) return null;
+
+  const updatedItems = await Promise.all(
+    order.items.map(async (item) => {
+      const latestProduct = await OrderRepo.findProductById(
+        item.productId,
+        storeId
+      );
+      if (!latestProduct) return item;
+
+      return {
+        ...item.toObject(),
+        trackQuantityEnabled: latestProduct.trackQuantityEnabled,
+        price: latestProduct.price,
+        productName: latestProduct.name,
+        productinventory: item.quantity + latestProduct.inventory.quantity,
+        cartMinimum: latestProduct.cartMinimumEnabled
+          ? latestProduct.cartMinimum
+          : 0,
+        cartMaximum: latestProduct.cartMaximumEnabled
+          ? latestProduct.cartMaximum
+          : 0,
+        imgUrls: latestProduct.imgUrls || [],
+        photo: latestProduct.photo || [],
+        options: latestProduct.options || [],
+        categories: latestProduct.categories || [],
+      };
+    })
+  );
+
+  order.items = updatedItems;
+  await OrderRepo.saveOrder(order);
+
+  // use your existing helper for image formatting
+  return enhanceProductImages(order);
+};
+
 // Delete
 const removeOrder = async (orderId, session) => {
   const order = await Order.findById(orderId).session(session);
@@ -177,6 +216,7 @@ const removeBulkOrders = async (orderIds, session) => {
 module.exports = {
   findOrders,
   enhanceProductImages,
+  getOrderWithEnhancedItems,
   createOrder,
   removeOrder,
   removeBulkOrders,

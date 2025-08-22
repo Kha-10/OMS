@@ -11,37 +11,13 @@ const handler = require("../helpers/handler");
 const redisClient = require("../config/redisClient");
 
 const OrdersController = {
-  // index: async (req, res) => {
-  //   try {
-  //     const queryParams = req.query;
-  //     let { orders, totalOrders, page, limit } = await orderService.findOrders(
-  //       queryParams
-  //     );
-
-  //     const response = {
-  //       data: orders,
-  //       pagination: {
-  //         totalOrders,
-  //         totalPages: Math.ceil(totalOrders / limit),
-  //         currentPage: page,
-  //         pageSize: limit,
-  //         hasNextPage: page < Math.ceil(totalOrders / limit),
-  //         hasPreviousPage: page > 1,
-  //       },
-  //     };
-
-  //     return res.json(response);
-  //   } catch (error) {
-  //     return res.status(500).json({ msg: "internal server error" });
-  //   }
-  // },
   index: async (req, res) => {
     try {
       const queryParams = {
         ...req.query,
         storeId: req.storeId,
       };
-      
+
       const { orders, totalOrders, page, limit } =
         await orderService.findOrders(queryParams);
 
@@ -63,160 +39,6 @@ const OrdersController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  // store: async (req, res) => {
-  //   const { customer, cartId, items, notes, orderStatus, pricing } = req.body;
-  //   const idempotencyKey = req.idempotencyKey;
-  //   const cartLockKey = `lock:cart:${cartId}`;
-  //   const isLocked = await redisClient.get(cartLockKey);
-  //   const session = await mongoose.startSession();
-  //   session.startTransaction();
-  //   try {
-  //     let customerId = null;
-  //     let manualCustomer = null;
-
-  //     if (
-  //       customer.customerId &&
-  //       mongoose.Types.ObjectId.isValid(customer.customerId)
-  //     ) {
-  //       customerId = customer.customerId;
-  //     } else {
-  //       manualCustomer = {
-  //         name: customer.name?.trim() || "",
-  //         phone: customer.phone?.trim() || "",
-  //         email: customer.email,
-  //         deliveryAddress: customer.deliveryAddress,
-  //       };
-  //     }
-
-  //     if (!customerId && !manualCustomer) {
-  //       return res.status(400).json({ error: "Customer info is required." });
-  //     }
-
-  //     if (isLocked) {
-  //       return res
-  //         .status(409)
-  //         .json({ msg: "Cart is currently being processed" });
-  //     }
-  //     // await redisClient.setEx(cartLockKey, 30, "locked");
-  //     await redisClient.set(cartLockKey, "locked", { ex: 30 });
-
-  //     const orderCounter = await Counter.findOneAndUpdate(
-  //       { id: "orderNumber" },
-  //       { $inc: { seq: 1 } },
-  //       { new: true, upsert: true }
-  //     );
-
-  //     // Fetch and update invoiceNumber counter
-  //     const invoiceCounter = await Counter.findOneAndUpdate(
-  //       { id: "invoiceNumber" },
-  //       { $inc: { seq: 1 } },
-  //       { new: true, upsert: true }
-  //     );
-
-  //     // Ensure we got the updated values
-  //     const orderNumber = orderCounter.seq;
-  //     const invoiceNumber = invoiceCounter.seq;
-
-  //     for (const item of items) {
-  //       const product = await Product.findById(item.productId).session(session);
-
-  //       if (!product) {
-  //         throw new Error("Product not found");
-  //       }
-
-  //       if (
-  //         product.trackQuantityEnabled &&
-  //         product.inventory.quantity < item.quantity
-  //       ) {
-  //         throw new Error(`Insufficient inventory for product ${product.name}`);
-  //       }
-
-  //       // Subtract the inventory
-  //       if (product.trackQuantityEnabled) {
-  //         product.inventory.quantity -= item.quantity;
-  //         await product.save({ session });
-  //       }
-  //     }
-
-  //     const existingCustomer = await Customer.findById(customerId).session(
-  //       session
-  //     );
-  //     if (existingCustomer) {
-  //       existingCustomer.name = customer.name;
-  //       existingCustomer.email = customer.email;
-  //       existingCustomer.phone = customer.phone;
-  //       existingCustomer.deliveryAddress = customer.deliveryAddress;
-
-  //       await existingCustomer.save({ session });
-  //     }
-
-  //     const [order] = await Order.create(
-  //       [
-  //         {
-  //           customer: customerId,
-  //           manualCustomer,
-  //           items,
-  //           notes,
-  //           orderStatus,
-  //           pricing,
-  //           orderNumber,
-  //           invoiceNumber,
-  //         },
-  //       ],
-  //       { session }
-  //     );
-
-  //     // await redisClient.setEx(
-  //     //   `idemp:${idempotencyKey}`,
-  //     //   3600,
-  //     //   JSON.stringify({
-  //     //     status: "completed",
-  //     //     orderId: order._id,
-  //     //   })
-  //     // );
-  //     await redisClient.set(
-  //       `idemp:${idempotencyKey}`,
-  //       JSON.stringify({
-  //         status: "completed",
-  //         orderId: order._id,
-  //       }),
-  //       { ex: 3600 }
-  //     );
-
-  //     await session.commitTransaction();
-  //     session.endSession();
-
-  //     await clearProductCache();
-  //     await clearCartCache(`cart:cartId:${cartId}`);
-  //     await redisClient.del(cartLockKey);
-
-  //     return res.json(order);
-  //   } catch (error) {
-  //     console.error("Error creating order:", error);
-  //     await session.abortTransaction();
-  //     session.endSession();
-  //     // await redisClient.setEx(
-  //     //   `idemp:${idempotencyKey}`,
-  //     //   600,
-  //     //   JSON.stringify({
-  //     //     status: "failed",
-  //     //     error: error.message,
-  //     //   })
-  //     // );
-  //     await redisClient.set(
-  //       `idemp:${idempotencyKey}`,
-  //       JSON.stringify({
-  //         status: "failed",
-  //         error: error.message,
-  //       }),
-  //       { ex: 600 }
-  //     );
-  //     await redisClient.del(cartLockKey);
-  //     return res
-  //       .status(500)
-  //       .json({ msg: error.message || "internal server error" });
-  //   }
-  // },
   store: async (req, res) => {
     const { customer, cartId, items, notes, orderStatus, pricing } = req.body;
     const idempotencyKey = req.idempotencyKey;
@@ -245,47 +67,14 @@ const OrdersController = {
   show: async (req, res) => {
     try {
       const id = req.params.id;
-      // Validate MongoDB ObjectId
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid order ID" });
+      const storeId = req.storeId;
+
+      const order = await orderService.getOrderWithEnhancedItems(id, storeId);
+      if (!order) {
+        return res.status(404).json({ msg: "Order not found" });
       }
 
-      // Get from DB
-      const order = await Order.findById(id).populate("customer");
-      if (!order) return res.status(404).json({ msg: "Order not found" });
-
-      const updatedItems = await Promise.all(
-        order.items.map(async (item) => {
-          const latestProduct = await Product.findById(item.productId);
-
-          if (!latestProduct) return item;
-
-          return {
-            ...item.toObject(),
-            trackQuantityEnabled: latestProduct.trackQuantityEnabled,
-            price: latestProduct.price,
-            productName: latestProduct.name,
-            productinventory: item.quantity + latestProduct.inventory.quantity,
-            cartMinimum: latestProduct.cartMinimumEnabled
-              ? latestProduct.cartMinimum
-              : 0,
-            cartMaximum: latestProduct.cartMaximumEnabled
-              ? latestProduct.cartMaximum
-              : 0,
-            imgUrls: latestProduct.imgUrls || [],
-            photo: latestProduct.photo || [],
-            options: latestProduct.options || [],
-            categories: latestProduct.categories || [],
-          };
-        })
-      );
-      console.log("updatedItems", updatedItems);
-      order.items = updatedItems;
-      await order.save();
-
-      const enhancedOrder = orderService.enhanceProductImages(order);
-
-      return res.json(enhancedOrder);
+      return res.json(order);
     } catch (error) {
       console.error("Order show error:", error);
       return res.status(500).json({ msg: "Internal server error" });

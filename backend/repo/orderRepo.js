@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 const mongoose = require("mongoose");
 
 const fetchOrders = async (queryParams) => {
@@ -45,7 +46,7 @@ const fetchOrders = async (queryParams) => {
   ]);
 
   const totalOrders = totalOrdersData[0]?.count || 0;
-  console.log("orders",orders);
+  console.log("orders", orders);
   return { orders, totalOrders, page, limit };
 };
 
@@ -87,4 +88,30 @@ const createOrder = async (orderData, session) => {
   return order;
 };
 
-module.exports = { fetchOrders, createOrder };
+const findById = async (orderId, storeId) => {
+  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    return null;
+  }
+
+  return Order.findOne({ _id: orderId, storeId }).populate("customer");
+};
+
+const findProductById = async (productId, storeId) => {
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return null;
+  }
+
+  return Product.findOne({ _id: productId, storeId });
+};
+
+const saveOrder = async (order) => {
+  return order.save();
+};
+
+module.exports = {
+  fetchOrders,
+  createOrder,
+  findById,
+  findProductById,
+  saveOrder,
+};

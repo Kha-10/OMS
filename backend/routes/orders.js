@@ -36,7 +36,12 @@ router.post(
 );
 
 router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
-router.get("/:id", OrdersController.show);
+router.get(
+  "/:id",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.show
+);
 
 router.delete(
   "/:cartId/discard",
