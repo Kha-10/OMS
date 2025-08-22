@@ -113,6 +113,7 @@ const CartController = {
   update: async (req, res) => {
     try {
       const { cartId } = req.params;
+      const storeId = req.storeId;
       const {
         productId,
         variantId,
@@ -121,7 +122,7 @@ const CartController = {
         optionValue,
         optionQuantity,
       } = req.body;
-      console.log("req.body", req.body);
+
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
@@ -177,12 +178,13 @@ const CartController = {
   removeItem: async (req, res) => {
     try {
       const { cartId, productId, variantId } = req.params;
-
-      const cartKey = `cart:cartId:${cartId}`;
+      const storeId = req.storeId;
+      const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 
-      const cart = JSON.parse(cartData);
+      // const cart = JSON.parse(cartData);
+      const cart = cartData;
       console.log("UPDATE", cart);
       const items = cart.order?.items || cart.items || [];
       const initialLength = items.length;

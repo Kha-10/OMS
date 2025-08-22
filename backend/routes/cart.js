@@ -11,18 +11,21 @@ router.get("/:cartId", CartController.show);
 router.post(
   "",
   checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager"]),
+  RoleMiddleware(["owner", "manager", "staff"]),
   CartController.store
 );
 
 router.patch(
   "/:cartId",
-  // RoleMiddleware(["admin", "superadmin"]),
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   CartController.update
 );
 
 router.delete(
   "/:cartId/item/:productId/:variantId?",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   CartController.removeItem
 );
 

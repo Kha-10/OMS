@@ -603,7 +603,7 @@ export default function AddToCart() {
       const cartId = sessionStorage.getItem("adminCartId");
       if (!cartId) throw new Error("Missing adminCartId");
 
-      await axios.patch(`/api/cart/${cartId}`, {
+      await axios.patch(`/api/stores/${storeId}/cart/${cartId}`, {
         productId,
         variantId,
         quantity: newQuantity,
@@ -670,7 +670,7 @@ export default function AddToCart() {
       const cartId = sessionStorage.getItem("adminCartId");
       if (!cartId) throw new Error("Missing adminCartId");
 
-      await axios.patch(`/api/cart/${cartId}`, {
+      await axios.patch(`/api/stores/${storeId}/cart/${cartId}`, {
         productId,
         variantId,
         optionName,
@@ -687,7 +687,7 @@ export default function AddToCart() {
     if (!cartId) throw new Error("Missing adminCartId");
 
     try {
-      const endpoint = `/api/cart/${cartId}/item/${productId}/${
+      const endpoint = `/api/stores/${storeId}/cart/${cartId}/item/${productId}/${
         variantId ?? ""
       }`;
       const res = await axios.delete(endpoint);
