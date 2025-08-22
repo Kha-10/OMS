@@ -7,6 +7,7 @@ const clearProductCache = require("../helpers/clearProductCache");
 const clearCartCache = require("../helpers/clearCartCache");
 const resetCounters = require("../helpers/reset");
 const orderService = require("../services/orderService");
+const cartService = require("../services/cartService");
 const handler = require("../helpers/handler");
 const redisClient = require("../config/redisClient");
 
@@ -215,57 +216,17 @@ const OrdersController = {
   },
   loadOrderAsCart: async (req, res) => {
     try {
-      const { orderId } = req.params;
+      const id = req.params.id;
+      const storeId = req.storeId;
 
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid order ID" });
       }
 
-      let order = await Order.findById(orderId).populate("customer");
-      if (!order) return res.status(404).json({ msg: "Order not found" });
-
-      const updatedItems = await Promise.all(
-        order.items.map(async (item) => {
-          const latestProduct = await Product.findById(item.productId);
-
-          if (!latestProduct) return item;
-
-          return {
-            ...item.toObject(),
-            trackQuantityEnabled: latestProduct.trackQuantityEnabled,
-            price: latestProduct.price,
-            productName: latestProduct.name,
-            productinventory: item.quantity + latestProduct.inventory.quantity,
-            cartMinimum: latestProduct.cartMinimumEnabled
-              ? latestProduct.cartMinimum
-              : 0,
-            cartMaximum: latestProduct.cartMaximumEnabled
-              ? latestProduct.cartMaximum
-              : 0,
-            imgUrls: latestProduct.imgUrls || [],
-            photo: latestProduct.photo || [],
-            options: latestProduct.options || [],
-            categories: latestProduct.categories || [],
-          };
-        })
-      );
-
-      order.items = updatedItems;
-      await order.save();
-
-      const cartId = order._id; // Reuse same cart for this order
-      const cartKey = `cart:cartId:${cartId}`;
-
-      // Prepare cart object
-      const cart = {
-        id: cartId,
-        order,
-        createdAt: Date.now(),
-      };
-
-      // await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
-      await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
+      const cart = await orderService.loadOrderAsCart(id, storeId);
+      if (!cart) {
+        return res.status(404).json({ msg: "Order not found" });
+      }
 
       return res.status(200).json({ cart });
     } catch (error) {
@@ -276,16 +237,17 @@ const OrdersController = {
   discardCart: async (req, res) => {
     try {
       const cartId = req.params.cartId;
-      const cartKey = `cart:cartId:${cartId}`;
-      const cartData = await redisClient.get(cartKey);
+      const storeId = req.storeId;
 
-      if (cartData) {
-        await clearCartCache(`cart:cartId:${cartId}`);
-      } else return res.status(404).json({ msg: "Cart not found" });
+      const result = await cartService.discardCart(cartId, storeId);
 
-      return res.status(200).json({ msg: "Successfully Discarded" });
+      if (!result.success) {
+        return res.status(404).json({ msg: result.msg });
+      }
+
+      return res.status(200).json({ msg: result.msg });
     } catch (error) {
-      console.error("Failed to load order as cart:", error);
+      console.error("Failed to discard cart:", error);
       return res.status(500).json({ msg: "Internal server error" });
     }
   },

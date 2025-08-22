@@ -10,6 +10,7 @@ const OrderRepo = require("../repo/orderRepo");
 const ProductRepo = require("../repo/productRepo");
 const CounterRepo = require("../repo/counterRepo");
 const CustomerRepo = require("../repo/customerRepo");
+const CartRepo = require("../repo/cartRepo");
 const redisClient = require("../config/redisClient");
 
 // GET
@@ -187,6 +188,56 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
   return enhanceProductImages(order);
 };
 
+const loadOrderAsCart = async (orderId, storeId) => {
+  const order = await OrderRepo.findById(orderId, storeId);
+  if (!order) return null;
+
+  // Refresh product data for items
+  const updatedItems = await Promise.all(
+    order.items.map(async (item) => {
+      const latestProduct = await OrderRepo.findProductById(
+        item.productId,
+        storeId
+      );
+      if (!latestProduct) return item;
+
+      return {
+        ...item.toObject(),
+        trackQuantityEnabled: latestProduct.trackQuantityEnabled,
+        price: latestProduct.price,
+        productName: latestProduct.name,
+        productinventory: item.quantity + latestProduct.inventory.quantity,
+        cartMinimum: latestProduct.cartMinimumEnabled
+          ? latestProduct.cartMinimum
+          : 0,
+        cartMaximum: latestProduct.cartMaximumEnabled
+          ? latestProduct.cartMaximum
+          : 0,
+        imgUrls: latestProduct.imgUrls || [],
+        photo: latestProduct.photo || [],
+        options: latestProduct.options || [],
+        categories: latestProduct.categories || [],
+      };
+    })
+  );
+
+  order.items = updatedItems;
+  await OrderRepo.saveOrder(order);
+
+  const cartId = order._id;
+  const cartKey = `cart:store:${storeId}:cartId:${cartId}`;
+
+  const cart = {
+    id: cartId,
+    order,
+    createdAt: Date.now(),
+  };
+  console.log("cartKey",cartKey);
+  await redisClient.set(cartKey, JSON.stringify(cart), { EX: 86400 });
+
+  return cart;
+};
+
 // Delete
 const removeOrder = async (orderId, session) => {
   const order = await Order.findById(orderId).session(session);
@@ -218,6 +269,7 @@ module.exports = {
   enhanceProductImages,
   getOrderWithEnhancedItems,
   createOrder,
+  loadOrderAsCart,
   removeOrder,
   removeBulkOrders,
 };

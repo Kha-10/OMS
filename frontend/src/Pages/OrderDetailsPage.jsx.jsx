@@ -24,10 +24,11 @@ import useOrders from "@/hooks/useOrders";
 import { format, parseISO } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import axios from "@/helper/axios";
+import { useSelector, useDispatch } from "react-redux";
+import { discardCart } from "@/features/cart/cartSlice";
 
 export default function OrderDetailsPage() {
   const { tenant } = useSelector((state) => state.tenants);
@@ -46,12 +47,14 @@ export default function OrderDetailsPage() {
     navigate("/orders")
   );
 
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
   const navigationType = useNavigationType();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (navigationType === "POP") {
-      sessionStorage.removeItem("adminCartId");
-      sessionStorage.removeItem("idempotencyKey");
+      dispatch(discardCart(storeId));
     }
   }, [navigationType]);
 

@@ -35,7 +35,12 @@ router.post(
   OrdersController.store
 );
 
-router.get("/:orderId/load-as-cart", OrdersController.loadOrderAsCart);
+router.get(
+  "/:id/load-as-cart",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.loadOrderAsCart
+);
 router.get(
   "/:id",
   checkMemberMiddleware,
@@ -45,7 +50,8 @@ router.get(
 
 router.delete(
   "/:cartId/discard",
-  handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.discardCart
 );
 router.delete(

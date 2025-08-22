@@ -18,13 +18,14 @@ import debounce from "lodash.debounce";
 import { Button } from "@/components/ui/button";
 import StatusDialog from "@/components/Orders/StatusDialog";
 import { useNavigationType } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { discardCart } from "@/features/cart/cartSlice";
 
 export default function OrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
-  const navigationType = useNavigationType();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = new URLSearchParams(searchParams);
   const page = parseInt(params.get("page") || "1", 10);
@@ -48,6 +49,11 @@ export default function OrdersPage() {
     paymentStatus,
     fulfillmentStatus,
   });
+
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
+  const dispatch = useDispatch();
+  const navigationType = useNavigationType();
 
   const orders = data?.data;
   const pagination = data?.pagination || {};
@@ -198,8 +204,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (navigationType === "POP") {
-      sessionStorage.removeItem("adminCartId");
-      sessionStorage.removeItem("idempotencyKey");
+      dispatch(discardCart(storeId));
     }
   }, [navigationType]);
 

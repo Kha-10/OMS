@@ -4,6 +4,7 @@ import notificationsReducer from "../features/recipe/notificationSlice";
 import superadminReducer from "../features/superadmin/superadminSlice";
 import authReducer from "../features/tenants/tenantSlice";
 import storeReducer from "../features/stores/storeSlice";
+import cartReducer from "../features/cart/cartSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     superadmins: superadminReducer,
     tenants: authReducer,
     stores: storeReducer,
+    carts: cartReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

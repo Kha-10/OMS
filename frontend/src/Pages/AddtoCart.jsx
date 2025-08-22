@@ -52,7 +52,8 @@ import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { discardCart } from "@/features/cart/cartSlice";
 
 // Form schemas
 const customerFormSchema = z.object({
@@ -267,14 +268,16 @@ export default function AddToCart() {
   const searchQuery = searchParams.get("search") || "";
 
   const { id } = useParams();
+  const dispatch = useDispatch();
+  const { discardSuccess } = useSelector((state) => state.carts);
+  console.log("discardSuccess", discardSuccess);
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const { data: { data: customersfromDb = [] } = {} } = useCustomers({});
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =
     useProducts({ categories: selectedCategory._id, searchQuery });
   const { data: { data: categoriesfromDb = [] } = {} } = useCategories({});
-
-  const { stores } = useSelector((state) => state.stores);
-  const storeId = stores?.[0]?._id;
 
   const containerRef = useRef(null);
 
@@ -328,7 +331,9 @@ export default function AddToCart() {
 
   const loadOrder = async () => {
     let orderId = id;
-    const res = await axios(`/api/orders/${orderId}/load-as-cart`);
+    const res = await axios(
+      `/api/stores/${storeId}/orders/${orderId}/load-as-cart`
+    );
     if (res.status === 200) {
       console.log("resloadOrder", res.data.cart);
       const orderDetails = res.data.cart.order;
@@ -829,7 +834,9 @@ export default function AddToCart() {
       notes: orderNotes,
     };
     try {
-      const endpoint = isEdit ? `/api/stores/${storeId}/orders/${id}/edit` : `/api/stores/${storeId}/orders`;
+      const endpoint = isEdit
+        ? `/api/stores/${storeId}/orders/${id}/edit`
+        : `/api/stores/${storeId}/orders`;
       const headers = {};
 
       if (!isEdit) {
@@ -1078,10 +1085,11 @@ export default function AddToCart() {
   };
 
   const handleDiscard = async () => {
-    const cartId = sessionStorage.getItem("adminCartId");
-    const res = await axios.delete(`/api/orders/${cartId}/discard`);
-    if (res.status === 200) {
-      sessionStorage.removeItem("adminCartId");
+    console.log("gg");
+    console.log("discardSuccess", discardSuccess);
+    dispatch(discardCart(storeId));
+    if (discardSuccess) {
+      console.log("discardSuccess", discardSuccess);
       window.history.back();
     }
   };
