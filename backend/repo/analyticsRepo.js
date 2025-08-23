@@ -1,9 +1,13 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const mongoose = require("mongoose");
 
-const getOrdersAggregation = async (tenantId, start, end) => {
+const getOrdersAggregation = async (storeId, start, end) => {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
   const pipeline = [
-    { $match: { tenantId, createdAt: { $gte: start, $lte: end } } },
+    {
+      $match: { storeId: storeObjectId, createdAt: { $gte: start, $lte: end } },
+    },
     {
       $project: {
         createdAt: 1,
@@ -46,11 +50,12 @@ const getOrdersAggregation = async (tenantId, start, end) => {
   return Order.aggregate(pipeline);
 };
 
-const getLowStockCount = async (tenantId, threshold = 5) => {
+const getLowStockCount = async (storeId, threshold = 5) => {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
   const result = await Product.aggregate([
     {
       $match: {
-        tenantId,
+        storeId: storeObjectId,
         trackQuantityEnabled: true,
         "inventory.quantity": { $lte: threshold },
       },
