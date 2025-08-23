@@ -188,8 +188,6 @@ const bulkDeleteOrders = async (orderIds, storeId, session) => {
 };
 
 const findOrdersByIds = async (orderIds, storeId, session) => {
-  console.log("orderIds", orderIds);
-  console.log("storeId", storeId);
   return Order.find({ _id: { $in: orderIds }, storeId }).session(session);
 };
 

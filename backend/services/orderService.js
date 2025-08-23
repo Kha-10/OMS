@@ -455,6 +455,34 @@ const bulkDestroyOrders = async (orderIds, storeId) => {
   }
 };
 
+const deduct = async (orderId, storeId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const originalOrder = await OrderRepo.findById(orderId, storeId, session);
+
+    if (!originalOrder) {
+      await session.abortTransaction();
+      session.endSession();
+      throw handler.notFoundError("Order not found");
+    }
+
+    await ProductRepo.bulkDeductInventory(originalOrder.items, session);
+
+    await clearProductCache();
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return { success: true };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 module.exports = {
   findOrders,
   enhanceProductImages,
@@ -468,4 +496,5 @@ module.exports = {
   deleteOrder,
   restockOrder,
   bulkDestroyOrders,
+  deduct,
 };

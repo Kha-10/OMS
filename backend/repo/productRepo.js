@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const uploadAdapter = require("../services/adapters/index");
+const handler = require("../helpers/handler");
 
 const find = async (storeId, query, sort, page, limit, search) => {
   const skip = (page - 1) * limit;
@@ -92,24 +93,39 @@ const deleteMany = async (storeId, ids, session) => {
   }).session(session);
 };
 
-const validateAndDecrementInventory = async (item, session,storeId) => {
-  const product = await Product.findOne({ _id: item.productId, storeId }).session(session);
+const validateAndDecrementInventory = async (item, session, storeId) => {
+  const product = await Product.findOne({
+    _id: item.productId,
+    storeId,
+  }).session(session);
 
   if (!product) {
-    throw new Error("Product not found");
+    handler.notFoundError("Product not found");
   }
 
   if (
     product.trackQuantityEnabled &&
     product.inventory.quantity < item.quantity
   ) {
-    throw new Error(`Insufficient inventory for product ${product.name}`);
+    handler.insufficient(`Insufficient inventory for product ${product.name}`);
   }
 
   if (product.trackQuantityEnabled) {
     product.inventory.quantity -= item.quantity;
     await product.save({ session });
   }
+};
+
+const bulkDeductInventory = async (items, session) => {
+  return Product.bulkWrite(
+    items.map((item) => ({
+      updateOne: {
+        filter: { _id: item.productId, trackQuantityEnabled: true },
+        update: { $inc: { "inventory.quantity": -item.quantity } },
+      },
+    })),
+    { session }
+  );
 };
 
 module.exports = {
@@ -124,4 +140,5 @@ module.exports = {
   insertMany,
   deleteMany,
   validateAndDecrementInventory,
+  bulkDeductInventory,
 };

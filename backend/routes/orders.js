@@ -36,15 +36,30 @@ router.post(
   RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.bulkDestroy
 );
-router.post("/deduct", OrdersController.deduct);
+router.post(
+  "/deduct",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.deduct
+);
 router.post(
   "/restock",
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.restock
 );
-router.post("/refund", OrdersController.refund);
-router.post("/pay", OrdersController.pay);
+router.post(
+  "/refund",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.refund
+);
+router.post(
+  "/pay",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.pay
+);
 router.post(
   "/",
   checkMemberMiddleware,

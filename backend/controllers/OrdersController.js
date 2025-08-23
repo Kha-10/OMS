@@ -265,43 +265,62 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
+  // deduct: async (req, res) => {
+  //   console.log("req.body", req.body);
+  //   const orderId = req.body._id;
+  //   const session = await mongoose.startSession();
+  //   session.startTransaction();
+
+  //   try {
+  //     const originalOrder = await Order.findById(orderId).lean();
+
+  //     if (!originalOrder) {
+  //       await session.abortTransaction();
+  //       session.endSession();
+  //       return res.status(400).json({ msg: "Order not found" });
+  //     }
+
+  //     await Product.bulkWrite(
+  //       originalOrder.items.map((item) => ({
+  //         updateOne: {
+  //           filter: { _id: item.productId, trackQuantityEnabled: true },
+  //           update: { $inc: { "inventory.quantity": -item.quantity } },
+  //         },
+  //       })),
+  //       { session }
+  //     );
+
+  //     await clearProductCache();
+
+  //     await session.commitTransaction();
+  //     session.endSession();
+
+  //     return res.status(200).json({ msg: "Inventory deducted successfully" });
+  //   } catch (error) {
+  //     console.error("Order deduct failed:", error);
+
+  //     await session.abortTransaction();
+  //     session.endSession();
+
+  //     return res
+  //       .status(500)
+  //       .json({ msg: error.message || "Internal server error" });
+  //   }
+  // },
   deduct: async (req, res) => {
-    console.log("req.body", req.body);
-    const orderId = req.body._id;
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const { _id: orderId } = req.body;
+    const storeId = req.storeId;
 
     try {
-      const originalOrder = await Order.findById(orderId).lean();
+      const result = await orderService.deduct(orderId, storeId);
 
-      if (!originalOrder) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ msg: "Order not found" });
+      if (!result.success) {
+        return res.status(result.status).json({ msg: result.msg });
       }
-
-      await Product.bulkWrite(
-        originalOrder.items.map((item) => ({
-          updateOne: {
-            filter: { _id: item.productId, trackQuantityEnabled: true },
-            update: { $inc: { "inventory.quantity": -item.quantity } },
-          },
-        })),
-        { session }
-      );
-
-      await clearProductCache();
-
-      await session.commitTransaction();
-      session.endSession();
 
       return res.status(200).json({ msg: "Inventory deducted successfully" });
     } catch (error) {
       console.error("Order deduct failed:", error);
-
-      await session.abortTransaction();
-      session.endSession();
-
       return res
         .status(500)
         .json({ msg: error.message || "Internal server error" });

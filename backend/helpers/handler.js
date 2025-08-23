@@ -24,6 +24,11 @@ const handler = {
     err.statusCode = 423;
     return err;
   },
+  insufficient: (message) => {
+    const err = new Error(message);
+    err.statusCode = 409;
+    return err;
+  },
 };
 
 module.exports = handler;

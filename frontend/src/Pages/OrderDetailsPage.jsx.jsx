@@ -102,7 +102,10 @@ export default function OrderDetailsPage() {
         if (confirmDeduct) {
           console.log(`Called deduct API for order ${orders._id}`);
           try {
-            let res = await axios.post("/api/orders/deduct", orders);
+            let res = await axios.post(
+              `/api/stores/${storeId}/orders/deduct`,
+              orders
+            );
             if (res.status === 200) {
               toast.success("Successfully deducted", {
                 position: "top-center",
@@ -129,7 +132,10 @@ export default function OrderDetailsPage() {
         if (confirmDeduct) {
           console.log(`Called restock API for order ${orders._id}`);
           try {
-            let res = await axios.post("/api/orders/restock", orders);
+            let res = await axios.post(
+              `/api/stores/${storeId}/orders/restock`,
+              orders
+            );
             if (res.status === 200) {
               toast.success("Successfully restocked", {
                 position: "top-center",
@@ -160,7 +166,10 @@ export default function OrderDetailsPage() {
       console.log(`Called refund API for order ${orders._id}`);
       // await callRefundAPI(order._id);
       try {
-        let res = await axios.post("/api/orders/refund", orders);
+        let res = await axios.post(
+          `/api/stores/${storeId}/orders/refund`,
+          orders
+        );
         if (res.status === 200) {
           toast.success("Successfully refunded", {
             position: "top-center",
@@ -183,7 +192,7 @@ export default function OrderDetailsPage() {
       console.log(`Called pay API for order ${orders._id}`);
       // await callPayAPI(order._id);
       try {
-        let res = await axios.post("/api/orders/pay", orders);
+        let res = await axios.post(`/api/stores/${storeId}/orders/pay`, orders);
         if (res.status === 200) {
           toast.success("Successfully Paid", {
             position: "top-center",
@@ -211,7 +220,10 @@ export default function OrderDetailsPage() {
         const confirmDeduct = confirm("Deduct the inventory?");
         if (confirmDeduct) {
           try {
-            let res = await axios.post("/api/orders/deduct", orders);
+            let res = await axios.post(
+              `/api/stores/${storeId}/orders/deduct`,
+              orders
+            );
             if (res.status === 200) {
               toast.success("Successfully deducted", {
                 position: "top-center",
