@@ -255,7 +255,10 @@ export default function OrderDetailsPage() {
       if (confirmRestock) {
         console.log(`Called restock API for order ${orders._id}`);
         try {
-          let res = await axios.post("/api/orders/restock", orders);
+          let res = await axios.post(
+            `/api/stores/${storeId}/orders/restock`,
+            orders
+          );
           if (res.status === 200) {
             toast.success("Successfully restocked", {
               position: "top-center",

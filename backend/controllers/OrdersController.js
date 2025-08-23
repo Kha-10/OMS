@@ -84,83 +84,43 @@ const OrdersController = {
   destroy: async (req, res) => {
     const { id } = req.params;
     const { shouldRestock } = req.body;
+    const storeId = req.storeId;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return handler.handleResponse(res, {
-        status: 400,
-        message: "Invalid id",
-      });
+      return handler.invalidError("Invalid id");
     }
 
     const session = await mongoose.startSession();
 
     try {
       await session.withTransaction(async () => {
-        const order = await orderService.removeOrder(id, session);
-
-        if (!order) {
-          throw new Error("Order not found");
-        }
-
-        if (shouldRestock) {
-          await orderService.restockOrderItems(order, session);
-        }
-        await clearProductCache();
+        await orderService.deleteOrder(id, storeId, shouldRestock, session);
       });
 
       session.endSession();
-      return handler.handleResponse(res, {
-        status: 200,
-        message: "Order deleted successfully.",
+      return res.json({
+        msg: "Order deleted successfully.",
       });
     } catch (error) {
       await session.endSession();
-      return handler.handleError(res, error);
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      res.status(status).json({ msg: message });
     }
   },
   bulkDestroy: async (req, res) => {
-    const { orderIds } = req.body;
-
-    // Validation
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return res.status(400).json({ msg: "empty orderIds" });
-    }
-
-    const invalidIds = orderIds.filter(
-      (id) => !mongoose.Types.ObjectId.isValid(id)
-    );
-    if (invalidIds.length > 0) {
-      return res
-        .status(400)
-        .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
-    }
-
-    const session = await mongoose.startSession();
-
     try {
-      await session.withTransaction(async () => {
-        const orders = await Order.find({ _id: { $in: orderIds } }).session(
-          session
-        );
-        console.log("orders", orders);
-        if (orders.length === 0) {
-          return res.status(404).json({ msg: `No orders found` });
-        }
+      const { orderIds } = req.body;
+      const storeId = req.storeId;
 
-        await Order.deleteMany({ _id: { $in: orderIds } });
-      });
-
-      session.endSession();
+      const result = await orderService.bulkDestroyOrders(orderIds, storeId);
 
       return res.json({
-        message: `Order status has been Successfully deleted.`,
+        msg: `${result.deletedCount} orders successfully deleted`,
       });
     } catch (error) {
-      console.log("error", error);
-      session.endSession();
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
+      return res.status(400).json({ msg: error.message });
     }
   },
   // Bulk order update
@@ -251,83 +211,6 @@ const OrdersController = {
       return res.status(500).json({ msg: "Internal server error" });
     }
   },
-  // singleOrderedit: async (req, res) => {
-  //   const { id } = req.params;
-  //   const { customer, items, notes, orderStatus, pricing } = req.body;
-  //   if (!mongoose.Types.ObjectId.isValid(id)) {
-  //     return res.status(400).json({ msg: "Invalid order ID" });
-  //   }
-
-  //   try {
-  //     const order = await Order.findById(id);
-  //     if (!order) return res.status(404).json({ msg: "Order not found" });
-
-  //     let customerId = null;
-  //     let manualCustomer = null;
-
-  //     if (
-  //       customer.customerId &&
-  //       mongoose.Types.ObjectId.isValid(customer.customerId)
-  //     ) {
-  //       customerId = customer.customerId;
-  //     } else {
-  //       manualCustomer = {
-  //         name: customer.name?.trim() || "",
-  //         phone: customer.phone?.trim() || "",
-  //         email: customer.email,
-  //         deliveryAddress: customer.deliveryAddress,
-  //       };
-  //     }
-
-  //     if (!customerId && !manualCustomer) {
-  //       return res.status(400).json({ error: "Customer info is required." });
-  //     }
-
-  //     const originalItems = order.items;
-  //     let needRestockAndDeduct = false;
-  //     for (const originalItem of originalItems) {
-  //       if (originalItem.trackQuantityEnabled) {
-  //         needRestockAndDeduct = true;
-  //         break;
-  //       }
-  //     }
-
-  //     const existingCustomer = await Customer.findById(customerId);
-  //     if (existingCustomer) {
-  //       existingCustomer.name = customer.name;
-  //       existingCustomer.email = customer.email;
-  //       existingCustomer.phone = customer.phone;
-  //       existingCustomer.deliveryAddress = customer.deliveryAddress;
-
-  //       await existingCustomer.save();
-  //     }
-
-  //     if (!needRestockAndDeduct) {
-  //       await Order.updateOne(
-  //         { _id: id },
-  //         {
-  //           customer: customerId,
-  //           manualCustomer,
-  //           items,
-  //           notes,
-  //           orderStatus,
-  //           pricing,
-  //         }
-  //       );
-  //     }
-  //     res.status(200).json({
-  //       msg: "Order updated successfully",
-  //       needRestockAndDeduct,
-  //     });
-  //   } catch (error) {
-  //     console.error("Order edit failed:", error);
-  //     res.status(500).json({ msg: error.message || "Internal server error" });
-  //   } finally {
-  //     if (req.lockKey) {
-  //       await redisClient.del(req.lockKey);
-  //     }
-  //   }
-  // },
   singleOrderEdit: async (req, res) => {
     const { id } = req.params;
     const storeId = req.storeId;
@@ -346,57 +229,6 @@ const OrdersController = {
       }
     }
   },
-  // updateOrder: async (req, res) => {
-  //   const orderId = req.params.id;
-  //   const newItems = req.body.items;
-  //   const notes = req.body.notes;
-  //   const pricing = req.body.pricing;
-  //   const session = await mongoose.startSession();
-  //   session.startTransaction();
-  //   try {
-  //     // 1. Get original order
-  //     const originalOrder = await Order.findById(orderId).lean();
-  //     if (!originalOrder) {
-  //       return res.status(400).json({ msg: "Order not found" });
-  //     }
-  //     let product;
-  //     // 2. Restore previous quantities
-  //     for (const item of originalOrder.items) {
-  //       product = await Product.updateOne(
-  //         { _id: item.productId, trackQuantityEnabled: true },
-  //         { $inc: { "inventory.quantity": item.quantity } },
-  //         { session }
-  //       );
-  //     }
-
-  //     // 3. Deduct new quantities
-  //     for (const item of newItems) {
-  //       product = await Product.updateOne(
-  //         { _id: item.productId, trackQuantityEnabled: true },
-  //         { $inc: { "inventory.quantity": -item.quantity } },
-  //         { session }
-  //       );
-  //     }
-  //     // 4. Update the order document
-  //     await Order.updateOne(
-  //       {
-  //         _id: orderId,
-  //       },
-  //       { $set: { items: newItems, notes, pricing } },
-  //       { session }
-  //     );
-
-  //     await clearProductCache();
-  //     await session.commitTransaction();
-  //     session.endSession();
-  //     return res.json({ success: true });
-  //   } catch (error) {
-  //     console.error("Order edit failed:", error);
-  //     res.status(500).json({ msg: error.message || "Internal server error" });
-  //     await session.abortTransaction();
-  //     session.endSession();
-  //   }
-  // },
   updateOrder: async (req, res) => {
     const orderId = req.params.id;
     const { items, notes, pricing } = req.body;
@@ -466,45 +298,30 @@ const OrdersController = {
     }
   },
   restock: async (req, res) => {
-    console.log("req.body", req.body);
-    const orderId = req.body._id;
+    const { _id: orderId, storeId } = req.body;
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const originalOrder = await Order.findById(orderId).lean();
+      const order = await orderService.restockOrder(orderId, storeId, session);
 
-      if (!originalOrder) {
+      if (!order) {
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json({ msg: "Order not found" });
+        return handler.notFoundError("Order not found");
       }
-
-      await Product.bulkWrite(
-        originalOrder.items.map((item) => ({
-          updateOne: {
-            filter: { _id: item.productId, trackQuantityEnabled: true },
-            update: { $inc: { "inventory.quantity": item.quantity } },
-          },
-        })),
-        { session }
-      );
-
-      await clearProductCache();
 
       await session.commitTransaction();
       session.endSession();
 
-      return res.status(200).json({ msg: "Inventory restocked successfully" });
+      return res.json({
+        msg: "Inventory restocked successfully",
+      });
     } catch (error) {
-      console.error("Order restock failed:", error);
-
       await session.abortTransaction();
       session.endSession();
-
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
+      return handler.handleError(res, error);
     }
   },
   refund: async (req, res) => {

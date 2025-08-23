@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { errorToast, successToast } from "@/helper/showToast";
+import { useSelector } from "react-redux";
 
 const updateBulkOrdersStatus = async (orderIds, status) => {
   const res = await axios.post("/api/orders/bulk-update", {
@@ -10,8 +11,8 @@ const updateBulkOrdersStatus = async (orderIds, status) => {
   return res.data;
 };
 
-const bulkDeleteOrders = async (orderIds) => {
-  const res = await axios.post("/api/orders/bulk-delete", {
+const bulkDeleteOrders = async (orderIds, storeId) => {
+  const res = await axios.post(`/api/stores/${storeId}/orders/bulk-delete`, {
     orderIds,
   });
   return res.data;
@@ -19,6 +20,8 @@ const bulkDeleteOrders = async (orderIds) => {
 
 const useOrderActions = (onSelectOrders) => {
   const queryClient = useQueryClient();
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ selectedOrders, activeStatus }) => {
@@ -50,7 +53,7 @@ const useOrderActions = (onSelectOrders) => {
     mutationFn: async ({ selectedOrders }) => {
       if (Array.isArray(selectedOrders) && selectedOrders.length > 0) {
         console.log("Using bulk delete for:", selectedOrders);
-        return await bulkDeleteOrders(selectedOrders);
+        return await bulkDeleteOrders(selectedOrders, storeId);
       } else {
         throw new Error("No valid order(s) provided");
       }

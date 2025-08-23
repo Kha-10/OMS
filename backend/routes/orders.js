@@ -30,9 +30,19 @@ router.post(
   OrdersController.updateOrder
 );
 router.post("/bulk-update", OrdersController.bulkUpdate);
-router.post("/bulk-delete", OrdersController.bulkDestroy);
+router.post(
+  "/bulk-delete",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.bulkDestroy
+);
 router.post("/deduct", OrdersController.deduct);
-router.post("/restock", OrdersController.restock);
+router.post(
+  "/restock",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.restock
+);
 router.post("/refund", OrdersController.refund);
 router.post("/pay", OrdersController.pay);
 router.post(
@@ -65,6 +75,8 @@ router.delete(
 router.delete(
   "/:id",
   // RoleMiddleware(["admin", "superadmin"]),
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.destroy
 );
 

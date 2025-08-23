@@ -155,6 +155,44 @@ const deductProductQuantity = async (productId, quantity, storeId, session) => {
   );
 };
 
+const removeOrder = async (orderId, storeId, session = null) => {
+  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    return null;
+  }
+
+  const query = Order.findOneAndDelete({ _id: orderId, storeId });
+  if (session) query.session(session);
+  return query;
+};
+
+const restockOrderItems = async (order, session) => {
+  if (!order || !order.items) return;
+
+  await Product.bulkWrite(
+    order.items.map((item) => ({
+      updateOne: {
+        filter: {
+          _id: item.productId,
+          storeId: order.storeId,
+          trackQuantityEnabled: true,
+        },
+        update: { $inc: { "inventory.quantity": item.quantity } },
+      },
+    })),
+    { session }
+  );
+};
+
+const bulkDeleteOrders = async (orderIds, storeId, session) => {
+  return Order.deleteMany({ _id: { $in: orderIds }, storeId }).session(session);
+};
+
+const findOrdersByIds = async (orderIds, storeId, session) => {
+  console.log("orderIds", orderIds);
+  console.log("storeId", storeId);
+  return Order.find({ _id: { $in: orderIds }, storeId }).session(session);
+};
+
 module.exports = {
   fetchOrders,
   createOrder,
@@ -166,4 +204,8 @@ module.exports = {
   updateOrder,
   restoreProductQuantity,
   deductProductQuantity,
+  removeOrder,
+  restockOrderItems,
+  bulkDeleteOrders,
+  findOrdersByIds,
 };

@@ -356,18 +356,6 @@ const updateOrderService = async (
   }
 };
 
-// Delete
-const removeOrder = async (orderId, session) => {
-  const order = await Order.findById(orderId).session(session);
-  if (!order) {
-    return null;
-  }
-
-  // await Order.findByIdAndDelete(orderId).session(session);
-  await Order.deleteOne({ _id: orderId }).session(session);
-  return order;
-};
-
 // Remove multiple orders
 const removeBulkOrders = async (orderIds, session) => {
   const orders = await Order.find({ _id: { $in: orderIds } }).session(session);
@@ -382,6 +370,90 @@ const removeBulkOrders = async (orderIds, session) => {
   return { success, failed, orders };
 };
 
+const removeOrder = async (orderId, storeId, session) => {
+  return OrderRepo.removeOrder(orderId, storeId, session);
+};
+
+const restockOrderItems = async (order, storeId, session) => {
+  for (const item of order.items) {
+    await ProductRepo.restoreProductQuantity(
+      item.product,
+      item.quantity,
+      storeId,
+      session
+    );
+  }
+};
+
+const deleteOrder = async (orderId, storeId, shouldRestock, session) => {
+  const order = await removeOrder(orderId, storeId, session);
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  if (shouldRestock) {
+    await restockOrderItems(order, storeId, session);
+  }
+
+  await clearCache(storeId, "products");
+  return order;
+};
+
+const restockOrder = async (orderId, storeId, session) => {
+  const order = await OrderRepo.findById(orderId, storeId, session);
+
+  if (!order) return null;
+
+  await OrderRepo.restockOrderItems(order, session);
+  await clearCache(storeId, "products");
+
+  return order;
+};
+
+const bulkDestroyOrders = async (orderIds, storeId) => {
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    throw new Error("empty orderIds");
+  }
+
+  const invalidIds = orderIds.filter(
+    (id) => !mongoose.Types.ObjectId.isValid(id)
+  );
+  if (invalidIds.length > 0) {
+    throw new Error(`Invalid order IDs: ${invalidIds.join(", ")}`);
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    let deletedCount = 0;
+
+    await session.withTransaction(async () => {
+      const orders = await OrderRepo.findOrdersByIds(
+        orderIds,
+        storeId,
+        session
+      );
+
+      if (orders.length === 0) {
+        throw new Error("No orders found");
+      }
+
+      const result = await OrderRepo.bulkDeleteOrders(
+        orderIds,
+        storeId,
+        session
+      );
+      deletedCount = result.deletedCount || 0;
+    });
+
+    session.endSession();
+    return { deletedCount };
+  } catch (err) {
+    session.endSession();
+    throw err;
+  }
+};
+
 module.exports = {
   findOrders,
   enhanceProductImages,
@@ -392,4 +464,7 @@ module.exports = {
   removeBulkOrders,
   editSingleOrder,
   updateOrderService,
+  deleteOrder,
+  restockOrder,
+  bulkDestroyOrders,
 };
