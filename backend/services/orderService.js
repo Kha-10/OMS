@@ -468,7 +468,11 @@ const deduct = async (orderId, storeId) => {
       throw handler.notFoundError("Order not found");
     }
 
-    await ProductRepo.bulkDeductInventory(originalOrder.items, session);
+    await ProductRepo.bulkDeductInventory(
+      originalOrder.items,
+      session,
+      storeId
+    );
 
     await clearProductCache();
 

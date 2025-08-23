@@ -116,11 +116,11 @@ const validateAndDecrementInventory = async (item, session, storeId) => {
   }
 };
 
-const bulkDeductInventory = async (items, session) => {
+const bulkDeductInventory = async (items, session, storeId) => {
   return Product.bulkWrite(
     items.map((item) => ({
       updateOne: {
-        filter: { _id: item.productId, trackQuantityEnabled: true },
+        filter: { _id: item.productId, storeId, trackQuantityEnabled: true },
         update: { $inc: { "inventory.quantity": -item.quantity } },
       },
     })),
