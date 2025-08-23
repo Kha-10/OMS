@@ -3,8 +3,8 @@ import axios from "@/helper/axios";
 import { errorToast, successToast } from "@/helper/showToast";
 import { useSelector } from "react-redux";
 
-const updateBulkOrdersStatus = async (orderIds, status) => {
-  const res = await axios.post("/api/orders/bulk-update", {
+const updateBulkOrdersStatus = async (orderIds, status, storeId) => {
+  const res = await axios.post(`/api/stores/${storeId}/orders/bulk-update`, {
     orderIds,
     ...status,
   });
@@ -27,7 +27,11 @@ const useOrderActions = (onSelectOrders) => {
     mutationFn: async ({ selectedOrders, activeStatus }) => {
       if (Array.isArray(selectedOrders) && selectedOrders.length > 0) {
         console.log("Using bulk update for:", selectedOrders);
-        return await updateBulkOrdersStatus(selectedOrders, activeStatus);
+        return await updateBulkOrdersStatus(
+          selectedOrders,
+          activeStatus,
+          storeId
+        );
       } else {
         throw new Error("No valid order(s) provided");
       }

@@ -6,6 +6,7 @@ const RoleMiddleware = require("../middlewares/roleMiddleware");
 const idempotencyCheck = require("../middlewares/idempotencyCheck");
 const lockOrderMiddleware = require("../middlewares/lockOrder");
 const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
+const Customercontroller = require("../controllers/CustomerController");
 
 const router = express.Router({ mergeParams: true });
 
@@ -29,7 +30,12 @@ router.post(
   RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.updateOrder
 );
-router.post("/bulk-update", OrdersController.bulkUpdate);
+router.post(
+  "/bulk-update",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.bulkUpdate
+);
 router.post(
   "/bulk-delete",
   checkMemberMiddleware,
@@ -52,13 +58,13 @@ router.post(
   "/refund",
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager", "staff"]),
-  OrdersController.refund
+  Customercontroller.refund
 );
 router.post(
   "/pay",
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager", "staff"]),
-  OrdersController.pay
+  Customercontroller.pay
 );
 router.post(
   "/",

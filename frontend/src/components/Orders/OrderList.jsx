@@ -22,6 +22,7 @@ import StatusBadge from "../StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
 import axios from "@/helper/axios";
 import { ToastContainer, toast } from "react-toastify";
+import { useSelector } from "react-redux";
 
 export default function OrderList({
   orders,
@@ -42,6 +43,10 @@ export default function OrderList({
   const navigate = useNavigate();
 
   const { deleteMutation } = useOrderActions(onSelectOrders);
+  
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
+
 
   const totalPages = Math.ceil(totalOrders / pageSize);
   const startIndex = (page - 1) * pageSize + 1;
@@ -114,7 +119,10 @@ export default function OrderList({
         if (confirmRestock) {
           console.log(`Called restock API for order ${order._id}`);
           try {
-            let res = await axios.post("/api/orders/restock", order);
+            let res = await axios.post(
+              `/api/stores/${storeId}/orders/restock`,
+              order
+            );
             if (res.status === 200) {
               toast.success("Successfully restocked", {
                 position: "top-center",

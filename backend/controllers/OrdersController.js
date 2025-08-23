@@ -101,7 +101,7 @@ const OrdersController = {
       return res.json({
         msg: "Order deleted successfully.",
       });
-    } catch (error) {
+    } catch (err) {
       await session.endSession();
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
@@ -119,7 +119,7 @@ const OrdersController = {
       return res.json({
         msg: `${result.deletedCount} orders successfully deleted`,
       });
-    } catch (error) {
+    } catch (err) {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
@@ -127,54 +127,98 @@ const OrdersController = {
     }
   },
   // Bulk order update
+  // bulkUpdate: async (req, res) => {
+  //   const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
+  //     req.body;
+  //   console.log("orderIds", orderIds);
+  //   console.log("orderStatus", orderStatus);
+
+  //   if (!Array.isArray(orderIds) || orderIds.length === 0) {
+  //     return res.status(400).json({ msg: "empty orderIds" });
+  //   }
+
+  //   const invalidIds = orderIds.filter(
+  //     (id) => !mongoose.Types.ObjectId.isValid(id)
+  //   );
+  //   if (invalidIds.length > 0) {
+  //     return res
+  //       .status(400)
+  //       .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
+  //   }
+
+  //   const session = await mongoose.startSession();
+
+  //   try {
+  //     await session.withTransaction(async () => {
+  //       const orders = await Order.find({ _id: { $in: orderIds } }).session(
+  //         session
+  //       );
+  //       console.log("orders", orders);
+  //       if (orders.length === 0) {
+  //         return res.status(404).json({ msg: `No orders found` });
+  //       }
+
+  //       await Order.updateMany(
+  //         { _id: { $in: orderIds } },
+  //         { $set: { orderStatus, paymentStatus, fulfillmentStatus } }
+  //       );
+  //     });
+
+  //     session.endSession();
+
+  //     return res.json({
+  //       message: `Order status has been Successfully updated.`,
+  //     });
+  //   } catch (error) {
+  //     console.log("error", error);
+  //     session.endSession();
+  //     return res
+  //       .status(500)
+  //       .json({ msg: error.message || "Internal server error" });
+  //   }
+  // },
   bulkUpdate: async (req, res) => {
     const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
       req.body;
-    console.log("orderIds", orderIds);
-    console.log("orderStatus", orderStatus);
+    const storeId = req.storeId;
+
+    if (!storeId) {
+      throw handler.invalidError("storeId is required");
+    }
 
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return res.status(400).json({ msg: "empty orderIds" });
+      throw handler.notFoundError("empty orderIds");
     }
 
     const invalidIds = orderIds.filter(
       (id) => !mongoose.Types.ObjectId.isValid(id)
     );
     if (invalidIds.length > 0) {
-      return res
-        .status(400)
-        .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
+      throw handler.invalidError(`Invalid order IDs: ${invalidIds.join(", ")}`);
     }
 
     const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
-      await session.withTransaction(async () => {
-        const orders = await Order.find({ _id: { $in: orderIds } }).session(
-          session
-        );
-        console.log("orders", orders);
-        if (orders.length === 0) {
-          return res.status(404).json({ msg: `No orders found` });
-        }
+      await orderService.bulkUpdate(
+        orderIds,
+        { orderStatus, paymentStatus, fulfillmentStatus },
+        storeId,
+        session
+      );
 
-        await Order.updateMany(
-          { _id: { $in: orderIds } },
-          { $set: { orderStatus, paymentStatus, fulfillmentStatus } }
-        );
-      });
-
+      await session.commitTransaction();
       session.endSession();
 
-      return res.json({
-        message: `Order status has been Successfully updated.`,
-      });
-    } catch (error) {
-      console.log("error", error);
+      return res.json({ msg: "Order status has been successfully updated" });
+    } catch (err) {
+      await session.abortTransaction();
       session.endSession();
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   loadOrderAsCart: async (req, res) => {
@@ -192,7 +236,7 @@ const OrdersController = {
       }
 
       return res.status(200).json({ cart });
-    } catch (error) {
+    } catch (err) {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
@@ -211,7 +255,7 @@ const OrdersController = {
       }
 
       return res.status(200).json({ msg: result.msg });
-    } catch (error) {
+    } catch (err) {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
@@ -227,7 +271,7 @@ const OrdersController = {
         msg: "Order updated successfully",
         needRestockAndDeduct: result.needRestockAndDeduct,
       });
-    } catch (error) {
+    } catch (err) {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
@@ -258,7 +302,7 @@ const OrdersController = {
       }
 
       return res.json({ success: true });
-    } catch (error) {
+    } catch (err) {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
@@ -356,96 +400,96 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
-  refund: async (req, res) => {
-    console.log("req.body", req.body);
-    const customerId = req.body.customer._id;
-    const totalSpent = req.body.pricing.finalTotal;
+  // refund: async (req, res) => {
+  //   console.log("req.body", req.body);
+  //   const customerId = req.body.customer._id;
+  //   const totalSpent = req.body.pricing.finalTotal;
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  //   const session = await mongoose.startSession();
+  //   session.startTransaction();
 
-    try {
-      const customer = await Customer.findById(customerId).lean();
+  //   try {
+  //     const customer = await Customer.findById(customerId).lean();
 
-      if (!customer) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ msg: "customer not found" });
-      }
+  //     if (!customer) {
+  //       await session.abortTransaction();
+  //       session.endSession();
+  //       return res.status(400).json({ msg: "customer not found" });
+  //     }
 
-      // ✅ Fix: Proper bulkWrite syntax as array of operations
-      await Customer.bulkWrite(
-        [
-          {
-            updateOne: {
-              filter: { _id: customerId },
-              update: { $inc: { totalSpent: -totalSpent } },
-            },
-          },
-        ],
-        { session }
-      );
+  //     // ✅ Fix: Proper bulkWrite syntax as array of operations
+  //     await Customer.bulkWrite(
+  //       [
+  //         {
+  //           updateOne: {
+  //             filter: { _id: customerId },
+  //             update: { $inc: { totalSpent: -totalSpent } },
+  //           },
+  //         },
+  //       ],
+  //       { session }
+  //     );
 
-      await session.commitTransaction();
-      session.endSession();
+  //     await session.commitTransaction();
+  //     session.endSession();
 
-      return res.status(200).json({ msg: "Refund processed successfully" });
-    } catch (error) {
-      console.error("Refund failed:", error);
+  //     return res.status(200).json({ msg: "Refund processed successfully" });
+  //   } catch (error) {
+  //     console.error("Refund failed:", error);
 
-      await session.abortTransaction();
-      session.endSession();
+  //     await session.abortTransaction();
+  //     session.endSession();
 
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
-    }
-  },
-  pay: async (req, res) => {
-    console.log("req.body", req.body);
-    const customerId = req.body.customer._id;
-    const totalSpent = req.body.pricing.finalTotal;
+  //     return res
+  //       .status(500)
+  //       .json({ msg: error.message || "Internal server error" });
+  //   }
+  // },
+  // pay: async (req, res) => {
+  //   console.log("req.body", req.body);
+  //   const customerId = req.body.customer._id;
+  //   const totalSpent = req.body.pricing.finalTotal;
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  //   const session = await mongoose.startSession();
+  //   session.startTransaction();
 
-    try {
-      const customer = await Customer.findById(customerId).lean();
+  //   try {
+  //     const customer = await Customer.findById(customerId).lean();
 
-      if (!customer) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ msg: "customer not found" });
-      }
+  //     if (!customer) {
+  //       await session.abortTransaction();
+  //       session.endSession();
+  //       return res.status(400).json({ msg: "customer not found" });
+  //     }
 
-      // ✅ Fix: Proper bulkWrite syntax as array of operations
-      await Customer.bulkWrite(
-        [
-          {
-            updateOne: {
-              filter: { _id: customerId },
-              update: { $inc: { totalSpent: totalSpent } },
-            },
-          },
-        ],
-        { session }
-      );
+  //     // ✅ Fix: Proper bulkWrite syntax as array of operations
+  //     await Customer.bulkWrite(
+  //       [
+  //         {
+  //           updateOne: {
+  //             filter: { _id: customerId },
+  //             update: { $inc: { totalSpent: totalSpent } },
+  //           },
+  //         },
+  //       ],
+  //       { session }
+  //     );
 
-      await session.commitTransaction();
-      session.endSession();
+  //     await session.commitTransaction();
+  //     session.endSession();
 
-      return res.status(200).json({ msg: "Pay processed successfully" });
-    } catch (error) {
-      console.error("Pay failed:", error);
+  //     return res.status(200).json({ msg: "Pay processed successfully" });
+  //   } catch (error) {
+  //     console.error("Pay failed:", error);
 
-      await session.abortTransaction();
-      session.endSession();
+  //     await session.abortTransaction();
+  //     session.endSession();
 
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
-    }
-  },
+  //     return res
+  //       .status(500)
+  //       .json({ msg: error.message || "Internal server error" });
+  //   }
+  // },
 };
 
 module.exports = OrdersController;

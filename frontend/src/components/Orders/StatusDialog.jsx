@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useOrderActions from "@/hooks/useOrderActions";
 import axios from "@/helper/axios";
 import { ToastContainer, toast } from "react-toastify";
+import { useSelector } from "react-redux";
 
 export default function StatusDialog({
   orders,
@@ -32,6 +33,9 @@ export default function StatusDialog({
   );
 
   const { updateStatusMutation } = useOrderActions(onSelectOrders);
+
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
 
   const orderStatusOptions = [
     {
@@ -138,7 +142,10 @@ export default function StatusDialog({
           if (confirmDeduct) {
             console.log(`Called deduct API for order ${order._id}`);
             try {
-              let res = await axios.post("/api/orders/deduct", order);
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/deduct`,
+                order
+              );
               if (res.status === 200) {
                 toast.success("Successfully deducted", {
                   position: "top-center",
@@ -166,7 +173,10 @@ export default function StatusDialog({
           if (confirmRestock) {
             console.log(`Called restock API for order ${order._id}`);
             try {
-              let res = await axios.post("/api/orders/restock", order);
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/restock`,
+                order
+              );
               if (res.status === 200) {
                 toast.success("Successfully restocked", {
                   position: "top-center",
@@ -198,7 +208,10 @@ export default function StatusDialog({
         console.log(`Called refund API for order ${order._id}`);
         // await callRefundAPI(order._id);
         try {
-          let res = await axios.post("/api/orders/refund", order);
+          let res = await axios.post(
+            `/api/stores/${storeId}/orders/refund`,
+            order
+          );
           if (res.status === 200) {
             toast.success("Successfully refunded", {
               position: "top-center",
@@ -222,7 +235,10 @@ export default function StatusDialog({
         console.log(`Called pay API for order ${order._id}`);
         // await callPayAPI(order._id);
         try {
-          let res = await axios.post("/api/orders/pay", order);
+          let res = await axios.post(
+            `/api/stores/${storeId}/orders/pay`,
+            order
+          );
           if (res.status === 200) {
             toast.success("Successfully Paid", {
               position: "top-center",
@@ -251,7 +267,10 @@ export default function StatusDialog({
           const confirmDeduct = confirm("Deduct the inventory?");
           if (confirmDeduct) {
             try {
-              let res = await axios.post("/api/orders/deduct", order);
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/deduct`,
+                order
+              );
               if (res.status === 200) {
                 toast.success("Successfully deducted", {
                   position: "top-center",

@@ -487,6 +487,17 @@ const deduct = async (orderId, storeId) => {
   }
 };
 
+const bulkUpdate = async (orderIds, updateData, storeId, session) => {
+  const orders = await OrderRepo.findOrdersByIds(orderIds, storeId, session);
+
+  if (!orders || orders.length === 0) {
+    throw new Error("No orders found");
+  }
+
+  await OrderRepo.bulkUpdate(orderIds, updateData, session, storeId);
+  return true;
+};
+
 module.exports = {
   findOrders,
   enhanceProductImages,
@@ -501,4 +512,5 @@ module.exports = {
   restockOrder,
   bulkDestroyOrders,
   deduct,
+  bulkUpdate,
 };

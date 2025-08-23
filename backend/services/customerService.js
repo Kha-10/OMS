@@ -1,44 +1,30 @@
 const mongoose = require("mongoose");
 const Customer = require("../models/Customer");
-
-const buildQuery = (queryParams) => {
-  let query = {};
-
-  if (queryParams.search) {
-    query.$or = [
-      { name: { $regex: queryParams.search, $options: "i" } },
-    ];
-  }
-
-  return query;
-};
-
-const buildSort = (sortBy, sortDirection) => {
-  const direction = sortDirection === "asc" ? 1 : -1;
-  return sortBy === "totalSpent"
-    ? { totalSpent: direction }
-    : { createdAt: direction };
-};
-
-const fetchCustomersFromDB = async (queryParams) => {
-  const query = buildQuery(queryParams);
-  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
-
-  const [customers, totalCustomers] = await Promise.all([
-    Customer.find(query).sort(sort).skip(skip).limit(limit),
-    Customer.countDocuments(query),
-  ]);
-
-  return { customers, totalCustomers, page, limit };
-};
+const CustomerRepo = require("../repo/customerRepo");
+const PaymentRepo = require("../repo/paymentRepo");
+const handler = require("../helpers/handler");
 
 const findCustomers = async (queryParams) => {
-  let categoriesData = await fetchCustomersFromDB(queryParams);
+  let customerData = await CustomerRepo.fetchCustomersFromDB(queryParams);
 
-  return categoriesData;
+  return customerData;
+};
+
+const storeCustomer = async (customerData, storeId, session = null) => {
+  const existingCustomer = await CustomerRepo.findByPhone(
+    customerData.phone,
+    storeId
+  );
+  if (existingCustomer) {
+    throw handler.conflictError("Customer already exists");
+  }
+
+  const customer = await CustomerRepo.createCustomer(
+    customerData,
+    storeId,
+    session
+  );
+  return customer;
 };
 
 // Delete
@@ -78,7 +64,63 @@ const deleteCustomers = async (ids) => {
   }
 };
 
+const pay = async (
+  customerId,
+  totalSpent,
+  storeId,
+  session,
+  method = "cash"
+) => {
+  if (customerId) {
+    const customer = await CustomerRepo.findById(customerId, storeId);
+    if (!customer) throw new Error("Customer not found");
+
+    await CustomerRepo.addPayment(customerId, totalSpent, session, storeId);
+  }
+
+  await PaymentRepo.recordPayment({
+    customerId,
+    storeId,
+    amount: totalSpent,
+    type: "PAYMENT",
+    method,
+    session,
+  });
+
+  return true;
+};
+
+const refund = async (
+  customerId,
+  amount,
+  storeId,
+  session,
+  method = "cash"
+) => {
+  if (customerId) {
+    const customer = await CustomerRepo.findById(customerId, storeId);
+    if (!customer) throw new Error("Customer not found");
+
+    await CustomerRepo.addRefund(customerId, amount, session, storeId);
+  }
+
+  // Always record refund
+  await PaymentRepo.recordPayment({
+    customerId,
+    storeId,
+    amount,
+    type: "REFUND",
+    method,
+    session,
+  });
+
+  return true;
+};
+
 module.exports = {
   findCustomers,
+  storeCustomer,
   deleteCustomers,
+  refund,
+  pay,
 };

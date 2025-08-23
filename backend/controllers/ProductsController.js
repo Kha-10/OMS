@@ -9,7 +9,7 @@ const clearOrderCache = require("../helpers/clearOrderCache");
 const ProductsController = {
   index: async (req, res) => {
     try {
-      const storeId = req.params.storeId; // multi-tenant
+      const storeId = req.params.storeId;
       const queryParams = req.query;
 
       let { products, totalProducts, allProductsCount, page, limit } =

@@ -96,7 +96,7 @@ app.use("/api/stores/:storeId/categories", authMiddleware, categoryRoutes);
 
 app.use("/api/stores/:storeId/cart", authMiddleware, cartRoutes);
 
-app.use("/api/customers", authMiddleware, customerRoutes);
+app.use("/api/stores/:storeId/customers", authMiddleware, customerRoutes);
 
 app.use("/api/stores/:storeId/orders", authMiddleware, orderRoutes);
 

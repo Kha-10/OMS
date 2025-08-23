@@ -191,6 +191,14 @@ const findOrdersByIds = async (orderIds, storeId, session) => {
   return Order.find({ _id: { $in: orderIds }, storeId }).session(session);
 };
 
+const bulkUpdate = async (orderIds, updateData, session, storeId) => {
+  return Order.updateMany(
+    { _id: { $in: orderIds }, storeId },
+    { $set: updateData },
+    { session }
+  );
+};
+
 module.exports = {
   fetchOrders,
   createOrder,
@@ -206,4 +214,5 @@ module.exports = {
   restockOrderItems,
   bulkDeleteOrders,
   findOrdersByIds,
+  bulkUpdate
 };

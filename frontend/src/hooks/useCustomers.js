@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/helper/axios";
+import { useSelector } from "react-redux";
 
 const fetchCustomers = async ({ queryKey }) => {
   const [, { id, page, pageSize, searchQuery, sortBy, sortDirection }] =
     queryKey;
 
   const url = id
-    ? `/api/customers/${id || ""}`
-    : `/api/customers?page=${page}&limit=${pageSize}${
+    ? `/api/stores/${storeId}/customers/${id || ""}`
+    : `/api/stores/${storeId}/customers?page=${page}&limit=${pageSize}${
         searchQuery ? `&search=${searchQuery}` : ""
       }${sortBy ? `&sortBy=${sortBy}` : ""}${
         sortDirection ? `&sortDirection=${sortDirection}` : ""
@@ -26,10 +27,15 @@ const useCustomers = ({
   sortBy,
   sortDirection,
 } = {}) => {
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
   return useQuery({
     queryKey: id
-      ? ["customers", { id }]
-      : ["customers", { page, pageSize, searchQuery, sortBy, sortDirection }],
+      ? ["customers", { id, storeId }]
+      : [
+          "customers",
+          { storeId, page, pageSize, searchQuery, sortBy, sortDirection },
+        ],
     queryFn: fetchCustomers,
     onError: (error) => {
       console.error("Error fetching products:", error);

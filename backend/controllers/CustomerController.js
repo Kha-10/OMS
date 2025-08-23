@@ -7,7 +7,10 @@ const clearProductCache = require("../helpers/clearProductCache");
 const Customercontroller = {
   index: async (req, res) => {
     try {
-      const queryParams = req.query;
+      const queryParams = {
+        ...req.query,
+        storeId: req.storeId,
+      };
       let { customers, totalCustomers, page, limit } =
         await customerService.findCustomers(queryParams);
 
@@ -31,26 +34,48 @@ const Customercontroller = {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
+  // store: async (req, res) => {
+  //   const { name, phone, email, deliveryAddress } = req.body;
+  //   console.log("req.body", req.body);
+  //   try {
+  //     const existingCustomer = await Customer.findOne({ phone });
+
+  //     if (existingCustomer) {
+  //       return res.status(409).json({ msg: "Customer already exists" });
+  //     }
+
+  //     const customer = await Customer.create({
+  //       name,
+  //       phone,
+  //       email,
+  //       deliveryAddress,
+  //     });
+  //     return res.json(customer);
+  //   } catch (error) {
+  //     console.error("Error creating category:", error);
+  //     return res.status(500).json({ msg: "internet server error" });
+  //   }
+  // },
   store: async (req, res) => {
     const { name, phone, email, deliveryAddress } = req.body;
-    console.log("req.body", req.body);
+    const storeId = req.storeId;
+
+    if (!storeId) {
+      throw handler.notFoundError("StoreId is required");
+    }
+
     try {
-      const existingCustomer = await Customer.findOne({ phone });
+      const customer = await customerService.storeCustomer(
+        { name, phone, email, deliveryAddress },
+        storeId
+      );
 
-      if (existingCustomer) {
-        return res.status(409).json({ msg: "Customer already exists" });
-      }
-
-      const customer = await Customer.create({
-        name,
-        phone,
-        email,
-        deliveryAddress,
-      });
       return res.json(customer);
     } catch (error) {
-      console.error("Error creating category:", error);
-      return res.status(500).json({ msg: "internet server error" });
+      console.error("Error creating customer:", error);
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+      return res.status(status).json({ msg: message });
     }
   },
   show: async (req, res) => {
@@ -131,6 +156,64 @@ const Customercontroller = {
       return res.json(customer);
     } catch (error) {
       return res.status(500).json({ msg: "Internet Server Error" });
+    }
+  },
+  refund: async (req, res) => {
+    const { customer, pricing, manualCustomer } = req.body;
+    const storeId = req.storeId;
+    let customerId = customer?._id || manualCustomer._id;
+    const totalSpent = pricing?.finalTotal;
+
+    if (!storeId) {
+      throw handler.invalidError("StoreId is required");
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      await customerService.refund(customerId, totalSpent, storeId, session);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.json({ msg: "Refund processed successfully" });
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
+    }
+  },
+  pay: async (req, res) => {
+    const { customer, pricing, manualCustomer } = req.body;
+    const storeId = req.storeId;
+    let customerId = customer?._id || manualCustomer._id;
+    const totalSpent = pricing?.finalTotal;
+
+    if (!storeId) {
+      throw handler.invalidError("StoreId is required");
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      await customerService.pay(customerId, totalSpent, storeId, session);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.json("Payment processed successfully");
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
 };

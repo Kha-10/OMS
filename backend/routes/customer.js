@@ -3,15 +3,21 @@ const CustomerController = require("../controllers/CustomerController");
 const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
+const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-router.get("", CustomerController.index);
+router.get(
+  "",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
+  CustomerController.index
+);
 
 router.post(
   "",
@@ -20,8 +26,9 @@ router.post(
     body("phone").notEmpty(),
     body("deliveryAddress").notEmpty(),
   ],
-  // RoleMiddleware(["tenant", "superadmin"]),
   handleErrorMessage,
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   CustomerController.store
 );
 
