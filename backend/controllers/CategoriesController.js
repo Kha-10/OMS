@@ -58,7 +58,7 @@ const CategoriesController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   show: async (req, res) => {
@@ -74,7 +74,7 @@ const CategoriesController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   destroy: async (req, res) => {
@@ -101,7 +101,7 @@ const CategoriesController = {
     try {
       const { ids } = req.body;
       const storeId = req.params.storeId;
-      console.log("bulkDestroy",ids);
+      console.log("bulkDestroy", ids);
       const result = await categoryService.deleteCategories(storeId, ids);
 
       if (result.invalidIds.length > 0) {
@@ -195,7 +195,7 @@ const CategoriesController = {
       const status = error.statusCode || 500;
       const message = error.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
 };

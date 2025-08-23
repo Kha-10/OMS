@@ -87,7 +87,7 @@ const OrdersController = {
     const storeId = req.storeId;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return handler.invalidError("Invalid id");
+      throw handler.invalidError("Invalid id");
     }
 
     const session = await mongoose.startSession();
@@ -106,7 +106,7 @@ const OrdersController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   bulkDestroy: async (req, res) => {
@@ -120,7 +120,10 @@ const OrdersController = {
         msg: `${result.deletedCount} orders successfully deleted`,
       });
     } catch (error) {
-      return res.status(400).json({ msg: error.message });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   // Bulk order update
@@ -180,18 +183,20 @@ const OrdersController = {
       const storeId = req.storeId;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid order ID" });
+        throw handler.invalidError("Invalid id");
       }
 
       const cart = await orderService.loadOrderAsCart(id, storeId);
       if (!cart) {
-        return res.status(404).json({ msg: "Order not found" });
+        throw handler.notFoundError("Order not found");
       }
 
       return res.status(200).json({ cart });
     } catch (error) {
-      console.error("Failed to load order as cart:", error);
-      return res.status(500).json({ msg: "Internal server error" });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   discardCart: async (req, res) => {
@@ -202,13 +207,15 @@ const OrdersController = {
       const result = await cartService.discardCart(cartId, storeId);
 
       if (!result.success) {
-        return res.status(404).json({ msg: result.msg });
+        throw handler.notFoundError(result.msg);
       }
 
       return res.status(200).json({ msg: result.msg });
     } catch (error) {
-      console.error("Failed to discard cart:", error);
-      return res.status(500).json({ msg: "Internal server error" });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   singleOrderEdit: async (req, res) => {
@@ -221,8 +228,10 @@ const OrdersController = {
         needRestockAndDeduct: result.needRestockAndDeduct,
       });
     } catch (error) {
-      console.error("Order edit failed:", error);
-      return res.status(400).json({ msg: error.message });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     } finally {
       if (req.lockKey) {
         await redisClient.del(req.lockKey);
@@ -244,15 +253,16 @@ const OrdersController = {
       );
 
       if (!result.success) {
-        return res.status(404).json({ msg: result.msg });
+        // return res.status(404).json({ msg: result.msg });
+        throw handler.notFoundError(result.msg);
       }
 
       return res.json({ success: true });
     } catch (error) {
-      console.error("Order update failed:", error);
-      return res
-        .status(500)
-        .json({ msg: error.message || "Internal server error" });
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   deduct: async (req, res) => {
@@ -321,7 +331,10 @@ const OrdersController = {
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      return handler.handleError(res, error);
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   refund: async (req, res) => {

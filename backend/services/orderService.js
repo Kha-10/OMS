@@ -12,6 +12,7 @@ const CounterRepo = require("../repo/counterRepo");
 const CustomerRepo = require("../repo/customerRepo");
 const CartRepo = require("../repo/cartRepo");
 const redisClient = require("../config/redisClient");
+const handler = require("../helpers/handler");
 
 // GET
 
@@ -46,7 +47,7 @@ const createOrder = async ({
   const isLocked = await redisClient.get(cartLockKey);
 
   if (isLocked) {
-    throw new Error("Cart is currently being processed");
+    throw handler.lockError("Cart is currently being processed");
   }
 
   // Lock the cart for 30 seconds
@@ -75,7 +76,7 @@ const createOrder = async ({
     }
 
     if (!customerId && !manualCustomer) {
-      throw new Error("Customer info is required.");
+      throw handler.invalidError("Customer info is required.");
     }
 
     // Generate sequential order + invoice numbers
@@ -243,7 +244,7 @@ const editSingleOrder = async (id, storeId, payload) => {
 
   // 1. Find Order
   const order = await OrderRepo.findById(id, storeId);
-  if (!order) throw new Error("Order not found");
+  if (!order) throw handler.notFoundError("Order not found");
 
   // 2. Handle Customer
   let customerId = null;
@@ -261,7 +262,7 @@ const editSingleOrder = async (id, storeId, payload) => {
   }
 
   if (!customerId && !manualCustomer) {
-    throw new Error("Customer info is required.");
+    throw handler.invalidError("Customer info is required.");
   }
 
   if (customerId) {
@@ -389,7 +390,7 @@ const deleteOrder = async (orderId, storeId, shouldRestock, session) => {
   const order = await removeOrder(orderId, storeId, session);
 
   if (!order) {
-    throw new Error("Order not found");
+    throw handler.notFoundError("Order not found");
   }
 
   if (shouldRestock) {
@@ -413,14 +414,14 @@ const restockOrder = async (orderId, storeId, session) => {
 
 const bulkDestroyOrders = async (orderIds, storeId) => {
   if (!Array.isArray(orderIds) || orderIds.length === 0) {
-    throw new Error("empty orderIds");
+    throw handler.invalidError("empty orderIds");
   }
 
   const invalidIds = orderIds.filter(
     (id) => !mongoose.Types.ObjectId.isValid(id)
   );
   if (invalidIds.length > 0) {
-    throw new Error(`Invalid order IDs: ${invalidIds.join(", ")}`);
+    throw handler.invalidError(`Invalid order IDs: ${invalidIds.join(", ")}`);
   }
 
   const session = await mongoose.startSession();
@@ -435,7 +436,7 @@ const bulkDestroyOrders = async (orderIds, storeId) => {
       );
 
       if (orders.length === 0) {
-        throw new Error("No orders found");
+        throw handler.notFoundError("No orders found");
       }
 
       const result = await OrderRepo.bulkDeleteOrders(

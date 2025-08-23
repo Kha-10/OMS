@@ -55,7 +55,7 @@ const ProductsController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   show: async (req, res) => {
@@ -73,15 +73,15 @@ const ProductsController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
       const storeId = req.params.storeId;
-      console.log("ids",ids);
-      console.log("storeId",storeId);
+      console.log("ids", ids);
+      console.log("storeId", storeId);
       const result = await productService.deleteProducts(storeId, ids);
 
       if (result.invalidIds.length > 0) {
@@ -138,7 +138,7 @@ const ProductsController = {
       const status = err.statusCode || 500;
       const message = err.message || "Internal server error";
 
-      res.status(status).json({ msg: message });
+      return res.status(status).json({ msg: message });
     }
   },
   updateVisibility: async (req, res) => {
