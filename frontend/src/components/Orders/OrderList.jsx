@@ -47,7 +47,6 @@ export default function OrderList({
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
 
-
   const totalPages = Math.ceil(totalOrders / pageSize);
   const startIndex = (page - 1) * pageSize + 1;
   const endIndex = Math.min(page * pageSize, totalOrders);

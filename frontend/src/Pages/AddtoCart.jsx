@@ -270,7 +270,7 @@ export default function AddToCart() {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { discardSuccess } = useSelector((state) => state.carts);
-  console.log("discardSuccess", discardSuccess);
+
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
 
@@ -509,7 +509,7 @@ export default function AddToCart() {
   const cartId = sessionStorage.getItem("adminCartId");
 
   const addToCart = async (formData) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || isSoldOut) return;
     formData.options.forEach((opt) => {
       if (
         Array.isArray(opt.answers) &&
@@ -3797,6 +3797,8 @@ export default function AddToCart() {
                               }`}
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
+                              {console.log(productsfromDb)}
+                              {console.log(isSoldOut)}
                               {isSoldOut
                                 ? "Sold Out"
                                 : `Add to Cart - $${currentItemPrice.toFixed(

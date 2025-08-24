@@ -69,7 +69,7 @@ const useOrderActions = (onSelectOrders) => {
         onSelectOrders([]);
         queryClient.invalidateQueries(["orders"]);
       } else {
-        successToast("Order deleted successfully");
+        successToast(`Successfully deleted order`);
       }
     },
     onError: (error) => {
