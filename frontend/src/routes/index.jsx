@@ -1,19 +1,16 @@
-import React, { useContext, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
-  useLocation,
 } from "react-router-dom";
 import TenantDashboard from "@/Pages/TenantDashboard";
 import Orders from "@/Pages/Orders.jsx";
-import NewOrders from "@/Pages/NewOrders";
 import ProductsPage from "@/Pages/ProductsPage";
 import CreateProduct from "@/Pages/CreateProduct";
 import SignInForm from "@/Pages/SignInForm.jsx";
 import CategoryPage from "@/Pages/Category";
 import NewCategory from "@/Pages/NewCategory";
-import { AuthContext } from "@/contexts/authContext.jsx";
 import Unauthorized from "@/components/Unauthorized";
 import ResetPassword from "@/Pages/ResetPassword";
 import ExpiredPage from "@/Pages/ExpiredPage";
@@ -24,13 +21,11 @@ import Layout from "@/Layout";
 import CustomerPage from "@/Pages/CustomerPage";
 import NewCustomer from "@/Pages/NewCustomer";
 import CustomerProfile from "@/Pages/CustomerProfile";
-import CheckoutForm from "@/Pages/CheckoutForm";
 import OrderDetailsPage from "@/Pages/OrderDetailsPage.jsx";
 import OrderReceipt from "@/Pages/OrderReceipt";
 import AddToCart from "@/Pages/AddtoCart";
 import NotFound from "@/Pages/NotFound";
 import Invoice from "@/Pages/Invoice";
-// import SignUpForm from "@/Pages/SignUpForm";
 import Onboarding from "@/Pages/Onboarding";
 
 function index() {

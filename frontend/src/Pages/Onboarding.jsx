@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  ArrowLeft,
   ChevronRight,
   ChevronDown,
   Eye,
@@ -46,8 +45,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerTenant } from "@/features/tenants/tenantSlice";
 import axios from "@/helper/axios";
-import { ToastContainer, toast } from "react-toastify";
 import LoadingButton from "@/components/LoadingButton";
+import { showToast } from "@/components/NewToaster";
 
 const step1Schema = z.object({
   username: z
@@ -121,17 +120,6 @@ const step4Schema = z
       }
     }
   });
-
-// const step5Schema = z
-//   .object({
-//     cash: z.boolean(),
-//     bank: z.boolean(),
-//     qr: z.boolean(),
-//   })
-//   .refine((data) => data.cash || data.bank || data.qr, {
-//     message: "At least one payment method must be selected",
-//     path: ["cash"], // or any path you want to show the error on
-//   });
 
 const step5Schema = z
   .object({
@@ -381,8 +369,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error?.response?.data?.message || error?.email?.msg, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
       setLoading(false);
     } finally {
@@ -403,8 +392,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error.response.data.message, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
       setLoading(false);
     } finally {
@@ -422,8 +412,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.response.data.message, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
     }
   };
@@ -453,8 +444,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error.response.data.msg, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
       setLoading(false);
     } finally {
@@ -481,17 +473,22 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
         if (file) {
           const formData = new FormData();
           formData.append("photo", file);
-          await axios.post(`/api/stores/${storeId}/products/${res.data._id}/upload`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          await axios.post(
+            `/api/stores/${storeId}/products/${res.data._id}/upload`,
+            formData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
         }
 
         nextStep();
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error?.response?.data?.message, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
       setLoading(false);
     } finally {
@@ -508,8 +505,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
       }
     } catch (error) {
       console.log("Error submitting the form", error);
-      toast.error(error.response.data.message, {
-        position: "top-center",
+      showToast({
+        title: error?.response?.data?.message || error?.email?.msg,
+        type: "error",
       });
       setLoading(false);
     } finally {
@@ -614,8 +612,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                 <Button
                   className="w-full rounded-xl bg-blue-500 text-white hover:bg-blue-600 py-3 text-base font-medium"
                   onClick={() => {
-                    navigate("/"),
-                    skipStep()
+                    navigate("/"), skipStep();
                   }}
                 >
                   Go to Dashboard
@@ -1630,7 +1627,6 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
           </div>
         )}
       </div>
-      <ToastContainer />
     </div>
   );
 }

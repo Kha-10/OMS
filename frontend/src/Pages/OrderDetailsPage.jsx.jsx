@@ -25,10 +25,10 @@ import { format, parseISO } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
 import axios from "@/helper/axios";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
+import { showToast } from "@/components/NewToaster";
 
 export default function OrderDetailsPage() {
   const { tenant } = useSelector((state) => state.tenants);
@@ -107,20 +107,16 @@ export default function OrderDetailsPage() {
               orders
             );
             if (res.status === 200) {
-              toast.success("Successfully deducted", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Successfully deducted the inventory",
+                type: "success",
               });
             }
           } catch (invErr) {
             console.error("Deduction failed:", invErr);
-            toast.error("Failed to deduct inventory", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+            showToast({
+              title: "Failed to deduct inventory",
+              type: "error",
             });
           }
         }
@@ -137,20 +133,16 @@ export default function OrderDetailsPage() {
               orders
             );
             if (res.status === 200) {
-              toast.success("Successfully restocked", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Successfully restocked inventory",
+                type: "success",
               });
             }
           } catch (invErr) {
             console.error("Restock failed:", invErr);
-            toast.error("Failed to restock inventory", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+            showToast({
+              title: "Failed to restock the inventory",
+              type: "error",
             });
           }
         }
@@ -171,20 +163,16 @@ export default function OrderDetailsPage() {
           orders
         );
         if (res.status === 200) {
-          toast.success("Successfully refunded", {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
+          showToast({
+            title: "Successfully refunded",
+            type: "success",
           });
         }
       } catch (invErr) {
         console.error("Restock failed:", invErr);
-        toast.error("Failed to refund", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: true,
+        showToast({
+          title: "Failed to refund",
+          type: "error",
         });
       }
     }
@@ -194,20 +182,16 @@ export default function OrderDetailsPage() {
       try {
         let res = await axios.post(`/api/stores/${storeId}/orders/pay`, orders);
         if (res.status === 200) {
-          toast.success("Successfully Paid", {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
+          showToast({
+            title: "Successfully Paid",
+            type: "success",
           });
         }
       } catch (invErr) {
         console.error("Restock failed:", invErr);
-        toast.error("Failed to pay", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: true,
+        showToast({
+          title: "Failed to pay",
+          type: "error",
         });
       }
     }
@@ -225,20 +209,16 @@ export default function OrderDetailsPage() {
               orders
             );
             if (res.status === 200) {
-              toast.success("Successfully deducted", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Successfully deducted",
+                type: "success",
               });
             }
           } catch (invErr) {
             console.error("Deduction failed:", invErr);
-            toast.error("Failed to deduct inventory", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+            showToast({
+              title: "Failed to deduct inventory",
+              type: "error",
             });
           }
         }
@@ -252,43 +232,51 @@ export default function OrderDetailsPage() {
     );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    deleteMutation.mutate(
-      { selectedOrders: [orders._id] },
-      {
-        onSuccess: () => {
-          navigate("/orders");
-        },
-      }
-    );
+    try {
+      // ✅ Await the delete mutation
+      await deleteMutation.mutateAsync(
+        { selectedOrders: [orders._id] },
+        {
+          onSuccess: () => {
+            navigate("/orders");
+          },
+        }
+      );
+      showToast({
+        title: "Successfully deleted orders",
+        type: "success",
+      });
 
-    // ✅ 1. Restock inventory if orderStatus becomes Cancelled
-    if (requiresInventoryAction) {
-      const confirmRestock = confirm("Restock the inventory?");
-      if (confirmRestock) {
-        console.log(`Called restock API for order ${orders._id}`);
-        try {
-          let res = await axios.post(
-            `/api/stores/${storeId}/orders/restock`,
-            orders
-          );
-          if (res.status === 200) {
-            toast.success("Successfully restocked", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+      // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+      if (requiresInventoryAction) {
+        const confirmRestock = confirm("Restock the inventory?");
+        if (confirmRestock) {
+          console.log(`Called restock API for order ${orders._id}`);
+          try {
+            let res = await axios.post(
+              `/api/stores/${storeId}/orders/restock`,
+              orders
+            );
+            if (res.status === 200) {
+              showToast({
+                title: "Successfully restocked",
+                type: "success",
+              });
+            }
+          } catch (invErr) {
+            console.error("Restock failed:", invErr);
+            showToast({
+              title: "Failed to restock inventory",
+              type: "error",
             });
           }
-        } catch (invErr) {
-          console.error("Restock failed:", invErr);
-          toast.error("Failed to restock inventory", {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
-          });
         }
       }
+    } catch (error) {
+      showToast({
+        title: "Failed to delete orders",
+        type: "error",
+      });
     }
   };
 
@@ -792,7 +780,6 @@ export default function OrderDetailsPage() {
           <MessageCircle className="h-6 w-6" />
         </Button>
       </div>
-      <ToastContainer />
     </div>
   );
 }

@@ -13,11 +13,11 @@ import {
 import { ArrowLeft, MapPin } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { DevTool } from "@hookform/devtools";
-import { ToastContainer, toast } from "react-toastify";
-import { showToast } from "@/helper/showToast";
 import axios from "@/helper/axios";
 import useCustomers from "@/hooks/useCustomers";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import NewToaster from "@/components/NewToaster";
 
 const NewCustomer = () => {
   const { id } = useParams();
@@ -69,23 +69,47 @@ const NewCustomer = () => {
   };
 
   const onSubmit = async (data) => {
-    const toastId = toast.loading(
-      id ? "Updating customer..." : "Adding customer...",
-      { position: "top-center" }
+    const loadingToastId = toast.custom(
+      () => (
+        <NewToaster
+          title={id ? "Updating category..." : "Adding category..."}
+          type="loading"
+        />
+      ),
+      {
+        duration: Infinity,
+      }
     );
     try {
       const res = await handleRequest(data);
 
       if (res.status === 200) {
         if (id) {
-          showToast(toastId, "Customer updated successfully");
+          toast.dismiss(loadingToastId);
+          toast.custom(() => (
+            <NewToaster title="Customer updated successfully" type="success" />
+          ));
         } else {
-          showToast(toastId, "Customer added successfully");
+          toast.dismiss(loadingToastId);
+          toast.custom(() => (
+            <NewToaster title="Customer added successfully" type="success" />
+          ));
         }
       }
     } catch (error) {
       console.error("Error handling customer:", error.response?.data.msg);
-      showToast(toastId, error.response?.data.msg, "error");
+      toast.dismiss(loadingToastId);
+      toast.custom(() => (
+        <NewToaster
+          title={
+            error.response?.data?.msg ||
+            error.response?.data?.error ||
+            error.message ||
+            "Something went wrong"
+          }
+          type="error"
+        />
+      ));
     }
   };
 
@@ -385,7 +409,6 @@ const NewCustomer = () => {
           </div>
         </main>
       </div>
-      <ToastContainer />
       {/* <DevTool control={form.control} /> */}
     </div>
   );

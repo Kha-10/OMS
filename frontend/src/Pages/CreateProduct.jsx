@@ -40,11 +40,10 @@ import { DevTool } from "@hookform/devtools";
 import axios from "@/helper/axios";
 import useCategories from "@/hooks/useCategories";
 import useCategoriesActions from "@/hooks/useCategoriesActions";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { showToast } from "@/helper/showToast";
 import useProducts from "@/hooks/useProducts";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import NewToaster from "@/components/NewToaster";
 
 export default function CreateProduct() {
   const [channel, setChannel] = useState("whatsapp");
@@ -280,10 +279,18 @@ export default function CreateProduct() {
   };
 
   const onSubmit = async (data) => {
-    const toastId = toast.loading(
-      id ? "Updating product..." : "Adding product...",
-      { position: "top-center" }
+    const loadingToastId = toast.custom(
+      () => (
+        <NewToaster
+          title={id ? "Updating product..." : "Adding product..."}
+          type="loading"
+        />
+      ),
+      {
+        duration: Infinity,
+      }
     );
+
     try {
       const newImages = images.filter((img) => img.file instanceof File); // Only new files
       const existingImageUrls = images.filter((img) => typeof img === "string"); // Keep only URLs
@@ -300,22 +307,43 @@ export default function CreateProduct() {
       } else {
         res = await axios.post(`/api/stores/${storeId}/products`, data);
       }
-      if (res.status === 200) {
-        showToast(
-          toastId,
-          id ? "Product updated successfully" : "Product added successfully"
-        );
-        onError("error");
-      }
+      // if (res.status === 200) {
+      //   showToast(
+      //     toastId,
+      //     id ? "Product updated successfully" : "Product added successfully"
+      //   );
+      //   onError("error");
+      // }
 
       // Step 2: Upload Photos (only if there are images)
       console.log("res", res);
-      if (newImages.length > 0) {
+      if (res.status === 200 && newImages.length > 0) {
         await uploadPhotos(res.data._id, newImages);
       }
+      toast.dismiss(loadingToastId);
+      toast.custom(() => (
+        <NewToaster
+          title={
+            id ? "Product updated successfully" : "Product added successfully"
+          }
+          type="success"
+        />
+      ));
+      onError("error");
     } catch (error) {
       console.error("Error handling product:", error.response?.data.msg);
-      showToast(toastId, error.response?.data.msg, "error");
+      toast.dismiss(loadingToastId);
+      toast.custom(() => (
+        <NewToaster
+          title={
+            error.response?.data?.msg ||
+            error.response?.data?.error ||
+            error.message ||
+            "Something went wrong"
+          }
+          type="error"
+        />
+      ));
     }
   };
 
@@ -1558,7 +1586,6 @@ export default function CreateProduct() {
         </form>
       </Form>
       {/* <DevTool control={form.control} /> */}
-      <ToastContainer />
     </div>
   );
 }

@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ToastContainer } from "react-toastify";
 import useOrders from "@/hooks/useOrders";
 import { useSearchParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -324,7 +323,6 @@ export default function OrdersPage() {
         onOpenChange={() => setShowStatus(false)}
       />
 
-      <ToastContainer />
     </div>
   );
 }

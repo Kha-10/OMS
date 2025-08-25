@@ -46,15 +46,12 @@ import debounce from "lodash.debounce";
 import useCustomers from "@/hooks/useCustomers";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
-// import { ToastContainer, toast } from "react-toastify";
-// import { showToast } from "@/helper/showToast";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
-import { showToast } from "@/components/NewToaster";
 import { toast } from "sonner";
 import NewToaster from "@/components/NewToaster";
 
@@ -817,7 +814,7 @@ export default function AddToCart() {
       });
     }
   };
-  
+
   const completeOrder = customerForm.handleSubmit(async (data) => {
     const customerData = customerForm.watch();
     const isEdit = Boolean(id);
@@ -4000,7 +3997,6 @@ export default function AddToCart() {
       </div>
       {/* <DevTool control={productForm.control} /> */}
       <DevTool control={customerForm.control} />
-      {/* <ToastContainer /> */}
     </div>
   );
 }

@@ -23,12 +23,12 @@ import { ArrowLeft } from "lucide-react";
 import ProductSearch from "@/components/ProductSearch";
 import { Link, useParams } from "react-router-dom";
 import { DevTool } from "@hookform/devtools";
-import { ToastContainer, toast } from "react-toastify";
-import { showToast } from "@/helper/showToast";
 import axios from "@/helper/axios";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import NewToaster from "@/components/NewToaster";
 
 export default function NewCategory() {
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -63,10 +63,18 @@ export default function NewCategory() {
   };
 
   const onSubmit = async (data) => {
-    const toastId = toast.loading(
-      id ? "Updating category..." : "Adding category...",
-      { position: "top-center" }
+    const loadingToastId = toast.custom(
+      () => (
+        <NewToaster
+          title={id ? "Updating category..." : "Adding category..."}
+          type="loading"
+        />
+      ),
+      {
+        duration: Infinity,
+      }
     );
+
     try {
       if (selectedProducts.length > 0) {
         data.products = selectedProducts;
@@ -75,15 +83,32 @@ export default function NewCategory() {
 
       if (res.status === 200) {
         if (id) {
-          showToast(toastId, "Category updated successfully");
+          toast.dismiss(loadingToastId);
+          toast.custom(() => (
+            <NewToaster title="Category updated successfully" type="success" />
+          ));
         } else {
-          showToast(toastId, "Category added successfully");
+          toast.dismiss(loadingToastId);
+          toast.custom(() => (
+            <NewToaster title="Category added successfully" type="success" />
+          ));
         }
       }
     } catch (error) {
       console.log(error);
       console.error("Error handling category:", error.response?.data.msg);
-      showToast(toastId, error.response?.data.msg, "error");
+      toast.dismiss(loadingToastId);
+      toast.custom(() => (
+        <NewToaster
+          title={
+            error.response?.data?.msg ||
+            error.response?.data?.error ||
+            error.message ||
+            "Something went wrong"
+          }
+          type="error"
+        />
+      ));
     }
   };
 
@@ -202,7 +227,6 @@ export default function NewCategory() {
           </div>
         </main>
       </div>
-      <ToastContainer />
       <DevTool control={form.control} />
     </div>
   );
