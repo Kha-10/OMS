@@ -101,7 +101,7 @@ const refund = async (
     const customer = await CustomerRepo.findById(customerId, storeId);
     if (!customer) throw new Error("Customer not found");
 
-    await CustomerRepo.addRefund(customerId, amount, session, storeId);
+    await CustomerRepo.refundCustomer(customerId, amount, session, storeId);
   }
 
   // Always record refund

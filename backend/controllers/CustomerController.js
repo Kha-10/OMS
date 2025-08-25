@@ -34,28 +34,6 @@ const Customercontroller = {
       return res.status(500).json({ msg: "internet server error" });
     }
   },
-  // store: async (req, res) => {
-  //   const { name, phone, email, deliveryAddress } = req.body;
-  //   console.log("req.body", req.body);
-  //   try {
-  //     const existingCustomer = await Customer.findOne({ phone });
-
-  //     if (existingCustomer) {
-  //       return res.status(409).json({ msg: "Customer already exists" });
-  //     }
-
-  //     const customer = await Customer.create({
-  //       name,
-  //       phone,
-  //       email,
-  //       deliveryAddress,
-  //     });
-  //     return res.json(customer);
-  //   } catch (error) {
-  //     console.error("Error creating category:", error);
-  //     return res.status(500).json({ msg: "internet server error" });
-  //   }
-  // },
   store: async (req, res) => {
     const { name, phone, email, deliveryAddress } = req.body;
     const storeId = req.storeId;

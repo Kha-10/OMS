@@ -15,7 +15,7 @@ const router = express.Router({ mergeParams: true });
 router.get(
   "",
   checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager"]),
+  RoleMiddleware(["owner", "manager", "staff"]),
   CustomerController.index
 );
 

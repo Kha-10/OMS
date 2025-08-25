@@ -3,7 +3,8 @@ import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
 
 const fetchCustomers = async ({ queryKey }) => {
-  const [, { id, page, pageSize, searchQuery, sortBy, sortDirection }] =
+  console.log("fetchCustomers");
+  const [, { id,storeId, page, pageSize, searchQuery, sortBy, sortDirection }] =
     queryKey;
 
   const url = id
@@ -15,6 +16,7 @@ const fetchCustomers = async ({ queryKey }) => {
       }`;
 
   const res = await axios.get(url);
+  console.log('res',res);
 
   return res.data;
 };

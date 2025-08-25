@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useForm, } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormField,
@@ -17,10 +17,12 @@ import { ToastContainer, toast } from "react-toastify";
 import { showToast } from "@/helper/showToast";
 import axios from "@/helper/axios";
 import useCustomers from "@/hooks/useCustomers";
+import { useSelector } from "react-redux";
 
 const NewCustomer = () => {
   const { id } = useParams();
-
+  const { stores } = useSelector((state) => state.stores);
+  const storeId = stores?.[0]?._id;
   const { data: customers = [], isPending: isLoading } = useCustomers({ id });
 
   const form = useForm({
@@ -36,16 +38,25 @@ const NewCustomer = () => {
       },
     },
   });
- 
+
   useEffect(() => {
     if (id) {
       form.setValue("name", customers.name);
       form.setValue("email", customers.email);
       form.setValue("phone", customers.phone);
-      form.setValue("deliveryAddress.street", customers?.deliveryAddress?.street);
-      form.setValue("deliveryAddress.apartment", customers?.deliveryAddress?.apartment);
+      form.setValue(
+        "deliveryAddress.street",
+        customers?.deliveryAddress?.street
+      );
+      form.setValue(
+        "deliveryAddress.apartment",
+        customers?.deliveryAddress?.apartment
+      );
       form.setValue("deliveryAddress.city", customers?.deliveryAddress?.city);
-      form.setValue("deliveryAddress.zipCode", customers?.deliveryAddress?.zipCode);
+      form.setValue(
+        "deliveryAddress.zipCode",
+        customers?.deliveryAddress?.zipCode
+      );
     }
   }, [customers]);
 
@@ -53,7 +64,7 @@ const NewCustomer = () => {
     if (id) {
       return await axios.patch(`/api/customers/${id}`, data);
     } else {
-      return await axios.post("/api/customers", data);
+      return await axios.post(`/api/stores/${storeId}/customers`, data);
     }
   };
 
