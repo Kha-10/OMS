@@ -371,8 +371,8 @@ const OrdersController = {
     }
   },
   restock: async (req, res) => {
-    const { _id: orderId, storeId } = req.body;
-
+    const { _id: orderId } = req.body;
+    const storeId = req.storeId;
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -391,7 +391,7 @@ const OrdersController = {
       return res.json({
         msg: "Inventory restocked successfully",
       });
-    } catch (error) {
+    } catch (err) {
       await session.abortTransaction();
       session.endSession();
       const status = err.statusCode || 500;

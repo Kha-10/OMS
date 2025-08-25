@@ -2839,7 +2839,7 @@ export default function AddToCart() {
                               disabled={isDisabled}
                               className={`w-full ${
                                 isSoldOut
-                                  ? "bg-blue-400"
+                                  ? "bg-blue-400 hover:bg-blue-300"
                                   : "bg-blue-600 hover:bg-blue-700"
                               }`}
                             >
@@ -2886,7 +2886,7 @@ export default function AddToCart() {
                       <div className="flex items-center justify-between">
                         <span className="font-medium">All Products</span>
                         <Badge variant="secondary" className="text-xs">
-                          {pagination.allProductsCount}
+                          {pagination.totalProducts}
                         </Badge>
                       </div>
                     </button>
@@ -3792,13 +3792,11 @@ export default function AddToCart() {
                               disabled={isDisabled}
                               className={`w-full ${
                                 isSoldOut
-                                  ? "bg-blue-400"
+                                  ? "bg-blue-400 hover:bg-blue-300"
                                   : "bg-blue-600 hover:bg-blue-700"
                               }`}
                             >
                               <ShoppingCart className="h-4 w-4 mr-2" />
-                              {console.log(productsfromDb)}
-                              {console.log(isSoldOut)}
                               {isSoldOut
                                 ? "Sold Out"
                                 : `Add to Cart - $${currentItemPrice.toFixed(

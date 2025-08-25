@@ -65,11 +65,11 @@ const useOrderActions = (onSelectOrders) => {
     onSuccess: (result, variables, context) => {
       if (variables?.isBulkDelete) {
         const count = variables.selectedOrders.length;
-        successToast(`Successfully deleted ${count} orders`);
+        // successToast(`Successfully deleted ${count} orders`);
         onSelectOrders([]);
         queryClient.invalidateQueries(["orders"]);
       } else {
-        successToast(`Successfully deleted order`);
+        // successToast(`Successfully deleted order`);
       }
     },
     onError: (error) => {
