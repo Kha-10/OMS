@@ -32,11 +32,17 @@ router.post(
   CustomerController.store
 );
 
-router.get("/:id", CustomerController.show);
+router.get(
+  "/:id",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  CustomerController.show
+);
 
-router.delete(
-  "/bulk",
-  // RoleMiddleware(["admin", "superadmin"]),
+router.post(
+  "/bulk-delete",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager"]),
   CustomerController.bulkDestroy
 );
 
@@ -48,7 +54,8 @@ router.delete(
 
 router.patch(
   "/:id",
-  // RoleMiddleware(["admin", "superadmin"]),
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
   CustomerController.update
 );
 

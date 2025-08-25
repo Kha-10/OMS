@@ -35,21 +35,57 @@ const fetchCustomersFromDB = async (queryParams) => {
   return { customers, totalCustomers, page, limit };
 };
 
-const updateCustomer = async (customerId, customerData, session, storeId) => {
-  const existingCustomer = await Customer.findOne({
-    _id: customerId,
-    storeId: storeId,
-  }).session(session);
+// const updateCustomer = async (
+//   customerId,
+//   customerData,
+//   session = null,
+//   storeId
+// ) => {
+//   const existingCustomer = await Customer.findOne({
+//     _id: customerId,
+//     storeId: storeId,
+//   }).session(session);
 
+//   if (!existingCustomer) return null;
+
+//   existingCustomer.name = customerData.name;
+//   existingCustomer.email = customerData.email;
+//   existingCustomer.phone = customerData.phone;
+//   existingCustomer.deliveryAddress = customerData.deliveryAddress;
+
+//   await existingCustomer.save({ session });
+//   return existingCustomer;
+// };
+const updateCustomer = async (
+  customerId,
+  customerData,
+  storeId,
+  session = null,
+) => {
+  let query = Customer.findOne({ _id: customerId, storeId });
+  if (session) query = query.session(session);
+
+  const existingCustomer = await query;
   if (!existingCustomer) return null;
 
+  // Update fields
   existingCustomer.name = customerData.name;
   existingCustomer.email = customerData.email;
   existingCustomer.phone = customerData.phone;
   existingCustomer.deliveryAddress = customerData.deliveryAddress;
 
-  await existingCustomer.save({ session });
+  // Save with session if provided
+  if (session) {
+    await existingCustomer.save({ session });
+  } else {
+    await existingCustomer.save();
+  }
+
   return existingCustomer;
+};
+
+module.exports = {
+  updateCustomer,
 };
 
 const findById = async (id, storeId, session = null) => {
@@ -76,6 +112,18 @@ const createCustomer = async (customerData, storeId, session) => {
   }
 
   return customer;
+};
+
+const deleteMany = async (ids, storeId) => {
+  const result = await Customer.deleteMany({ _id: { $in: ids }, storeId });
+  return result.deletedCount;
+};
+
+const findInvalidIds = async (ids, storeId) => {
+  const validIds = (await Customer.find({ _id: { $in: ids }, storeId })).map(
+    (c) => c._id.toString()
+  );
+  return ids.filter((id) => !validIds.includes(id));
 };
 
 const refundCustomer = async (customerId, amount, session, storeId) => {
@@ -111,6 +159,8 @@ module.exports = {
   findById,
   findByPhone,
   createCustomer,
+  deleteMany,
+  findInvalidIds,
   updateCustomer,
   refundCustomer,
   addPayment,

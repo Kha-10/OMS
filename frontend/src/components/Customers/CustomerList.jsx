@@ -20,6 +20,7 @@ import { Minus, Trash } from "lucide-react";
 import useCustomerActions from "@/hooks/useCustomerActions";
 // import InitialLoading from "../InitialLoading";
 import { Link } from "react-router-dom";
+import { showToast } from "@/components/NewToaster";
 
 export default function CustomerList({
   customers,
@@ -36,8 +37,12 @@ export default function CustomerList({
 }) {
   const { deleteMutation } = useCustomerActions(onSelectCustomers);
 
-  const handleDelete = () => {
-    deleteMutation.mutate(selectedCustomers);
+  const handleDelete = async () => {
+    await deleteMutation.mutateAsync({ selectedCustomers, isBulkDelete: true });
+    showToast({
+      title: "Successfully deleted customers",
+      type: "success",
+    });
   };
 
   const toggleSelectAll = () => {

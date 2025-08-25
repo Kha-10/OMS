@@ -3,10 +3,8 @@ import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
 
 const fetchCustomers = async ({ queryKey }) => {
-  console.log("fetchCustomers");
   const [, { id,storeId, page, pageSize, searchQuery, sortBy, sortDirection }] =
     queryKey;
-
   const url = id
     ? `/api/stores/${storeId}/customers/${id || ""}`
     : `/api/stores/${storeId}/customers?page=${page}&limit=${pageSize}${

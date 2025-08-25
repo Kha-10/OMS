@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useCustomers from "@/hooks/useCustomers";
+import useCustomerActions from "@/hooks/useCustomerActions";
+import { showToast } from "@/components/NewToaster";
 
 export default function CustomerProfile() {
   const [copied, setCopied] = useState(false);
@@ -45,6 +47,23 @@ export default function CustomerProfile() {
     };
   }, []);
 
+  const { deleteMutation } = useCustomerActions(null);
+
+  const handleDelete = async () => {
+    await deleteMutation.mutateAsync(
+      { selectedCustomers: [id] },
+      {
+        onSuccess: () => {
+          navigate("/customers");
+        },
+      }
+    );
+    showToast({
+      title: "Successfully deleted customers",
+      type: "success",
+    });
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 bg-white rounded-2xl">
       {/* Header */}
@@ -61,7 +80,7 @@ export default function CustomerProfile() {
           <h1 className="text-xl font-semibold">{data?.name}</h1>
         </div>
         <div className="flex gap-2">
-          <div className="relative" ref={whatsAppButtonRef}>
+          {/* <div className="relative" ref={whatsAppButtonRef}>
             <Button
               variant="outline"
               className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100"
@@ -92,10 +111,12 @@ export default function CustomerProfile() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
           <Button
             variant="outline"
             className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
+            type="button"
+            onClick={handleDelete}
           >
             Delete
           </Button>

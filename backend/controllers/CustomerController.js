@@ -35,7 +35,6 @@ const Customercontroller = {
     }
   },
   store: async (req, res) => {
-    console.log("HITTTTT");
     const { name, phone, email, deliveryAddress } = req.body;
     const storeId = req.storeId;
 
@@ -45,7 +44,7 @@ const Customercontroller = {
 
     try {
       const customer = await customerService.storeCustomer(
-        {name, phone, email, deliveryAddress },
+        { name, phone, email, deliveryAddress },
         storeId
       );
 
@@ -60,11 +59,13 @@ const Customercontroller = {
   show: async (req, res) => {
     try {
       let id = req.params.id;
+      let storeId = req.storeId;
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
       }
 
-      let customer = await Customer.findById(id);
+      let customer = await Customer.findOne({ storeId, _id: id });
+
       if (!customer) {
         return res.status(404).json({ msg: "Customer not found" });
       }
@@ -97,18 +98,20 @@ const Customercontroller = {
   bulkDestroy: async (req, res) => {
     try {
       const { ids } = req.body;
+      const storeId = req.storeId;
+      console.log("req.body", req.body);
+      if (!storeId) {
+        throw handler.invalidError("storeId is required");
+      }
 
-      const result = await customerService.deleteCustomers(ids);
+      const result = await customerService.deleteCustomers(ids, storeId);
 
       if (result.invalidIds.length > 0) {
-        return res.status(400).json({
-          msg: "Some IDs are invalid",
-          invalidIds: result.invalidIds,
-        });
+        throw handler.invalidError("Some IDs are invalid");
       }
 
       if (result.deletedCount === 0) {
-        return res.status(404).json({ msg: "No Customers found" });
+        throw handler.notFoundError("No Customers found");
       }
 
       return res.json({
@@ -116,25 +119,54 @@ const Customercontroller = {
         deletedCount: result.deletedCount,
       });
     } catch (error) {
-      console.error("Error in bulkDestroy:", error);
-      return res.status(500).json({ msg: "Internal server error" });
+      console.error("Error creating customer:", error);
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+      return res.status(status).json({ msg: message });
     }
   },
+  // update: async (req, res) => {
+  //   try {
+  //     let id = req.params.id;
+  //     if (!mongoose.Types.ObjectId.isValid(id)) {
+  //       return res.status(400).json({ msg: "Invalid id" });
+  //     }
+  //     let customer = await Customer.findByIdAndUpdate(id, {
+  //       ...req.body,
+  //     });
+  //     if (!customer) {
+  //       return res.status(404).json({ msg: "Customer not found" });
+  //     }
+  //     return res.json(customer);
+  //   } catch (error) {
+  //     return res.status(500).json({ msg: "Internet Server Error" });
+  //   }
+  // },
   update: async (req, res) => {
     try {
-      let id = req.params.id;
+      const id = req.params.id;
+      const storeId = req.storeId;
+
+      if (!storeId) {
+        throw handler.invalidError("storeId is required");
+      }
+
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid id" });
+        throw handler.invalidError("Invalid id");
       }
-      let customer = await Customer.findByIdAndUpdate(id, {
-        ...req.body,
-      });
-      if (!customer) {
-        return res.status(404).json({ msg: "Customer not found" });
-      }
-      return res.json(customer);
+
+      const updatedCustomer = await customerService.updateCustomer(
+        id,
+        req.body,
+        storeId
+      );
+
+      return res.json(updatedCustomer);
     } catch (error) {
-      return res.status(500).json({ msg: "Internet Server Error" });
+      console.error("Error creating customer:", error);
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+      return res.status(status).json({ msg: message });
     }
   },
   refund: async (req, res) => {

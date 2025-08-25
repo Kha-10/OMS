@@ -98,7 +98,7 @@ const createOrder = async ({
 
     // Update existing customer if needed
     if (customerId) {
-      await CustomerRepo.updateCustomer(customerId, customer, session, storeId);
+      await CustomerRepo.updateCustomer(customerId, customer, storeId, session);
     }
 
     const order = await OrderRepo.createOrder(
