@@ -179,6 +179,10 @@ const OrderSchema = new mongoose.Schema(
     },
     orderNumber: { type: String, required: true },
     invoiceNumber: { type: String, required: true },
+    deleted : {
+      type : Boolean,
+      default : false
+    },
     storeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Store",

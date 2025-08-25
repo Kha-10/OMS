@@ -95,10 +95,11 @@ export default function OrderList({
         selectedOrders.length > 1
           ? `${selectedOrders.length} orders`
           : "an order"
-      }`
+      }?`
     );
     if (!shouldDelete) return;
 
+    // Find orders that require restocking
     const ordersWithTracking = selectedOrders
       .map((id) => orders.find((order) => order._id === id))
       .filter((order) =>
@@ -107,9 +108,10 @@ export default function OrderList({
         )
       );
 
-    const requiresInventoryAction = ordersWithTracking.length > 0;
     try {
-      deleteMutation.mutate({ selectedOrders, isBulkDelete: true });
+      // ✅ Await the delete mutation
+      await deleteMutation.mutateAsync({ selectedOrders, isBulkDelete: true });
+
       toast.success("Successfully deleted orders", {
         position: "top-center",
         autoClose: 5000,
@@ -117,19 +119,20 @@ export default function OrderList({
         closeOnClick: true,
       });
 
-      for (const order of ordersWithTracking) {
-        // ✅ 1. Restock inventory if orderStatus becomes Cancelled
-        if (requiresInventoryAction) {
-          const confirmRestock = confirm("Restock the inventory?");
-          if (confirmRestock) {
-            console.log(`Called restock API for order ${order._id}`);
+      // Ask once for restocking
+      if (ordersWithTracking.length > 0) {
+        const confirmRestock = confirm(
+          "Restock the inventory for all deleted orders?"
+        );
+        if (confirmRestock) {
+          for (const order of ordersWithTracking) {
             try {
-              let res = await axios.post(
+              const res = await axios.post(
                 `/api/stores/${storeId}/orders/restock`,
                 order
               );
               if (res.status === 200) {
-                toast.success("Successfully restocked", {
+                toast.success(`Restocked order ${order._id}`, {
                   position: "top-center",
                   autoClose: 5000,
                   hideProgressBar: true,
@@ -138,7 +141,7 @@ export default function OrderList({
               }
             } catch (invErr) {
               console.error("Restock failed:", invErr);
-              toast.error("Failed to restock inventory", {
+              toast.error(`Failed to restock order ${order._id}`, {
                 position: "top-center",
                 autoClose: 5000,
                 hideProgressBar: true,

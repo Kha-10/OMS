@@ -17,6 +17,7 @@ const OrdersController = {
       const queryParams = {
         ...req.query,
         storeId: req.storeId,
+        deleted: false,
       };
 
       const { orders, totalOrders, page, limit } =

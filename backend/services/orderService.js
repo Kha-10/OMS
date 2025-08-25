@@ -403,7 +403,7 @@ const deleteOrder = async (orderId, storeId, shouldRestock, session) => {
 
 const restockOrder = async (orderId, storeId, session) => {
   const order = await OrderRepo.findById(orderId, storeId, session);
-
+  console.log("restockOrder",order);
   if (!order) return null;
 
   await OrderRepo.restockOrderItems(order, session);

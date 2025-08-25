@@ -71,6 +71,10 @@ const buildMatchStage = (queryParams) => {
     match.fulfillmentStatus = queryParams.fulfillmentStatus;
   }
 
+  if (queryParams.deleted !== undefined) {
+    match.deleted = queryParams.deleted;
+  }
+
   if (queryParams.search) {
     const regex = new RegExp(queryParams.search, "i");
     match.$or = [
@@ -89,12 +93,33 @@ const createOrder = async (orderData, session) => {
   return order;
 };
 
+// const findById = async (orderId, storeId, session = null) => {
+//   console.log("orderId",orderId);
+//   console.log("storeId",storeId);
+//   if (!mongoose.Types.ObjectId.isValid(orderId)) {
+//     return null;
+//   }
+
+//   const query = Order.findOne({ _id: orderId, storeId }).populate("customer");
+//   console.log("query",query);
+//   if (session) {
+//     query.session(session);
+//   }
+//   console.log("queryAns",query);
+//   return query;
+// };
 const findById = async (orderId, storeId, session = null) => {
-  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(orderId) ||
+    !mongoose.Types.ObjectId.isValid(storeId)
+  ) {
     return null;
   }
 
-  const query = Order.findOne({ _id: orderId, storeId }).populate("customer");
+  const query = Order.findOne({
+    _id: orderId,
+    storeId: storeId,
+  }).populate("customer");
 
   if (session) {
     query.session(session);
@@ -167,7 +192,7 @@ const removeOrder = async (orderId, storeId, session = null) => {
 
 const restockOrderItems = async (order, session) => {
   if (!order || !order.items) return;
-
+  console.log("order", order);
   await Product.bulkWrite(
     order.items.map((item) => ({
       updateOne: {
@@ -183,8 +208,16 @@ const restockOrderItems = async (order, session) => {
   );
 };
 
+// const bulkDeleteOrders = async (orderIds, storeId, session) => {
+//   return Order.deleteMany({ _id: { $in: orderIds }, storeId }).session(session);
+// };
+
 const bulkDeleteOrders = async (orderIds, storeId, session) => {
-  return Order.deleteMany({ _id: { $in: orderIds }, storeId }).session(session);
+  return Order.updateMany(
+    { _id: { $in: orderIds }, storeId },
+    { $set: { deleted: true } },
+    { session }
+  );
 };
 
 const findOrdersByIds = async (orderIds, storeId, session) => {
@@ -214,5 +247,5 @@ module.exports = {
   restockOrderItems,
   bulkDeleteOrders,
   findOrdersByIds,
-  bulkUpdate
+  bulkUpdate,
 };
