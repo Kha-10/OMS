@@ -1,4 +1,5 @@
 const Customer = require("../models/Customer");
+const Order = require("../models/Order");
 const mongoose = require("mongoose");
 const customerService = require("../services/customerService");
 const handler = require("../helpers/handler");
@@ -64,12 +65,103 @@ const Customercontroller = {
         return res.status(400).json({ msg: "Invalid id" });
       }
 
-      let customer = await Customer.findOne({ storeId, _id: id });
+      let customer = await Customer.findOne({ storeId, _id: id }).lean();
 
       if (!customer) {
         return res.status(404).json({ msg: "Customer not found" });
       }
-      return res.json(customer);
+
+      const result = await Order.aggregate([
+        {
+          $match: {
+            storeId: new mongoose.Types.ObjectId(storeId),
+            customer: new mongoose.Types.ObjectId(id),
+            deleted: false, // optional safeguard
+          },
+        },
+        {
+          $facet: {
+            summary: [
+              {
+                $group: {
+                  _id: "$customer",
+                  orderQuantity: { $sum: 1 },
+                  totalSpent: { $sum: "$pricing.finalTotal" },
+                  averageOrderValue: { $avg: "$pricing.finalTotal" },
+                  // accountsReceivable: {
+                  //   $sum: {
+                  //     $cond: [
+                  //       {
+                  //         $and: [
+                  //           { $eq: ["$paymentStatus", "Unpaid"] },
+                  //           { $ne: ["$orderStatus", "Pending"] },
+                  //         ],
+                  //       },
+                  //       "$pricing.finalTotal",
+                  //       0,
+                  //     ],
+                  //   },
+                  // },
+                },
+              },
+            ],
+            recentOrders: [
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              {
+                $project: {
+                  _id: 1,
+                  orderNumber: 1,
+                  orderStatus: 1,
+                  paymentStatus: 1,
+                  fulfillmentStatus: 1,
+                  "pricing.finalTotal": 1,
+                  createdAt: 1,
+                },
+              },
+            ],
+            accountsReceivable: [
+              {
+                $match: {
+                  paymentStatus: "Unpaid",
+                  orderStatus: { $ne: "Pending" },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  orderNumber: 1,
+                  orderStatus: 1,
+                  paymentStatus: 1,
+                  fulfillmentStatus: 1,
+                  "pricing.finalTotal": 1,
+                  createdAt: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            summary: {
+              $ifNull: [
+                { $arrayElemAt: ["$summary", 0] },
+                {
+                  orderQuantity: 0,
+                  totalSpent: 0,
+                  averageOrderValue: 0,
+                  accountsReceivable: 0,
+                },
+              ],
+            },
+            recentOrders: 1,
+            accountsReceivable: 1,
+          },
+        },
+      ]);
+
+      console.log("result", result);
+      return res.json({ ...customer, ...result[0] });
     } catch (error) {
       console.log("err", error);
       return res.status(500).json({ msg: "Internet Server Error" });

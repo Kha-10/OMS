@@ -35,27 +35,6 @@ const fetchCustomersFromDB = async (queryParams) => {
   return { customers, totalCustomers, page, limit };
 };
 
-// const updateCustomer = async (
-//   customerId,
-//   customerData,
-//   session = null,
-//   storeId
-// ) => {
-//   const existingCustomer = await Customer.findOne({
-//     _id: customerId,
-//     storeId: storeId,
-//   }).session(session);
-
-//   if (!existingCustomer) return null;
-
-//   existingCustomer.name = customerData.name;
-//   existingCustomer.email = customerData.email;
-//   existingCustomer.phone = customerData.phone;
-//   existingCustomer.deliveryAddress = customerData.deliveryAddress;
-
-//   await existingCustomer.save({ session });
-//   return existingCustomer;
-// };
 const updateCustomer = async (
   customerId,
   customerData,

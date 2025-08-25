@@ -1,11 +1,4 @@
-import {
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  Copy,
-  HelpCircle,
-  Zap,
-} from "lucide-react";
+import { ArrowLeft, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +7,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import useCustomers from "@/hooks/useCustomers";
 import useCustomerActions from "@/hooks/useCustomerActions";
 import { showToast } from "@/components/NewToaster";
+import { format } from "date-fns";
+import StatusBadge from "@/components/StatusBadge";
 
 export default function CustomerProfile() {
   const [copied, setCopied] = useState(false);
@@ -63,7 +58,7 @@ export default function CustomerProfile() {
       type: "success",
     });
   };
-
+  console.log(data);
   return (
     <div className="max-w-6xl mx-auto p-4 bg-white rounded-2xl">
       {/* Header */}
@@ -134,15 +129,21 @@ export default function CustomerProfile() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <div className="text-gray-500 mb-1">Orders</div>
-                <div className="text-2xl font-semibold">4</div>
+                <div className="text-2xl font-semibold">
+                  {data?.summary?.orderQuantity}
+                </div>
               </div>
               <div>
                 <div className="text-gray-500 mb-1">Average order value</div>
-                <div className="text-2xl font-semibold">$95.00</div>
+                <div className="text-2xl font-semibold">
+                  {data?.summary?.averageOrderValue}
+                </div>
               </div>
               <div>
                 <div className="text-gray-500 mb-1">Total spent</div>
-                <div className="text-2xl font-semibold">$380.00</div>
+                <div className="text-2xl font-semibold">
+                  {data?.summary?.totalSpent}
+                </div>
               </div>
             </div>
           </Card>
@@ -157,29 +158,20 @@ export default function CustomerProfile() {
             </div>
 
             <div className="divide-y">
-              <OrderItem
-                number="36"
-                status="COMPLETED"
-                statusColor="bg-green-100 text-green-700"
-                tags={[
-                  { label: "UNPAID", icon: "document" },
-                  { label: "OUT FOR DELIVERY", icon: "truck" },
-                ]}
-                date="28 Mar 2025 01:33"
-                amount="60.00"
-              />
-
-              <OrderItem
-                number="35"
-                status="CONFIRMED"
-                statusColor="bg-yellow-100 text-yellow-700"
-                tags={[
-                  { label: "UNPAID", icon: "document" },
-                  { label: "UNFULFILLED", icon: "package" },
-                ]}
-                date="28 Mar 2025 01:25"
-                amount="60.00"
-              />
+              {data?.accountsReceivable.length > 0 &&
+                data?.accountsReceivable.map((order) => (
+                  <OrderItem
+                    number={order.orderNumber}
+                    status={order.orderStatus}
+                    statusColor="bg-green-100 text-green-700"
+                    tags={[
+                      { label: "UNPAID", icon: "document" },
+                      { label: `${order.fulfillmentStatus}`, icon: "truck" },
+                    ]}
+                    date={order.createdAt}
+                    amount={order.pricing.finalTotal}
+                  />
+                ))}
             </div>
           </Card>
 
@@ -190,41 +182,20 @@ export default function CustomerProfile() {
             </div>
 
             <div className="divide-y">
-              <OrderItem
-                number="36"
-                status="COMPLETED"
-                statusColor="bg-green-100 text-green-700"
-                tags={[
-                  { label: "UNPAID", icon: "document" },
-                  { label: "OUT FOR DELIVERY", icon: "truck" },
-                ]}
-                date="28 Mar 2025 01:33"
-                amount="60.00"
-              />
-
-              <OrderItem
-                number="35"
-                status="CONFIRMED"
-                statusColor="bg-yellow-100 text-yellow-700"
-                tags={[
-                  { label: "UNPAID", icon: "document" },
-                  { label: "UNFULFILLED", icon: "package" },
-                ]}
-                date="28 Mar 2025 01:25"
-                amount="60.00"
-              />
-
-              <OrderItem
-                number="34"
-                status="COMPLETED"
-                statusColor="bg-green-100 text-green-700"
-                tags={[
-                  { label: "PAID", icon: "document" },
-                  { label: "FULFILLED", icon: "package" },
-                ]}
-                date="28 Mar 2025 00:52"
-                amount="210.00"
-              />
+              {data?.recentOrders.length > 0 &&
+                data?.recentOrders.map((order) => (
+                  <OrderItem
+                    number={order.orderNumber}
+                    status={order.orderStatus}
+                    statusColor="bg-green-100 text-green-700"
+                    tags={[
+                      { label: "UNPAID", icon: "document" },
+                      { label: `${order.fulfillmentStatus}`, icon: "truck" },
+                    ]}
+                    date={order.createdAt}
+                    amount={order.pricing.finalTotal}
+                  />
+                ))}
             </div>
           </Card>
         </div>
@@ -293,7 +264,7 @@ function OrderItem({ number, status, statusColor, tags, date, amount }) {
   return (
     <div className="p-4 flex items-center justify-between">
       <div>
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-4 mb-1">
           <span className="text-blue-600 font-medium">#{number}</span>
           <Badge className={`font-normal ${statusColor}`}>{status}</Badge>
 
@@ -412,11 +383,14 @@ function OrderItem({ number, status, statusColor, tags, date, amount }) {
                   />
                 </svg>
               )}
-              {tag.label}
+              <StatusBadge status={tag.label} />
             </div>
           ))}
         </div>
-        <div className="text-gray-500">{date}</div>
+        <div className="text-gray-500 mt-2 text-sm">
+          {" "}
+          {format(date, "dd MMMM yyyy, h:mm a")}
+        </div>
       </div>
       <div className="font-semibold">${amount}</div>
     </div>
