@@ -89,140 +89,158 @@ export default function OrderDetailsPage() {
     );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    updateStatusMutation.mutate({
-      selectedOrders: [orders._id],
-      activeStatus: status,
-    });
+    // updateStatusMutation.mutate({
+    //   selectedOrders: [orders._id],
+    //   activeStatus: status,
+    // });
+    try {
+      await updateStatusMutation.mutateAsync({
+        selectedOrders: [orders._id],
+        activeStatus: status,
+      });
+      showToast({
+        title: "Successfully updated orders",
+        type: "success",
+      });
 
-    const oldStatus = orders?.[key];
-    // ✅ 1. Restock inventory if orderStatus becomes Cancelled
-    if (key === "orderStatus" && oldStatus === "Cancelled") {
-      if (requiresInventoryAction) {
-        const confirmDeduct = confirm("Deduct the inventory?");
-        if (confirmDeduct) {
-          console.log(`Called deduct API for order ${orders._id}`);
-          try {
-            let res = await axios.post(
-              `/api/stores/${storeId}/orders/deduct`,
-              orders
-            );
-            if (res.status === 200) {
+      const oldStatus = orders?.[key];
+      // ✅ 1. Restock inventory if orderStatus becomes Cancelled
+      if (key === "orderStatus" && oldStatus === "Cancelled") {
+        if (requiresInventoryAction) {
+          const confirmDeduct = confirm("Deduct the inventory?");
+          if (confirmDeduct) {
+            console.log(`Called deduct API for order ${orders._id}`);
+            try {
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/deduct`,
+                orders
+              );
+              if (res.status === 200) {
+                showToast({
+                  title: "Successfully deducted the inventory",
+                  type: "success",
+                });
+              }
+            } catch (invErr) {
+              console.error("Deduction failed:", invErr);
               showToast({
-                title: "Successfully deducted the inventory",
-                type: "success",
+                title: "Failed to deduct inventory",
+                type: "error",
               });
             }
-          } catch (invErr) {
-            console.error("Deduction failed:", invErr);
-            showToast({
-              title: "Failed to deduct inventory",
-              type: "error",
-            });
           }
         }
       }
-    }
-    if (key === "orderStatus" && newStatus === "Cancelled") {
-      if (requiresInventoryAction) {
-        const confirmDeduct = confirm("Restock the inventory?");
-        if (confirmDeduct) {
-          console.log(`Called restock API for order ${orders._id}`);
-          try {
-            let res = await axios.post(
-              `/api/stores/${storeId}/orders/restock`,
-              orders
-            );
-            if (res.status === 200) {
+      if (key === "orderStatus" && newStatus === "Cancelled") {
+        if (requiresInventoryAction) {
+          const confirmDeduct = confirm("Restock the inventory?");
+          if (confirmDeduct) {
+            console.log(`Called restock API for order ${orders._id}`);
+            try {
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/restock`,
+                orders
+              );
+              if (res.status === 200) {
+                showToast({
+                  title: "Successfully restocked inventory",
+                  type: "success",
+                });
+              }
+            } catch (invErr) {
+              console.error("Restock failed:", invErr);
               showToast({
-                title: "Successfully restocked inventory",
-                type: "success",
+                title: "Failed to restock the inventory",
+                type: "error",
               });
             }
-          } catch (invErr) {
-            console.error("Restock failed:", invErr);
-            showToast({
-              title: "Failed to restock the inventory",
-              type: "error",
-            });
           }
         }
       }
-    }
 
-    // ✅ 2. Refund if value is Refunded
-    if (
-      key === "paymentStatus" &&
-      newStatus === "Refunded" &&
-      oldStatus === "Paid"
-    ) {
-      console.log(`Called refund API for order ${orders._id}`);
-      // await callRefundAPI(order._id);
-      try {
-        let res = await axios.post(
-          `/api/stores/${storeId}/orders/refund`,
-          orders
-        );
-        if (res.status === 200) {
+      // ✅ 2. Refund if value is Refunded
+      if (
+        key === "paymentStatus" &&
+        newStatus === "Refunded" &&
+        oldStatus === "Paid"
+      ) {
+        console.log(`Called refund API for order ${orders._id}`);
+        // await callRefundAPI(order._id);
+        try {
+          let res = await axios.post(
+            `/api/stores/${storeId}/orders/refund`,
+            orders
+          );
+          if (res.status === 200) {
+            showToast({
+              title: "Successfully refunded",
+              type: "success",
+            });
+          }
+        } catch (invErr) {
+          console.error("Restock failed:", invErr);
           showToast({
-            title: "Successfully refunded",
-            type: "success",
+            title: "Failed to refund",
+            type: "error",
           });
         }
-      } catch (invErr) {
-        console.error("Restock failed:", invErr);
-        showToast({
-          title: "Failed to refund",
-          type: "error",
-        });
       }
-    }
-    if (key === "paymentStatus" && newStatus === "Paid") {
-      console.log(`Called pay API for order ${orders._id}`);
-      // await callPayAPI(order._id);
-      try {
-        let res = await axios.post(`/api/stores/${storeId}/orders/pay`, orders);
-        if (res.status === 200) {
+      if (key === "paymentStatus" && newStatus === "Paid") {
+        console.log(`Called pay API for order ${orders._id}`);
+        // await callPayAPI(order._id);
+        try {
+          let res = await axios.post(
+            `/api/stores/${storeId}/orders/pay`,
+            orders
+          );
+          if (res.status === 200) {
+            showToast({
+              title: "Successfully Paid",
+              type: "success",
+            });
+          }
+        } catch (invErr) {
+          console.error("Restock failed:", invErr);
           showToast({
-            title: "Successfully Paid",
-            type: "success",
+            title: "Failed to pay",
+            type: "error",
           });
         }
-      } catch (invErr) {
-        console.error("Restock failed:", invErr);
-        showToast({
-          title: "Failed to pay",
-          type: "error",
-        });
       }
-    }
 
-    if (key === "orderStatus") {
-      const shouldDeduct =
-        !skipValues.includes(oldStatus) && !skipValues.includes(newStatus);
+      if (key === "orderStatus") {
+        const shouldDeduct =
+          !skipValues.includes(oldStatus) && !skipValues.includes(newStatus);
 
-      if (requiresInventoryAction && shouldDeduct) {
-        const confirmDeduct = confirm("Deduct the inventory?");
-        if (confirmDeduct) {
-          try {
-            let res = await axios.post(
-              `/api/stores/${storeId}/orders/deduct`,
-              orders
-            );
-            if (res.status === 200) {
+        if (requiresInventoryAction && shouldDeduct) {
+          const confirmDeduct = confirm("Deduct the inventory?");
+          if (confirmDeduct) {
+            try {
+              let res = await axios.post(
+                `/api/stores/${storeId}/orders/deduct`,
+                orders
+              );
+              if (res.status === 200) {
+                showToast({
+                  title: "Successfully deducted",
+                  type: "success",
+                });
+              }
+            } catch (invErr) {
+              console.error("Deduction failed:", invErr);
               showToast({
-                title: "Successfully deducted",
-                type: "success",
+                title: "Failed to deduct inventory",
+                type: "error",
               });
             }
-          } catch (invErr) {
-            console.error("Deduction failed:", invErr);
-            showToast({
-              title: "Failed to deduct inventory",
-              type: "error",
-            });
           }
         }
       }
+    } catch (error) {
+      showToast({
+        title: "Failed to update orders",
+        type: "error",
+      });
     }
   };
 
