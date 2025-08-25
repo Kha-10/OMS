@@ -19,8 +19,6 @@ router.post(
   "",
   [body("name").notEmpty(), body("phone").notEmpty()],
   handleErrorMessage,
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager"]),
   StoreController.store
 );
 

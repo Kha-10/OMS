@@ -35,6 +35,7 @@ const Customercontroller = {
     }
   },
   store: async (req, res) => {
+    console.log("HITTTTT");
     const { name, phone, email, deliveryAddress } = req.body;
     const storeId = req.storeId;
 
@@ -44,7 +45,7 @@ const Customercontroller = {
 
     try {
       const customer = await customerService.storeCustomer(
-        { name, phone, email, deliveryAddress },
+        {name, phone, email, deliveryAddress },
         storeId
       );
 

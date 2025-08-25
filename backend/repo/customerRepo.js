@@ -19,6 +19,9 @@ const buildSort = (sortBy, sortDirection) => {
 
 const fetchCustomersFromDB = async (queryParams) => {
   const query = buildQuery(queryParams);
+  if (queryParams.storeId) {
+    query.storeId = queryParams.storeId;
+  }
   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
   const page = Number(queryParams.page) || 1;
   const limit = Number(queryParams.limit) || 10;

@@ -24,6 +24,7 @@ const NewCustomer = () => {
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
   const { data: customers = [], isPending: isLoading } = useCustomers({ id });
+  console.log("storeId",storeId);
 
   const form = useForm({
     defaultValues: {
@@ -62,7 +63,7 @@ const NewCustomer = () => {
 
   const handleRequest = async (data) => {
     if (id) {
-      return await axios.patch(`/api/customers/${id}`, data);
+      return await axios.patch(`/api/stores/${storeId}/customers/${id}`, data);
     } else {
       return await axios.post(`/api/stores/${storeId}/customers`, data);
     }
