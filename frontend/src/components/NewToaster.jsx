@@ -17,6 +17,9 @@ export default function NewToaster({ id, title, type = "loading" }) {
       : type === "error"
       ? "text-red-400"
       : "text-gray-400";
+
+  const animate = type === "loading" ? "animate-spin" : "";
+
   // Icon based on type
   const Icon =
     type === "success" ? CircleCheck : type === "error" ? XCircle : Loader;
@@ -27,7 +30,7 @@ export default function NewToaster({ id, title, type = "loading" }) {
     >
       <div className="flex flex-1 items-center gap-3">
         {" "}
-        <Icon className={`h-6 w-6 ${iconColor}`} />
+        <Icon className={`h-6 w-6 ${iconColor} ${animate}`} />
         <div className="w-full">
           <p className="text-sm font-medium text-gray-900">{title}</p>
         </div>
@@ -43,6 +46,5 @@ export default function NewToaster({ id, title, type = "loading" }) {
 }
 
 export function showToast({ title, type = "loading" }) {
-  console.log("title",title);
   return toast.custom((id) => <NewToaster id={id} title={title} type={type} />);
 }

@@ -46,14 +46,17 @@ import debounce from "lodash.debounce";
 import useCustomers from "@/hooks/useCustomers";
 import useProducts from "@/hooks/useProducts";
 import useCategories from "@/hooks/useCategories";
-import { ToastContainer, toast } from "react-toastify";
-import { showToast } from "@/helper/showToast";
+// import { ToastContainer, toast } from "react-toastify";
+// import { showToast } from "@/helper/showToast";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import axios from "@/helper/axios";
 import { DevTool } from "@hookform/devtools";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
+import { showToast } from "@/components/NewToaster";
+import { toast } from "sonner";
+import NewToaster from "@/components/NewToaster";
 
 // Form schemas
 const customerFormSchema = z.object({
@@ -814,12 +817,23 @@ export default function AddToCart() {
       });
     }
   };
-
+  
   const completeOrder = customerForm.handleSubmit(async (data) => {
     const customerData = customerForm.watch();
     const isEdit = Boolean(id);
-    const toastId =
-      !isEdit && toast.loading("Adding order...", { position: "top-center" });
+
+    // Show loading toast
+    const loadingToastId = toast.custom(
+      () => (
+        <NewToaster
+          title={isEdit ? "Updating order..." : "Adding order..."}
+          type="loading"
+        />
+      ),
+      {
+        duration: Infinity, // Keep visible until we manually dismiss
+      }
+    );
 
     const orderData = {
       customer: customerData,
@@ -833,12 +847,13 @@ export default function AddToCart() {
       },
       notes: orderNotes,
     };
+
     try {
       const endpoint = isEdit
         ? `/api/stores/${storeId}/orders/${id}/edit`
         : `/api/stores/${storeId}/orders`;
-      const headers = {};
 
+      const headers = {};
       if (!isEdit) {
         headers["Idempotency-Key"] = getOrCreateIdempotencyKey();
       }
@@ -849,10 +864,26 @@ export default function AddToCart() {
         const { needRestockAndDeduct } = res.data;
 
         if (!needRestockAndDeduct) {
-          showToast(
-            toastId,
-            isEdit ? "Order updated successfully" : "Order added successfully"
-          );
+          // Dismiss loading toast and show success
+          toast.dismiss(loadingToastId);
+          toast.custom(() => (
+            <NewToaster
+              title={
+                isEdit
+                  ? "Order updated successfully"
+                  : "Order added successfully"
+              }
+              type="success"
+            />
+          ));
+
+          // Reset everything after successful order handling
+          clearAll();
+          setCart([]);
+          setPricingAdjustments([]);
+          setOrderNotes([]);
+          setCurrentView("products");
+          onComplete("complete");
         } else {
           const confirmRestockAndDeduct = confirm(
             "Some items track inventory and have increased quantity or are newly added. Do you want to deduct inventory?"
@@ -860,41 +891,79 @@ export default function AddToCart() {
 
           if (confirmRestockAndDeduct) {
             try {
-              let res = await axios.post(
+              let inventoryRes = await axios.post(
                 `/api/stores/${storeId}/orders/${id}/update`,
                 orderData
               );
-              if (res.status === 200) {
-                toast.success("Inventory updated", {
-                  position: "top-center",
-                });
+
+              if (inventoryRes.status === 200) {
+                // Dismiss loading toast and show success
+                toast.dismiss(loadingToastId);
+                toast.custom(() => (
+                  <NewToaster
+                    title="Order and inventory updated successfully"
+                    type="success"
+                  />
+                ));
+
+                // Reset everything after successful inventory update
+                clearAll();
+                setCart([]);
+                setPricingAdjustments([]);
+                setOrderNotes([]);
+                setCurrentView("products");
+                onComplete("complete");
               }
             } catch (invErr) {
               console.error("Inventory sync failed:", invErr);
-              toast.error("Failed to update inventory", {
-                position: "top-center",
-              });
+              // Dismiss loading toast and show error
+              toast.dismiss(loadingToastId);
+              toast.custom(() => (
+                <NewToaster
+                  title="Failed to update the inventory"
+                  type="error"
+                />
+              ));
             }
+          } else {
+            // Dismiss loading toast and show success even if inventory update is skipped
+            toast.dismiss(loadingToastId);
+            toast.custom(() => (
+              <NewToaster
+                title={
+                  isEdit
+                    ? "Order updated successfully"
+                    : "Order added successfully"
+                }
+                type="success"
+              />
+            ));
+
+            // Reset everything
+            clearAll();
+            setCart([]);
+            setPricingAdjustments([]);
+            setOrderNotes([]);
+            setCurrentView("products");
+            onComplete("complete");
           }
         }
-
-        // Reset everything after successful order handling
-        clearAll();
-        setCart([]);
-        setPricingAdjustments([]);
-        setOrderNotes([]);
-        setCurrentView("products");
-        onComplete("complete");
       }
     } catch (error) {
       console.error("Error handling order:", error);
-      showToast(
-        toastId,
-        error.response?.data?.msg ||
-          error.response?.data?.error ||
-          "Something went wrong",
-        "error"
-      );
+      // Dismiss loading toast and show error
+      toast.dismiss(loadingToastId);
+      toast.custom(() => (
+        <NewToaster
+          title={
+            error.response?.data?.msg ||
+            error.response?.data?.error ||
+            error.message ||
+            "Something went wrong"
+          }
+          type="error"
+        />
+      ));
     }
   });
 
@@ -3931,7 +4000,7 @@ export default function AddToCart() {
       </div>
       {/* <DevTool control={productForm.control} /> */}
       <DevTool control={customerForm.control} />
-      <ToastContainer />
+      {/* <ToastContainer /> */}
     </div>
   );
 }
