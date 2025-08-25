@@ -41,7 +41,7 @@ router.post(
 );
 
 router.post(
-  "",
+  "/",
   [
     body("name").notEmpty(),
     body("categories")

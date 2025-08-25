@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const sendEmail = require("../helpers/sendEmail");
+// const sendEmail = require("../helpers/sendEmail");
 const Verification = require("./Verification");
+const sendTemplateEmail = require("../helpers/sendEmail");
 
 const Schema = mongoose.Schema;
 
@@ -65,14 +66,20 @@ UserSchema.statics.register = async function (
     expiresAt: new Date(Date.now() + 15 * 60 * 1000),
   });
 
-  await sendEmail({
-    viewFilename: "email",
-    data: {
-      verificationCode,
-    },
-    from: "nexoraDigital@gmail.com",
-    to: user.email,
-  });
+  // await sendEmail({
+  //   viewFilename: "email",
+  //   data: {
+  //     verificationCode,
+  //   },
+  //   from: "nexoraDigital@gmail.com",
+  //   to: user.email,
+  // });
+
+  const variables = {
+    name: "Kyaw Htet",
+    code: verificationCode
+  };
+  await sendTemplateEmail(user.email,user.username, 7254278, variables);
 
   return user;
 };

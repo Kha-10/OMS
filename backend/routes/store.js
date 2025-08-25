@@ -32,13 +32,7 @@ router.post(
 );
 
 router.post(
-  "/:storeId/products",
-  // [
-  //   body("name").notEmpty(),
-  //   body("categories")
-  //     .isArray({ min: 1 })
-  //     .withMessage("Category must be a non-empty array"),
-  // ],
+  "/:storeId/products/onboarding",
   [
     body().custom((value) => {
       if (

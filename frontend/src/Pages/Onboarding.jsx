@@ -370,7 +370,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.message || error?.email?.msg,
+        title: error?.response?.data?.msg || error?.email?.msg,
         type: "error",
       });
       setLoading(false);
@@ -393,7 +393,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.message || error?.email?.msg,
+        title: error?.response?.data?.msg || error?.email?.msg,
         type: "error",
       });
       setLoading(false);
@@ -413,7 +413,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log(error);
       showToast({
-        title: error?.response?.data?.message || error?.email?.msg,
+        title: error?.response?.data?.msg || error?.email?.msg,
         type: "error",
       });
     }
@@ -445,7 +445,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.message || error?.email?.msg,
+        title: error?.response?.data?.msg || error?.email?.msg,
         type: "error",
       });
       setLoading(false);
@@ -467,7 +467,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
   const handleProductAddition = async (data) => {
     try {
       setLoading(true);
-      let res = await axios.post(`/api/stores/${storeId}/products`, data);
+      let res = await axios.post(`/api/stores/${storeId}/products/onboarding`, data);
       if (res.status === 200) {
         const file = productImageInputRef.current?.files?.[0];
         if (file) {
@@ -487,7 +487,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.message || error?.email?.msg,
+        title: error?.response?.data?.msg || error?.email?.msg,
         type: "error",
       });
       setLoading(false);
