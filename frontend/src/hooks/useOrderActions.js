@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
-import { errorToast, successToast } from "@/helper/showToast";
 import { useSelector } from "react-redux";
 
 const updateBulkOrdersStatus = async (orderIds, status, storeId) => {
@@ -41,15 +40,11 @@ const useOrderActions = (onSelectOrders) => {
 
       if (variables?.isBulkUpdate) {
         const count = variables.selectedOrders.length;
-        successToast(`Successfully updated ${count} orders`);
         onSelectOrders([]);
-      } else {
-        successToast("Order status updated successfully");
       }
     },
     onError: (error) => {
       console.error("Updating order status failed:", error);
-      errorToast(error.response.data.message);
     },
   });
 
@@ -65,16 +60,12 @@ const useOrderActions = (onSelectOrders) => {
     onSuccess: (result, variables, context) => {
       if (variables?.isBulkDelete) {
         const count = variables.selectedOrders.length;
-        // successToast(`Successfully deleted ${count} orders`);
         onSelectOrders([]);
         queryClient.invalidateQueries(["orders"]);
-      } else {
-        // successToast(`Successfully deleted order`);
       }
     },
     onError: (error) => {
       console.error("Deleting orders failed:", error);
-      errorToast(error.response.data.message);
     },
   });
   return { updateStatusMutation, deleteMutation };

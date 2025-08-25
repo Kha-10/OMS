@@ -21,8 +21,8 @@ import { useNavigate } from "react-router-dom";
 import StatusBadge from "../StatusBadge";
 import useOrderActions from "@/hooks/useOrderActions";
 import axios from "@/helper/axios";
-import { ToastContainer, toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import { showToast } from "@/components/NewToaster";
 
 export default function OrderList({
   orders,
@@ -111,12 +111,9 @@ export default function OrderList({
     try {
       // ✅ Await the delete mutation
       await deleteMutation.mutateAsync({ selectedOrders, isBulkDelete: true });
-
-      toast.success("Successfully deleted orders", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
+      showToast({
+        title: "Successfully deleted orders",
+        type: "success",
       });
 
       // Ask once for restocking
@@ -132,31 +129,25 @@ export default function OrderList({
                 order
               );
               if (res.status === 200) {
-                toast.success(`Restocked order ${order._id}`, {
-                  position: "top-center",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: true,
+                showToast({
+                  title: "Successfully restocked order",
+                  type: "success",
                 });
               }
             } catch (invErr) {
               console.error("Restock failed:", invErr);
-              toast.error(`Failed to restock order ${order._id}`, {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Failed to restock orders",
+                type: "error",
               });
             }
           }
         }
       }
     } catch (error) {
-      toast.error("Failed to delete orders", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
+      showToast({
+        title: "Failed to delete orders",
+        type: "error",
       });
     }
   };
@@ -346,7 +337,7 @@ export default function OrderList({
           <p className="text-sm text-gray-500">No Orders found.</p>
         )}
       </div>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
     </div>
   );
 }

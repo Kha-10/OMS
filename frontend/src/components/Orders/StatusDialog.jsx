@@ -11,8 +11,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useOrderActions from "@/hooks/useOrderActions";
 import axios from "@/helper/axios";
-import { ToastContainer, toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import { showToast } from "../NewToaster";
 
 export default function StatusDialog({
   orders,
@@ -147,20 +147,16 @@ export default function StatusDialog({
                 order
               );
               if (res.status === 200) {
-                toast.success("Successfully deducted", {
-                  position: "top-center",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: true,
+                showToast({
+                  title: "Successfully deducted the inventory",
+                  type: "success",
                 });
               }
             } catch (invErr) {
               console.error("Deduction failed:", invErr);
-              toast.error("Failed to deduct inventory", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Failed to deduct the inventory",
+                type: "error",
               });
             }
           }
@@ -178,20 +174,16 @@ export default function StatusDialog({
                 order
               );
               if (res.status === 200) {
-                toast.success("Successfully restocked", {
-                  position: "top-center",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: true,
+                showToast({
+                  title: "Successfully restocked the inventory",
+                  type: "success",
                 });
               }
             } catch (invErr) {
               console.error("Restock failed:", invErr);
-              toast.error("Failed to restock inventory", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Failed to restock inventory",
+                type: "error",
               });
             }
           }
@@ -213,20 +205,16 @@ export default function StatusDialog({
             order
           );
           if (res.status === 200) {
-            toast.success("Successfully refunded", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+            showToast({
+              title: "Successfully refunded",
+              type: "success",
             });
           }
         } catch (invErr) {
           console.error("Restock failed:", invErr);
-          toast.error("Failed to refund", {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
+          showToast({
+            title: "Failed to refund",
+            type: "error",
           });
         }
         continue; // Skip deduct if refunding
@@ -240,20 +228,16 @@ export default function StatusDialog({
             order
           );
           if (res.status === 200) {
-            toast.success("Successfully Paid", {
-              position: "top-center",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: true,
+            showToast({
+              title: "Successfully Paid",
+              type: "success",
             });
           }
         } catch (invErr) {
           console.error("Restock failed:", invErr);
-          toast.error("Failed to pay", {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
+          showToast({
+            title: "Failed to pay",
+            type: "error",
           });
         }
         continue; // Skip deduct if Paying
@@ -272,20 +256,16 @@ export default function StatusDialog({
                 order
               );
               if (res.status === 200) {
-                toast.success("Successfully deducted", {
-                  position: "top-center",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: true,
+                showToast({
+                  title: "Successfully deducted the inventory",
+                  type: "success",
                 });
               }
             } catch (invErr) {
               console.error("Deduction failed:", invErr);
-              toast.error("Failed to deduct inventory", {
-                position: "top-center",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: true,
+              showToast({
+                title: "Failed to deduct the inventory",
+                type: "error",
               });
             }
           }
@@ -438,7 +418,6 @@ export default function StatusDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
-      <ToastContainer />
     </Dialog>
   );
 }
