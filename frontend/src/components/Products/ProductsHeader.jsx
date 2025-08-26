@@ -1,8 +1,8 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 
-export default function ProductsHeader({header,buttonText,context}) {
+export default function ProductsHeader({ header, buttonText }) {
   const navigate = useNavigate();
   const [orderItems, setOrderItems] = useState([
     { name: "Burger", quantity: 1 },
@@ -18,6 +18,8 @@ export default function ProductsHeader({header,buttonText,context}) {
       .join("%0A"); // %0A is newline
     return `https://m.me/${restaurantPage}?text=Hello!%20I%20would%20like%20to%20order%3A%0A${orderMessage}`;
   };
+
+  const { storeId } = useParams();
 
   return (
     <div className="flex items-center justify-between">
@@ -60,7 +62,7 @@ export default function ProductsHeader({header,buttonText,context}) {
           Open Messenger
         </a> */}
         <button
-          onClick={() => navigate(`/${buttonText}/${context}`)}
+          onClick={() => navigate(`/stores/${storeId}/products/new`)}
           className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-700 rounded-lg font-medium"
         >
           Add {buttonText}

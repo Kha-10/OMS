@@ -366,7 +366,7 @@ export default function CreateProduct() {
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link
-            to={"/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc"}
+            to={`/stores/${storeId}/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc`}
             className="inline-flex items-center"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

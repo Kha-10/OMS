@@ -19,7 +19,7 @@ import { Button } from "../ui/button";
 import { Minus } from "lucide-react";
 import useProductActions from "@/hooks/useProductActions";
 // import InitialLoading from "../InitialLoading";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 export default function ProductsList({
   products,
@@ -82,6 +82,8 @@ export default function ProductsList({
   const totalProduct = Number(totalProducts) || 0;
   const startIndex = (pages - 1) * pageSizes + 1;
   const endIndex = Math.min(pages * pageSizes, totalProduct);
+
+  const { storeId } = useParams();
 
   if (isPending) {
     return <InitialLoading />;
@@ -170,7 +172,7 @@ export default function ProductsList({
                       onCheckedChange={() => toggleSelectProduct(product._id)}
                       className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
                     />
-                    <Link to={`/products/${product._id}`}>
+                    <Link to={`/stores/${storeId}/products/${product._id}`}>
                       <div className="flex items-center gap-3">
                         {product.imgUrls.length > 0 && (
                           <img
@@ -200,7 +202,9 @@ export default function ProductsList({
                             ))}
                             {product.trackQuantityEnabled && (
                               <p className="text-sm text-gray-400">
-                                {product.inventory.quantity > 0 ? `${product.inventory.quantity} left` : 'Sold out'}
+                                {product.inventory.quantity > 0
+                                  ? `${product.inventory.quantity} left`
+                                  : "Sold out"}
                               </p>
                             )}
                           </div>

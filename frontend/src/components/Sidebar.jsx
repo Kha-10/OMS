@@ -88,22 +88,21 @@ function NavItem({ item, onItemClick }) {
   let isActive = false;
 
   if (item.submenu) {
-    // Active if any submenu matches
-    isActive = item.submenu.some(
-      (subitem) => pathnameWithoutQuery === subitem.to.split("?")[0]
-    );
+    // Active if any submenu matches or if current path is under parent base path
+    isActive =
+      item.submenu.some((subitem) =>
+        pathnameWithoutQuery.startsWith(subitem.to.split("?")[0])
+      ) || pathnameWithoutQuery.startsWith(normalizedItemTo);
   } else {
     // Active only if exact match
     isActive = pathnameWithoutQuery === normalizedItemTo;
   }
 
-  const isInSubtree = isActive;
-
-  const [isOpen, setIsOpen] = useState(isInSubtree);
+  const [isOpen, setIsOpen] = useState(isActive);
 
   useEffect(() => {
-    setIsOpen(isInSubtree);
-  }, [isInSubtree]);
+    setIsOpen(isActive);
+  }, [isActive]);
 
   const handleClick = (to) => {
     navigate(to);
