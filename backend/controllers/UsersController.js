@@ -2,11 +2,16 @@ const User = require("../models/User");
 const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
 const crypto = require("crypto");
+const StoreMember = require("../models/StoreMember");
 
 const UserController = {
   me: async (req, res) => {
     try {
-      return res.json(req.user);
+      let store = await StoreMember.findOne({ user: req.user._id })
+        .populate("store")
+        .lean();
+      return res.json({ user: req.user, store });
+      // return res.json(req.user);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal Server error" });
@@ -22,7 +27,11 @@ const UserController = {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
       });
-      return res.json({ user, token });
+      let store = await StoreMember.findOne({ user: user._id })
+        .populate("store")
+        .lean();
+      return res.json({ user, store, token });
+      // return res.json({ user, token });
     } catch (e) {
       return res.status(400).json({ error: e.message });
     }
@@ -155,7 +164,10 @@ const UserController = {
           new: true,
         });
       }
-      return res.json(updatedUser);
+      let store = await StoreMember.findOne({ user: updatedUser._id })
+        .populate("store")
+        .lean();
+      return res.json({ user: updatedUser.toObject(), store });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Internal server error" });

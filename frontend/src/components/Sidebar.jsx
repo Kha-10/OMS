@@ -20,50 +20,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-const navigation = [
-  {
-    title: "Dashboard",
-    to: "/",
-    icon: <Home className="h-5 w-5" />,
-  },
-  {
-    title: "Orders",
-    to: "/orders",
-    icon: <ShoppingCart className="h-5 w-5" />,
-    submenu: [
-      { title: "All", to: "/orders" },
-      // { title: "Summary", to: "/orders/summary" },
-    ],
-  },
-  {
-    title: "Products",
-    to: "/products",
-    icon: <Package className="h-5 w-5" />,
-    submenu: [
-      {
-        title: "All",
-        to: "/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc",
-      },
-      { title: "Category", to: "/categories" },
-    ],
-  },
-  {
-    title: "Customers",
-    to: "/customers?page=1&limit=10&sortBy=createdAt&sortDirection=desc",
-    icon: <Users className="h-5 w-5" />,
-  },
-  // {
-  //   title: "Design",
-  //   to: "/design",
-  //   icon: <Paintbrush className="h-5 w-5" />,
-  // },
-  // {
-  //   title: "Settings",
-  //   to: "/settings",
-  //   icon: <Settings className="h-5 w-5" />,
-  // },
-];
+import { useSelector } from "react-redux";
 
 // const apps = [
 //   {
@@ -114,18 +71,31 @@ function NavItem({ item, onItemClick }) {
   const pathname = location.pathname;
   const navigate = useNavigate();
 
-  const normalizedItemTo = item.to.split("?")[0]; 
-  const isExactMatch = pathname === normalizedItemTo;
-  const isPathMatch =
-    pathname.startsWith(`${normalizedItemTo}/`) || isExactMatch;
-  const isSubmenuMatch =
-    item.submenu?.some(
-      (subitem) =>
-        pathname === subitem.to.split("?")[0] ||
-        pathname.startsWith(`${subitem.to.split("?")[0]}/`)
-    ) || false;
+  const normalizedItemTo = item.to.split("?")[0];
+  // const isExactMatch = pathname === normalizedItemTo;
+  // const isPathMatch =
+  //   pathname.startsWith(`${normalizedItemTo}/`) || isExactMatch;
+  // const isSubmenuMatch =
+  //   item.submenu?.some(
+  //     (subitem) =>
+  //       pathname === subitem.to.split("?")[0] ||
+  //       pathname.startsWith(`${subitem.to.split("?")[0]}/`)
+  //   ) || false;
 
-  const isActive = isExactMatch || isPathMatch || isSubmenuMatch;
+  // const isActive = isExactMatch || isPathMatch || isSubmenuMatch;
+  const pathnameWithoutQuery = pathname.split("?")[0];
+
+  let isActive = false;
+
+  if (item.submenu) {
+    // Active if any submenu matches
+    isActive = item.submenu.some(
+      (subitem) => pathnameWithoutQuery === subitem.to.split("?")[0]
+    );
+  } else {
+    // Active only if exact match
+    isActive = pathnameWithoutQuery === normalizedItemTo;
+  }
 
   const isInSubtree = isActive;
 
@@ -225,6 +195,54 @@ function NavItem({ item, onItemClick }) {
 }
 
 export function Sidebar({ open, onClose }) {
+  const { tenant } = useSelector((state) => state.tenants);
+
+  const navigation = [
+    {
+      title: "Dashboard",
+      to: `/stores/${tenant?.store?.store._id}`,
+      icon: <Home className="h-5 w-5" />,
+    },
+    {
+      title: "Orders",
+      to: `/stores/${tenant?.store?.store._id}/orders`,
+      icon: <ShoppingCart className="h-5 w-5" />,
+      submenu: [
+        { title: "All", to: `/stores/${tenant?.store?.store._id}/orders` },
+        // { title: "Summary", to: "/orders/summary" },
+      ],
+    },
+    {
+      title: "Products",
+      to: `/stores/${tenant?.store?.store._id}/products`,
+      icon: <Package className="h-5 w-5" />,
+      submenu: [
+        {
+          title: "All",
+          to: `/stores/${tenant?.store?.store._id}/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
+        },
+        {
+          title: "Category",
+          to: `/stores/${tenant?.store?.store._id}/categories`,
+        },
+      ],
+    },
+    {
+      title: "Customers",
+      to: `/stores/${tenant?.store?.store._id}/customers?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
+      icon: <Users className="h-5 w-5" />,
+    },
+    // {
+    //   title: "Design",
+    //   to: "/design",
+    //   icon: <Paintbrush className="h-5 w-5" />,
+    // },
+    // {
+    //   title: "Settings",
+    //   to: "/settings",
+    //   icon: <Settings className="h-5 w-5" />,
+    // },
+  ];
   return (
     <>
       {/* Backdrop */}

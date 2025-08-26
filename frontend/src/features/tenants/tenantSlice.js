@@ -24,8 +24,8 @@ export const loginTenant = createAsyncThunk(
       const response = await axios.post("/api/users/login", data, {
         withCredentials: true,
       });
-      console.log("login", response.data.user); // For debugging purposes
-      return response.data.user; // Assuming superAdmin info is returned
+      console.log("login", response.data); // For debugging purposes
+      return response.data; // Assuming superAdmin info is returned
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to log in");
     }
@@ -53,7 +53,8 @@ export const registerTenant = createAsyncThunk(
       const res = await axios.post("/api/users/register", data, {
         withCredentials: true, // if you need cookies sent
       });
-      return res.data.user;
+      console.log("register", res.data);
+      return res.data;
     } catch (error) {
       console.log("registerTenant", error);
       return rejectWithValue(

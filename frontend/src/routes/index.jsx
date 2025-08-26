@@ -33,17 +33,22 @@ function index() {
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
-
+  console.log("tenant", tenant);
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());
   }, [dispatch]);
 
   const router = createBrowserRouter([
-    // {
-    //   path: "/",
-    //   element: <Navigate to="/" />,
-    // },
+    {
+      path: "/",
+      element:
+        tenant && tenant.user ? (
+          <Navigate to={`/stores/${tenant?.store?.store._id}`} />
+        ) : (
+          <Navigate to="/" replace />
+        ),
+    },
     {
       path: "/reset-password/:token",
       element: <ResetPassword />,
@@ -61,7 +66,7 @@ function index() {
       element: <Layout />,
       children: [
         {
-          path: "/",
+          path: "/stores/:storeId",
           element: tenant ? (
             <TenantDashboard stores={stores} />
           ) : (
@@ -76,27 +81,27 @@ function index() {
         //   element: <ResetPassword/>,
         // },
         {
-          path: "/orders",
+          path: "/stores/:storeId/orders",
           element: tenant ? <Orders /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/addToCart",
+          path: "/stores/:storeId/addToCart",
           element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/addToCart/:id",
+          path: "/stores/:storeId/addToCart/:id",
           element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/orders/:id",
+          path: "/stores/:storeId/orders/:id",
           element: tenant ? <OrderDetailsPage /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/invoice/:id",
+          path: "/stores/:storeId/invoice/:id",
           element: tenant ? <Invoice /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/:tennantName/orders/:id",
+          path: "/stores/:storeId/:tennantName/orders/:id",
           element: tenant ? <OrderReceipt /> : <Navigate to={"/sign-in"} />,
         },
         // {
@@ -109,66 +114,66 @@ function index() {
         //   element: tenant ? <CheckoutForm /> : <Navigate to={"/sign-in"} />,
         // },
         {
-          path: "/products",
+          path: "/stores/:storeId/products",
           element: tenant ? <ProductsPage /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/products/new",
+          path: "/stores/:storeId/products/new",
           element: tenant ? <CreateProduct /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/products/:id",
+          path: "/stores/:storeId/products/:id",
           element: tenant ? <CreateProduct /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/categories",
+          path: "/stores/:storeId/categories",
           element: tenant ? <CategoryPage /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/categories/new",
+          path: "/stores/:storeId/categories/new",
           element: tenant ? <NewCategory /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/categories/:id",
+          path: "/stores/:storeId/categories/:id",
           element: tenant ? <NewCategory /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/customers",
+          path: "/stores/:storeId/customers",
           element: tenant ? <CustomerPage /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/customers/manage",
+          path: "/stores/:storeId/customers/manage",
           element: tenant ? <NewCustomer /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/customers/manage/:id",
+          path: "/stores/:storeId/customers/manage/:id",
           element: tenant ? <NewCustomer /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/customers/:id",
+          path: "/stores/:storeId/customers/:id",
           element: tenant ? <CustomerProfile /> : <Navigate to={"/sign-in"} />,
         },
         {
           path: "/sign-in",
           element:
-            !tenant || tenant?.onboarding_step < 7 ? (
+            !tenant || tenant?.user?.onboarding_step < 7 ? (
               <SignInForm />
             ) : (
-              <Navigate to={"/"} />
+              <Navigate to={`/stores/${tenant?.store?.store._id}`} />
             ),
         },
         {
           path: "/sign-up",
           element:
-            !tenant || tenant?.onboarding_step < 7 ? (
+            !tenant || tenant?.user?.onboarding_step < 7 ? (
               <Onboarding
-                stepper={tenant?.onboarding_step || 1}
-                dbEmail={tenant?.email || ""}
+                stepper={tenant?.user?.onboarding_step || 1}
+                dbEmail={tenant?.user?.email || ""}
                 dbStoreId={stores?.[0]?._id}
                 storeName={stores?.[0]?.name}
               />
             ) : (
-              <Navigate to={"/"} />
+              <Navigate to={`/stores/${tenant?.store?.store._id}`} />
             ),
         },
         {

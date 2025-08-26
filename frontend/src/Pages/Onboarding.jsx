@@ -462,12 +462,18 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     let res = await axios.patch("/api/users/skip");
     if (res.status === 200) {
       nextStep();
+      if (res.data?.user?.onboarding_step === 7) {
+        navigate(`/stores/${res.data?.store?.store._id}`);
+      }
     }
   };
   const handleProductAddition = async (data) => {
     try {
       setLoading(true);
-      let res = await axios.post(`/api/stores/${storeId}/products/onboarding`, data);
+      let res = await axios.post(
+        `/api/stores/${storeId}/products/onboarding`,
+        data
+      );
       if (res.status === 200) {
         const file = productImageInputRef.current?.files?.[0];
         if (file) {
@@ -612,7 +618,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                 <Button
                   className="w-full rounded-xl bg-blue-500 text-white hover:bg-blue-600 py-3 text-base font-medium"
                   onClick={() => {
-                    navigate("/"), skipStep();
+                    skipStep();
                   }}
                 >
                   Go to Dashboard

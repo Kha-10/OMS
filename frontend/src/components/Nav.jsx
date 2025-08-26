@@ -63,10 +63,10 @@ export default function Navbar({ onOpenSidebar }) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {tenant?.username}
+                      {tenant?.user?.username}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {tenant?.email}
+                      {tenant?.user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>

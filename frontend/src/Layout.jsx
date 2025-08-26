@@ -11,13 +11,13 @@ export default function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const pathnames = location.pathname;
-  const excludedPrefixes = ["/checkout", `/addToCart`];
+  const excludedPrefixes = ["/stores/checkout", `/stores/addToCart`];
   const includedPrefixes = [
-    "/",
-    `/orders`,
-    "/categories",
-    "/products",
-    "/customers",
+    "/stores",
+    `/store/orders`,
+    "/stores/categories",
+    "/stores/products",
+    "/stores/customers",
   ];
 
   const isExcluded = excludedPrefixes.some((prefix) =>
