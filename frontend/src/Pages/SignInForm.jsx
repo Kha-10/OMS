@@ -138,7 +138,7 @@ function SignInForm() {
 
               <div className="text-right">
                 <a href="/sign-up" className="text-sm text-blue-500">
-                  Already have an account?
+                  Don't have an account? Sign up
                 </a>
               </div>
 

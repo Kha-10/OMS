@@ -793,7 +793,12 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                       />
                     </div>
 
-                    <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
+                    <footer className="mt-auto flex items-center justify-between">
+                      <div className="text-center">
+                        <a href="/sign-in" className="text-sm text-blue-500">
+                          Already have an account? Sign in
+                        </a>
+                      </div>
                       <LoadingButton
                         loading={loading}
                         disabled={!isStep1Valid}
