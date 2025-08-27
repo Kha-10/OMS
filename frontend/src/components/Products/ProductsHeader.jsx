@@ -62,7 +62,7 @@ export default function ProductsHeader({ header, buttonText }) {
           Open Messenger
         </a> */}
         <button
-          onClick={() => navigate(`/stores/${storeId}/products/new`)}
+          onClick={() => navigate(`/stores/${storeId}/${buttonText}/new`)}
           className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-700 rounded-lg font-medium"
         >
           Add {buttonText}

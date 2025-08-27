@@ -72,29 +72,22 @@ function NavItem({ item, onItemClick }) {
   const navigate = useNavigate();
 
   const normalizedItemTo = item.to.split("?")[0];
-  // const isExactMatch = pathname === normalizedItemTo;
-  // const isPathMatch =
-  //   pathname.startsWith(`${normalizedItemTo}/`) || isExactMatch;
-  // const isSubmenuMatch =
-  //   item.submenu?.some(
-  //     (subitem) =>
-  //       pathname === subitem.to.split("?")[0] ||
-  //       pathname.startsWith(`${subitem.to.split("?")[0]}/`)
-  //   ) || false;
-
-  // const isActive = isExactMatch || isPathMatch || isSubmenuMatch;
   const pathnameWithoutQuery = pathname.split("?")[0];
+
+  const matchNested = item.title !== "Dashboard";
 
   let isActive = false;
 
   if (item.submenu) {
-    // Active if any submenu matches or if current path is under parent base path
     isActive =
       item.submenu.some((subitem) =>
         pathnameWithoutQuery.startsWith(subitem.to.split("?")[0])
-      ) || pathnameWithoutQuery.startsWith(normalizedItemTo);
+      ) || pathnameWithoutQuery.startsWith(normalizedItemTo + "/");
+  } else if (matchNested) {
+    isActive =
+      pathnameWithoutQuery === normalizedItemTo ||
+      pathnameWithoutQuery.startsWith(normalizedItemTo + "/");
   } else {
-    // Active only if exact match
     isActive = pathnameWithoutQuery === normalizedItemTo;
   }
 

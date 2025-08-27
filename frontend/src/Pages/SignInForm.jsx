@@ -114,6 +114,7 @@ function SignInForm() {
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
+                          autoComplete="off"
                           placeholder="Enter your password"
                           className="h-11 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 pr-10"
                           {...field}

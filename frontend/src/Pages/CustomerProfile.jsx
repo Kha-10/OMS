@@ -14,8 +14,9 @@ export default function CustomerProfile() {
   const [copied, setCopied] = useState(false);
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
   const whatsAppButtonRef = useRef(null);
-  const { id } = useParams();
-
+  const { id, storeId } = useParams();
+  console.log("storeId", storeId);
+  console.log("id", id);
   const { data } = useCustomers({ id });
   const navigate = useNavigate();
 
@@ -209,7 +210,9 @@ export default function CustomerProfile() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/customers/manage/${id}`)}
+                onClick={() =>
+                  navigate(`/stores/${storeId}/customers/new/${id}`)
+                }
               >
                 Edit
               </Button>

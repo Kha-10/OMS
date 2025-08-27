@@ -142,11 +142,11 @@ function index() {
           element: tenant ? <CustomerPage /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/stores/:storeId/customers/manage",
+          path: "/stores/:storeId/customers/new",
           element: tenant ? <NewCustomer /> : <Navigate to={"/sign-in"} />,
         },
         {
-          path: "/stores/:storeId/customers/manage/:id",
+          path: "/stores/:storeId/customers/new/:id",
           element: tenant ? <NewCustomer /> : <Navigate to={"/sign-in"} />,
         },
         {

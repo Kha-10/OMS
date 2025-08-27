@@ -83,7 +83,7 @@ export default function CustomerPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <ProductsHeader header="Customers" buttonText="customers" context="manage" />
+      <ProductsHeader header="Customers" buttonText="customers" />
 
       <ProductsToolbar
         text="Search by customer name"

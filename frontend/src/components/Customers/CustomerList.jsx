@@ -21,6 +21,7 @@ import useCustomerActions from "@/hooks/useCustomerActions";
 // import InitialLoading from "../InitialLoading";
 import { Link } from "react-router-dom";
 import { showToast } from "@/components/NewToaster";
+import { useParams } from "react-router-dom";
 
 export default function CustomerList({
   customers,
@@ -36,6 +37,7 @@ export default function CustomerList({
   onPageSizeChange,
 }) {
   const { deleteMutation } = useCustomerActions(onSelectCustomers);
+  const { storeId } = useParams();
 
   const handleDelete = async () => {
     await deleteMutation.mutateAsync({ selectedCustomers, isBulkDelete: true });
@@ -135,7 +137,7 @@ export default function CustomerList({
                       className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
                     />
                     <Link
-                      to={`/customers/${customer._id}`}
+                      to={`/stores/${storeId}/customers/${customer._id}`}
                       className="block w-full"
                     >
                       <p className="font-medium">{customer.name}</p>
