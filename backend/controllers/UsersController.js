@@ -26,6 +26,8 @@ const UserController = {
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
+        secure: true,
+        sameSite: "none",
       });
       let store = await StoreMember.findOne({ user: user._id })
         .populate("store")
@@ -50,6 +52,8 @@ const UserController = {
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
+        secure: true,
+        sameSite: "none",
       });
       return res.json({ user, token });
     } catch (e) {
