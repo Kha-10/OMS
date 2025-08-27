@@ -46,7 +46,7 @@ function index() {
         tenant && tenant.user ? (
           <Navigate to={`/stores/${tenant?.store?.store._id}`} />
         ) : (
-          <Navigate to="/" replace />
+          <Navigate to="/sign-in" replace />
         ),
     },
     {
