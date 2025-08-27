@@ -59,8 +59,10 @@ import NewToaster from "@/components/NewToaster";
 const customerFormSchema = z.object({
   customerId: z.string().optional(),
   name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().min(1, "Phone is required"),
+  // email: z.string().email("Valid email is required"),
+  // phone: z.string().min(1, "Phone is required"),
+  email: z.string().optional(),
+  phone: z.string().optional(),
   deliveryAddressId: z.string().optional(),
   newDeliveryAddress: z
     .object({
