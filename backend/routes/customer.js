@@ -4,7 +4,6 @@ const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
 const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
-const validatePhotoUpload = require("../middlewares/validatePhotoUpload");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
