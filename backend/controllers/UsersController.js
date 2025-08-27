@@ -27,7 +27,8 @@ const UserController = {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
         secure: true,
-        sameSite: "none",
+        sameSite: "lax",
+        domain: ".nexoradigital.site",
       });
       let store = await StoreMember.findOne({ user: user._id })
         .populate("store")
@@ -53,7 +54,8 @@ const UserController = {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
         secure: true,
-        sameSite: "none",
+        sameSite: "lax",
+        domain: ".nexoradigital.site",
       });
       return res.json({ user, token });
     } catch (e) {
