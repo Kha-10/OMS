@@ -11,11 +11,11 @@ const CustomerSchema = new schema(
     },
     phone: {
       type: String,
-      required: true,
+      // required: true,
     },
     email: {
       type: String,
-      required: true,
+      // required: true,
       unique: true,
     },
     deliveryAddress: {
