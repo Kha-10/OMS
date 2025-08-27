@@ -11,14 +11,14 @@ const findCustomers = async (queryParams) => {
 };
 
 const storeCustomer = async (customerData, storeId, session = null) => {
-  const existingCustomer = await CustomerRepo.findByPhone(
-    // customerData.phone,
-    storeId
-  );
+  // const existingCustomer = await CustomerRepo.findByPhone(
+  //   // customerData.phone,
+  //   storeId
+  // );
 
-  if (existingCustomer) {
-    throw handler.conflictError("Customer already exists");
-  }
+  // if (existingCustomer) {
+  //   throw handler.conflictError("Customer already exists");
+  // }
 
   const customer = await CustomerRepo.createCustomer(
     customerData,
