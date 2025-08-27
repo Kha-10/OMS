@@ -89,10 +89,6 @@ export default function OrderDetailsPage() {
     );
 
     const requiresInventoryAction = orderIdsWithTracking.length > 0;
-    // updateStatusMutation.mutate({
-    //   selectedOrders: [orders._id],
-    //   activeStatus: status,
-    // });
     try {
       await updateStatusMutation.mutateAsync({
         selectedOrders: [orders._id],
@@ -318,7 +314,7 @@ export default function OrderDetailsPage() {
                 variant="ghost"
                 className="rounded-r-none border border-gray-200"
                 type="button"
-                onClick={() => navigate(`/invoice/${id}`)}
+                onClick={() => navigate(`/stores/${storeId}/invoice/${id}`)}
               >
                 <Printer className="w-4 h-4" />
                 <span className="hidden md:inline ml-2">Print</span>
@@ -334,7 +330,9 @@ export default function OrderDetailsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="cursor-pointer">
                   <DropdownMenuItem
-                    onClick={() => navigate(`/addToCart/${orders._id}`)}
+                    onClick={() =>
+                      navigate(`/stores/${storeId}/addToCart/${orders._id}`)
+                    }
                     className="flex items-center w-full text-left text-sm text-gray-500 hover:bg-gray-100"
                   >
                     <Edit className="mr-3 h-4 w-4" />
@@ -420,7 +418,7 @@ export default function OrderDetailsPage() {
                           <div>
                             {item.productId && (
                               <Link
-                                to={`/products/${item.productId}`}
+                                to={`/stores/${storeId}/products/${item.productId}`}
                                 className="text-blue-500"
                               >
                                 {item.productName}{" "}

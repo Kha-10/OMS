@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SequenceDialog } from "./SequenceDialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Minus } from "lucide-react";
 import useCategories from "@/hooks/useCategories";
 import useCategoriesActions from "@/hooks/useCategoriesActions";
@@ -53,6 +53,7 @@ export default function CategoryPage() {
   const [isSequenceDialogOpen, setIsSequenceDialogOpen] = useState(false);
 
   const navigate = useNavigate();
+  const { storeId } = useParams();
 
   // Filter categories based on active tab
   const filteredCategories = categories.filter(
@@ -101,7 +102,7 @@ export default function CategoryPage() {
   };
 
   const createCategory = () => {
-    navigate("/categories/new");
+    navigate(`/stores/${storeId}/categories/new`);
   };
 
   const handlePageChange = (newPage) => {
@@ -230,7 +231,7 @@ export default function CategoryPage() {
                   onCheckedChange={() => toggleSelectProduct(category._id)}
                   className="border-gray-300 peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                 />
-                <Link to={`/categories/${category._id}`}>
+                <Link to={`/stores/${storeId}/categories/${category._id}`}>
                   <label
                     htmlFor={category._id}
                     className="flex items-center gap-1 cursor-pointer"

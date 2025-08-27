@@ -209,7 +209,7 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <OrdersHeader />
+      <OrdersHeader storeId={storeId} />
 
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-2xl">
@@ -322,7 +322,6 @@ export default function OrdersPage() {
         open={showStatus}
         onOpenChange={() => setShowStatus(false)}
       />
-
     </div>
   );
 }

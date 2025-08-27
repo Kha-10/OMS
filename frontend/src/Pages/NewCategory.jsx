@@ -119,7 +119,10 @@ export default function NewCategory() {
         <main className="p-6">
           <div className="mx-auto max-w-2xl space-y-6">
             <div className="flex items-center space-x-2">
-              <Link to={"/categories"} className="inline-flex items-center">
+              <Link
+                to={`/stores/${storeId}/categories`}
+                className="inline-flex items-center"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Category
               </Link>

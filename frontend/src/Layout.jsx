@@ -11,25 +11,27 @@ export default function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const pathnames = location.pathname;
-  const excludedPrefixes = ["/stores/checkout", `/stores/addToCart`];
+
+  const excludedPatterns = [
+    /^\/stores\/[^/]+\/addToCart(\/.*)?$/,
+    /^\/stores\/[^/]+\/invoice\/[^/]+$/,
+  ];
+
   const includedPrefixes = [
     "/stores",
-    `/store/orders`,
+    "/store/orders",
     "/stores/categories",
     "/stores/products",
     "/stores/customers",
   ];
 
-  const isExcluded = excludedPrefixes.some((prefix) =>
-    pathnames.startsWith(prefix)
+  const isExcluded = excludedPatterns.some((pattern) =>
+    pattern.test(pathnames)
   );
 
-  const isIncluded = includedPrefixes.some((prefix) => {
-    if (prefix === "/") {
-      return pathnames === "/";
-    }
-    return pathnames.startsWith(prefix);
-  });
+  const isIncluded = includedPrefixes.some((prefix) =>
+    pathnames.startsWith(prefix)
+  );
 
   const showSidebar = !isExcluded && isIncluded;
 

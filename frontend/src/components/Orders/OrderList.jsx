@@ -153,7 +153,7 @@ export default function OrderList({
   };
 
   const navigateToOrder = (id) => {
-    navigate(`/orders/${id}`);
+    navigate(`/stores/${storeId}/orders/${id}`);
   };
 
   return (
