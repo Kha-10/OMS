@@ -26,6 +26,8 @@ import { loginTenant } from "@/features/tenants/tenantSlice";
 import { fetchStore } from "@/features/stores/storeSlice";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import logo from "@/assets/logo2.png";
+import { toast } from "sonner";
+import NewToaster from "@/components/NewToaster";
 
 const formSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -58,6 +60,7 @@ function SignInForm() {
       navigate("/");
     } catch (error) {
       console.log("Error during login:", error);
+      toast.custom(() => <NewToaster title={error} type="error" />);
     }
   };
 
