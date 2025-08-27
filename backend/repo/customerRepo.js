@@ -39,7 +39,7 @@ const updateCustomer = async (
   customerId,
   customerData,
   storeId,
-  session = null,
+  session = null
 ) => {
   let query = Customer.findOne({ _id: customerId, storeId });
   if (session) query = query.session(session);
@@ -73,8 +73,12 @@ const findById = async (id, storeId, session = null) => {
   return query;
 };
 
-const findByPhone = async (phone, storeId) => {
-  return Customer.findOne({ phone, storeId });
+// const findByPhone = async (phone, storeId) => {
+//   return Customer.findOne({ phone, storeId });
+// };
+
+const findByPhone = async (storeId) => {
+  return Customer.findOne({ storeId });
 };
 
 const createCustomer = async (customerData, storeId, session) => {

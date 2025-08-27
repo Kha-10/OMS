@@ -196,9 +196,9 @@ const NewCustomer = () => {
                           <Input
                             placeholder="+1 (555) 123-4567"
                             {...field}
-                            {...form.register("phone", {
-                              required: "Phone number is required",
-                            })}
+                            // {...form.register("phone", {
+                            //   required: "Phone number is required",
+                            // })}
                             onChange={(e) => {
                               field.onChange(e);
                               // handleManualCustomerInput();

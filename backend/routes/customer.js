@@ -22,7 +22,7 @@ router.post(
   "",
   [
     body("name").notEmpty(),
-    body("phone").notEmpty(),
+    // body("phone").notEmpty(),
     body("deliveryAddress").notEmpty(),
   ],
   handleErrorMessage,

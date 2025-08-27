@@ -12,7 +12,7 @@ const findCustomers = async (queryParams) => {
 
 const storeCustomer = async (customerData, storeId, session = null) => {
   const existingCustomer = await CustomerRepo.findByPhone(
-    customerData.phone,
+    // customerData.phone,
     storeId
   );
 
