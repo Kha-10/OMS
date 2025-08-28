@@ -88,7 +88,7 @@ const findProducts = async (storeId, queryParams) => {
   );
 
   // Cache result
-  await redisClient.set(cacheKey, JSON.stringify(result), { EX: 3600 });
+  await redisClient.set(cacheKey, result, { EX: 3600 });
   return result;
 };
 const enhanceProductImages = (input) => {
