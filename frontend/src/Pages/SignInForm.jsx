@@ -159,7 +159,7 @@ function SignInForm() {
               </Button>
 
               <div className="text-center">
-                <a href="#" className="text-sm text-blue-500">
+                <a href="/reset-password" className="text-sm text-blue-500">
                   Forgot your password?
                 </a>
               </div>

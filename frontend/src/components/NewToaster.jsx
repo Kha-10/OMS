@@ -1,14 +1,21 @@
 import React from "react";
 import { toast } from "sonner";
-import { CircleCheck, Loader, XIcon, XCircle } from "lucide-react";
+import { CircleCheck, Loader, XIcon, XCircle, InfoIcon } from "lucide-react";
 
 // 1. Fully custom Toast component
-export default function NewToaster({ id, title, type = "loading" }) {
+export default function NewToaster({
+  id,
+  title,
+  type = "loading",
+  description = "",
+}) {
   const borderColor =
     type === "success"
       ? "border-l-4 border-green-400"
       : type === "error"
       ? "border-l-4 border-red-400"
+      : type === "info"
+      ? "border-l-4 border-blue-400"
       : "border-l-4 border-gray-400";
 
   const iconColor =
@@ -16,23 +23,33 @@ export default function NewToaster({ id, title, type = "loading" }) {
       ? "text-green-400"
       : type === "error"
       ? "text-red-400"
+      : type === "info"
+      ? "text-blue-400"
       : "text-gray-400";
 
   const animate = type === "loading" ? "animate-spin" : "";
 
   // Icon based on type
   const Icon =
-    type === "success" ? CircleCheck : type === "error" ? XCircle : Loader;
+    type === "success"
+      ? CircleCheck
+      : type === "error"
+      ? XCircle
+      : type === "info"
+      ? InfoIcon
+      : Loader;
 
   return (
     <div
       className={`flex rounded-lg bg-white shadow-lg ring-1 ring-black/5 w-full md:max-w-[500px] lg:max-w-[600px] items-center p-4 ${borderColor}`}
     >
       <div className="flex flex-1 items-center gap-3">
-        {" "}
         <Icon className={`h-6 w-6 ${iconColor} ${animate}`} />
         <div className="w-full">
           <p className="text-sm font-medium text-gray-900">{title}</p>
+          {description && (
+            <p className="text-sm text-gray-500 mt-1">{description}</p>
+          )}
         </div>
       </div>
       <button
@@ -45,6 +62,6 @@ export default function NewToaster({ id, title, type = "loading" }) {
   );
 }
 
-export function showToast({ title, type = "loading" }) {
-  return toast.custom((id) => <NewToaster id={id} title={title} type={type} />);
+export function showToast({ title, type = "loading", description = "" }) {
+  return toast.custom((id) => <NewToaster id={id} title={title} type={type} description={description} />);
 }

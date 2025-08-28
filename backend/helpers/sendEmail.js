@@ -32,10 +32,13 @@ const ejs = require("ejs");
 
 const Mailjet = require("node-mailjet");
 
-const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC, process.env.MJ_APIKEY_PRIVATE);
+const mailjet = Mailjet.apiConnect(
+  process.env.MJ_APIKEY_PUBLIC,
+  process.env.MJ_APIKEY_PRIVATE
+);
 
 const sendTemplateEmail = async (toEmail, toName, templateId, variables) => {
-  console.log("variables",variables);
+  console.log("variables", variables);
   try {
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
@@ -57,3 +60,4 @@ const sendTemplateEmail = async (toEmail, toName, templateId, variables) => {
 };
 
 module.exports = sendTemplateEmail;
+// module.exports = sendEmail;

@@ -12,7 +12,6 @@ import SignInForm from "@/Pages/SignInForm.jsx";
 import CategoryPage from "@/Pages/Category";
 import NewCategory from "@/Pages/NewCategory";
 import Unauthorized from "@/components/Unauthorized";
-import ResetPassword from "@/Pages/ResetPassword";
 import ExpiredPage from "@/Pages/ExpiredPage";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTenant } from "@/features/tenants/tenantSlice";
@@ -27,6 +26,8 @@ import AddToCart from "@/Pages/AddtoCart";
 import NotFound from "@/Pages/NotFound";
 import Invoice from "@/Pages/Invoice";
 import Onboarding from "@/Pages/Onboarding";
+import ResetPassword from "@/Pages/ResetPassword";
+import NewPassword from "@/Pages/NewPassword";
 
 function index() {
   // const { user } = useContext(AuthContext);
@@ -49,14 +50,14 @@ function index() {
           <Navigate to="/sign-in" replace />
         ),
     },
-    {
-      path: "/reset-password/:token",
-      element: <ResetPassword />,
-    },
-    {
-      path: "/reset-password",
-      element: <ResetPassword />,
-    },
+    // {
+    //   path: "/reset-password/:token",
+    //   element: <ResetPassword />,
+    // },
+    // {
+    //   path: "/reset-password",
+    //   element: <ResetPassword />,
+    // },
     {
       path: "/expired-link",
       element: <ExpiredPage />,
@@ -175,6 +176,22 @@ function index() {
             ) : (
               <Navigate to={`/stores/${tenant?.store?.store._id}`} />
             ),
+        },
+        {
+          path: "/reset-password",
+          element: !tenant ? (
+            <ResetPassword />
+          ) : (
+            <Navigate to={`/stores/${tenant?.store?.store._id}`} />
+          ),
+        },
+        {
+          path: "/new-password/:token",
+          element: !tenant ? (
+            <NewPassword />
+          ) : (
+            <Navigate to={`/stores/${tenant?.store?.store._id}`} />
+          ),
         },
         {
           path: "forbidden",

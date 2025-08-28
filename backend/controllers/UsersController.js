@@ -3,6 +3,9 @@ const Verification = require("../models/Verification");
 const createToken = require("../helpers/createToken");
 const crypto = require("crypto");
 const StoreMember = require("../models/StoreMember");
+const sendTemplateEmail = require("../helpers/sendEmail");
+// const sendEmail = require("../helpers/sendEmail");
+const bcrypt = require("bcrypt");
 
 const UserController = {
   me: async (req, res) => {
@@ -12,8 +15,8 @@ const UserController = {
         .lean();
       return res.json({ user: req.user, store });
       // return res.json(req.user);
-    } catch (error) {
-      console.error(error);
+    } catch (e) {
+      console.error(e);
       return res.status(500).json({ message: "Internal Server error" });
     }
   },
@@ -97,8 +100,8 @@ const UserController = {
       await Verification.deleteOne({ _id: verification._id });
 
       res.json({ message: "Email verified successfully" });
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
       res.status(500).json({ message: "Internal server error" });
     }
   },
@@ -147,8 +150,8 @@ const UserController = {
       });
 
       return res.json({ message: "Verification code resent" });
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
       return res.status(500).json({ message: "Server error" });
     }
   },
@@ -174,9 +177,61 @@ const UserController = {
         .populate("store")
         .lean();
       return res.json({ user: updatedUser.toObject(), store });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+  forgetPassword: async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let token = createToken(user._id, "1h");
+
+    const resetUrl = `${process.env.ORIGIN}/new-password/${token}`;
+
+    try {
+      const variables = {
+        username: user.username,
+        resetUrl,
+      };
+      await sendTemplateEmail(user.email, user.username, 7262244, variables);
+      // await sendEmail({
+      //   viewFilename: "passwordReset",
+      //   data: {
+      //     resetUrl,
+      //   },
+      //   from: "nexoraDigital@gmail.com",
+      //   to: user.email,
+      // });
+      res.json({ message: "Password reset email sent" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Email could not be sent" });
+    }
+  },
+  resetPassword: async (req, res) => {
+    const { password } = req.body;
+
+    try {
+      let userId = req.user._id;
+
+      let salt = await bcrypt.genSalt();
+      let hashValue = await bcrypt.hash(password, salt);
+
+      let updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { password: hashValue },
+        {
+          new: true,
+        }
+      );
+
+      return res.json({ user: updatedUser.toObject() });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(400).json({ message: "Invalid or expired token" });
     }
   },
 };
