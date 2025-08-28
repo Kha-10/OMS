@@ -822,7 +822,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                         Verify your account
                       </h1>
                       <p className="text-sm text-muted-foreground sm:text-base">
-                        We've sent a verification code to your email or phone.
+                        We've sent a verification code to your email.
                       </p>
                     </header>
 
@@ -868,6 +868,9 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                         >
                           Resend code
                         </button>
+                        <p className="text-xs text-red-400 sm:text-xs mt-5">
+                          Didn't receive the email? Check your spam folder.
+                        </p>
                       </div>
                     </div>
 
@@ -1528,7 +1531,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                         Verification sent
                       </h3>
                       <p className="text-sm text-gray-500">
-                        Check your email or phone
+                        Check your email
                       </p>
                     </div>
                   </div>
