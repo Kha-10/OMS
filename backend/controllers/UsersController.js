@@ -66,7 +66,13 @@ const UserController = {
     }
   },
   logout: (req, res) => {
-    res.cookie("jwt", "", { maxAge: 1 });
+    res.cookie("jwt", "", {
+      httpOnly: true,
+      maxAge: 1,
+      secure: true,
+      sameSite: "lax",
+      domain: ".nexoradigital.site",
+    });
     return res.json({ message: "user logged out" });
   },
   verify: async (req, res) => {
