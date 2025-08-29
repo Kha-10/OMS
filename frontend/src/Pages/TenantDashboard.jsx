@@ -13,7 +13,7 @@ import { useParams } from "react-router-dom";
 
 function TenantDashboard({ stores }) {
   const { storeId } = useParams();
-  console.log("storeId",storeId);
+  console.log("storeId", storeId);
   const { data, isLoading } = useAnalytics(storeId);
   const navigate = useNavigate();
   console.log(isLoading);
@@ -34,7 +34,7 @@ function TenantDashboard({ stores }) {
             <h2 className="text-lg font-semibold">Orders</h2>
             <button
               className="text-blue-600 hover:text-blue-700 font-medium"
-              onClick={() => navigate("/addToCart")}
+              onClick={() => navigate(`/stores/${storeId}/addToCart`)}
             >
               <Plus size={20} className="text-blue-600" />
             </button>
