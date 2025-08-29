@@ -119,7 +119,10 @@ export default function CustomerProfile() {
         </div>
       </div>
 
-      <div className="text-gray-500 mb-4">Last order 28 Mar 2025</div>
+      <div className="text-gray-500 mb-4">
+        Last order{" "}
+        {format(data?.recentOrders[0]?.createdAt, "dd MMMM yyyy, h:mm a")}
+      </div>
 
       {/* Two column layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -137,7 +140,7 @@ export default function CustomerProfile() {
               <div>
                 <div className="text-gray-500 mb-1">Average order value</div>
                 <div className="text-2xl font-semibold">
-                  {data?.summary?.averageOrderValue}
+                  {data?.summary?.averageOrderValue.toFixed(2)}
                 </div>
               </div>
               <div>
