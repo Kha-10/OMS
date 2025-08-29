@@ -157,148 +157,153 @@ export default function OrderList({
   };
 
   return (
-    <div className="bg-white border border-gray-200 overflow-x-auto rounded-xl">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="w-12 px-4 py-3">
-              <div className="relative">
-                <Checkbox
-                  checked={
-                    orders?.length > 0 &&
-                    selectedOrders.length === orders?.length
-                  }
-                  onCheckedChange={toggleSelectAll}
-                  className={`peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300 ${
-                    selectedOrders.length > 0 &&
-                    !selectedOrders.length !== orders?.length
-                      ? "bg-blue-500 border-blue-500"
-                      : ""
-                  }`}
-                />
-                {selectedOrders.length > 0 &&
-                  selectedOrders.length !== orders?.length && (
-                    <Minus className="h-3 w-3 absolute top-[5px] left-[2px] text-white bg-blue-500 pointer-events-none" />
-                  )}
-              </div>
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[200px]">
-              <div className="flex items-center h-8">
-                {selectedOrders.length > 0 ? (
-                  <Button
-                    ref={buttonRef}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
-                  >
-                    Actions({selectedOrders.length} selected)
-                  </Button>
-                ) : (
-                  <span>ID</span>
-                )}
-                {actionsMenuOpen && (
-                  <div
-                    ref={menuRef}
-                    className="absolute mt-[160px] ml-6 w-56 rounded-md shadow-lg text-black font-normal bg-white ring-1 ring-black ring-opacity-5 z-10"
-                  >
-                    <div
-                      className="p-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                    >
-                      <button
-                        className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        role="menuitem"
-                        onClick={() => {
-                          setActionsMenuOpen(false);
-                          onShowStatus();
-                        }}
-                      >
-                        <CheckCircle className="mr-3 h-4 w-4" />
-                        Change status
-                      </button>
-                      <button
-                        className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        role="menuitem"
-                      >
-                        <FileDown className="mr-3 h-4 w-4" />
-                        Download PDF
-                      </button>
-                      <button
-                        className="flex items-center w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
-                        role="menuitem"
-                        onClick={() => {
-                          setActionsMenuOpen(false);
-                          setTimeout(() => {
-                            deleteOrders();
-                          }, 0);
-                        }}
-                      >
-                        <Trash2 className="mr-3 h-4 w-4" />
-                        Delete orders
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              Customer
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              Amount
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium  text-gray-700">
-              Date
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              Status
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {orders?.length > 0 &&
-            orders.map((order) => (
-              <tr
-                key={order._id}
-                className="hover:bg-gray-50 cursor-pointer group"
-                onClick={() => navigateToOrder(order._id)}
-              >
-                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+    <div className="bg-white border border-gray-200 overflow-hidden rounded-xl max-w-[378px] sm:max-w-2xl lg:max-w-7xl min-w-full">
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 border-collapse">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="w-12 px-4 py-3">
+                <div className="relative">
                   <Checkbox
-                    checked={selectedOrders.includes(order._id)}
-                    onCheckedChange={() => toggleSelectOrder(order._id)}
-                    className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
+                    checked={
+                      orders?.length > 0 &&
+                      selectedOrders.length === orders?.length
+                    }
+                    onCheckedChange={toggleSelectAll}
+                    className={`peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300 ${
+                      selectedOrders.length > 0 &&
+                      !selectedOrders.length !== orders?.length
+                        ? "bg-blue-500 border-blue-500"
+                        : ""
+                    }`}
                   />
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
-                  <span className="mr-2"># {order.orderNumber}</span>
-                  <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {order?.customer
-                    ? order?.customer?.name
-                    : order?.manualCustomer?.name}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {order.pricing?.finalTotal.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {format(order?.createdAt, "dd MMMM yyyy, h:mm a")}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm">
-                  <div className="flex space-x-2">
-                    <StatusBadge status={order.orderStatus} />
-                    <StatusBadge status={order.paymentStatus} />
-                    <StatusBadge status={order.fulfillmentStatus} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+                  {selectedOrders.length > 0 &&
+                    selectedOrders.length !== orders?.length && (
+                      <Minus className="h-3 w-3 absolute top-[5px] left-[2px] text-white bg-blue-500 pointer-events-none" />
+                    )}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[200px]">
+                <div className="flex items-center h-8">
+                  {selectedOrders.length > 0 ? (
+                    <Button
+                      ref={buttonRef}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
+                    >
+                      Actions({selectedOrders.length} selected)
+                    </Button>
+                  ) : (
+                    <span>ID</span>
+                  )}
+                  {actionsMenuOpen && (
+                    <div
+                      ref={menuRef}
+                      className="absolute mt-[160px] ml-6 w-56 rounded-md shadow-lg text-black font-normal bg-white ring-1 ring-black ring-opacity-5 z-10"
+                    >
+                      <div
+                        className="p-1"
+                        role="menu"
+                        aria-orientation="vertical"
+                      >
+                        <button
+                          className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          role="menuitem"
+                          onClick={() => {
+                            setActionsMenuOpen(false);
+                            onShowStatus();
+                          }}
+                        >
+                          <CheckCircle className="mr-3 h-4 w-4" />
+                          Change status
+                        </button>
+                        <button
+                          className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                        >
+                          <FileDown className="mr-3 h-4 w-4" />
+                          Download PDF
+                        </button>
+                        <button
+                          className="flex items-center w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                          role="menuitem"
+                          onClick={() => {
+                            setActionsMenuOpen(false);
+                            setTimeout(() => {
+                              deleteOrders();
+                            }, 0);
+                          }}
+                        >
+                          <Trash2 className="mr-3 h-4 w-4" />
+                          Delete orders
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                Customer
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                Amount
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium  text-gray-700">
+                Date
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {orders?.length > 0 &&
+              orders.map((order) => (
+                <tr
+                  key={order._id}
+                  className="hover:bg-gray-50 cursor-pointer group"
+                  onClick={() => navigateToOrder(order._id)}
+                >
+                  <td
+                    className="px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedOrders.includes(order._id)}
+                      onCheckedChange={() => toggleSelectOrder(order._id)}
+                      className="peer data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 border-gray-300"
+                    />
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
+                    <span className="mr-2"># {order.orderNumber}</span>
+                    <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {order?.customer
+                      ? order?.customer?.name
+                      : order?.manualCustomer?.name}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {order.pricing?.finalTotal.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {format(order?.createdAt, "dd MMMM yyyy, h:mm a")}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    <div className="flex space-x-2">
+                      <StatusBadge status={order.orderStatus} />
+                      <StatusBadge status={order.paymentStatus} />
+                      <StatusBadge status={order.fulfillmentStatus} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
       <div
         className={`flex items-center ${
           orders?.length > 0 ? "justify-between" : "justify-center"

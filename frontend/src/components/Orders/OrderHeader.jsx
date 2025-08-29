@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function OrderHeader({ storeId }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between max-w-[378px] sm:max-w-2xl lg:max-w-7xl min-w-full">
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-semibold">Orders</h1>
       </div>

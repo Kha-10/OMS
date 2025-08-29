@@ -211,7 +211,7 @@ export default function OrdersPage() {
     <div className="space-y-6 p-6">
       <OrdersHeader storeId={storeId} />
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 max-w-[378px] sm:max-w-2xl lg:max-w-7xl min-w-full">
         <div className="relative flex-1 max-w-2xl">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
