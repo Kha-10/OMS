@@ -76,38 +76,6 @@ export default function CustomerProfile() {
           <h1 className="text-xl font-semibold">{data?.name}</h1>
         </div>
         <div className="flex gap-2">
-          {/* <div className="relative" ref={whatsAppButtonRef}>
-            <Button
-              variant="outline"
-              className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100"
-              onClick={() => setWhatsAppOpen(!whatsAppOpen)}
-            >
-              WhatsApp
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-
-            {whatsAppOpen && (
-              <div className="absolute right-0 mt-1 w-[220px] bg-white rounded-md shadow-lg border z-10">
-                <div className="py-2 text-sm">
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50">
-                    Send order detail
-                  </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50">
-                    Send review request
-                  </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50">
-                    Send payment reminder
-                  </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center">
-                    <span className="inline-flex items-center justify-center w-5 h-5 mr-2">
-                      +
-                    </span>
-                    Add custom template
-                  </button>
-                </div>
-              </div>
-            )}
-          </div> */}
           <Button
             variant="outline"
             className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
@@ -121,7 +89,12 @@ export default function CustomerProfile() {
 
       <div className="text-gray-500 mb-4">
         Last order{" "}
-        {format(data?.recentOrders[0]?.createdAt, "dd MMMM yyyy, h:mm a")}
+        {data?.recentOrders?.[0]?.createdAt
+          ? format(
+              new Date(data.recentOrders[0].createdAt),
+              "dd MMMM yyyy, h:mm a"
+            )
+          : "No recent orders"}
       </div>
 
       {/* Two column layout */}
@@ -274,7 +247,7 @@ function OrderItem({ number, status, statusColor, tags, date, amount }) {
           <span className="text-blue-600 font-medium">#{number}</span>
           <Badge className={`font-normal ${statusColor}`}>{status}</Badge>
 
-          {tags.map((tag, index) => (
+          {/* {tags.map((tag, index) => (
             <div
               key={index}
               className="flex items-center gap-1 text-gray-500 text-sm"
@@ -391,7 +364,7 @@ function OrderItem({ number, status, statusColor, tags, date, amount }) {
               )}
               <StatusBadge status={tag.label} />
             </div>
-          ))}
+          ))} */}
         </div>
         <div className="text-gray-500 mt-2 text-sm">
           {" "}
