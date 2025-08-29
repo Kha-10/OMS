@@ -157,7 +157,7 @@ export default function OrderList({
   };
 
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden rounded-xl max-w-[378px] sm:max-w-2xl lg:max-w-7xl min-w-full">
+    <div className="bg-white border border-gray-200 overflow-hidden rounded-xl w-[100px] sm:max-w-2xl lg:max-w-7xl min-w-full">
       <div className="w-full overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 border-collapse">
           <thead className="bg-gray-50">
