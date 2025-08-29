@@ -17,7 +17,9 @@ const UserController = {
       // return res.json(req.user);
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ message: "Internal Server error" });
+      return res
+        .status(500)
+        .json({ message: e.message || "Internal Server error" });
     }
   },
   login: async (req, res) => {
@@ -108,7 +110,7 @@ const UserController = {
       res.json({ message: "Email verified successfully" });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: e.message || "Internal server error" });
     }
   },
   resendVerificationCode: async (req, res) => {
@@ -158,7 +160,7 @@ const UserController = {
       return res.json({ message: "Verification code resent" });
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ message: "Server error" });
+      return res.status(500).json({ message: e.message || "Server error" });
     }
   },
   skip: async (req, res) => {
@@ -185,7 +187,7 @@ const UserController = {
       return res.json({ user: updatedUser.toObject(), store });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: e.message || "Internal server error" });
     }
   },
   forgetPassword: async (req, res) => {
@@ -214,7 +216,7 @@ const UserController = {
       res.json({ message: "Password reset email sent" });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ message: "Email could not be sent" });
+      res.status(500).json({ message: e.message || "Email could not be sent" });
     }
   },
   resetPassword: async (req, res) => {
@@ -235,9 +237,38 @@ const UserController = {
       );
 
       return res.json({ user: updatedUser.toObject() });
-    } catch (err) {
-      console.error(err);
-      res.status(400).json({ message: "Invalid or expired token" });
+    } catch (e) {
+      console.error(e);
+      res
+        .status(400)
+        .json({ message: e.message || "Invalid or expired token" });
+    }
+  },
+  update: async (req, res) => {
+    try {
+      let userId = req.user._id;
+      const allowedUpdates = ["username", "phoneLocal", "countryCode"];
+      let updatedData = {};
+
+      for (let key of allowedUpdates) {
+        if (req.body[key] !== undefined) {
+          updatedData[key] = req.body[key];
+        }
+      }
+
+      let existingUser = await User.findById(userId);
+      if (!existingUser) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      let updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+        new: true,
+      });
+
+      return res.json({ user: updatedUser.toObject() });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e.message || "Internal server error" });
     }
   },
 };

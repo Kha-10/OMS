@@ -9,8 +9,7 @@ import {
   Package,
   ShoppingCart,
   Users,
-  Paintbrush,
-  Settings,
+  ExternalLink,
   X,
 } from "lucide-react";
 import {
@@ -188,7 +187,7 @@ function NavItem({ item, onItemClick }) {
 
 export function Sidebar({ open, onClose }) {
   const { tenant } = useSelector((state) => state.tenants);
-
+  console.log(tenant);
   const navigation = [
     {
       title: "Dashboard",
@@ -259,8 +258,15 @@ export function Sidebar({ open, onClose }) {
                 <ShoppingCart className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <div className="font-medium text-gray-900">Abc</div>
-                <div className="text-sm text-gray-500">take.app/molly</div>
+                <a
+                  href={`https://sellpoint.nexoradigital.site/${tenant?.store?.store?.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 font-medium text-blue-500"
+                >
+                  {tenant?.store?.store?.name}
+                  <ExternalLink size={16} className="text-blue-500" />
+                </a>
               </div>
             </div>
             <Button

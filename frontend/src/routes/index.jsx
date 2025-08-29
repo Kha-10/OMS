@@ -28,13 +28,14 @@ import Invoice from "@/Pages/Invoice";
 import Onboarding from "@/Pages/Onboarding";
 import ResetPassword from "@/Pages/ResetPassword";
 import NewPassword from "@/Pages/NewPassword";
+import Profile from "@/Pages/Profile";
 
 function index() {
   // const { user } = useContext(AuthContext);
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
-  console.log("tenant", tenant);
+  
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());
@@ -153,6 +154,10 @@ function index() {
         {
           path: "/stores/:storeId/customers/:id",
           element: tenant ? <CustomerProfile /> : <Navigate to={"/sign-in"} />,
+        },
+        {
+          path: "/profile",
+          element: tenant ? <Profile /> : <Navigate to={"/sign-in"} />,
         },
         {
           path: "/sign-in",

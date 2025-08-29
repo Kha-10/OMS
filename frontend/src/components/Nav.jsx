@@ -12,6 +12,7 @@ import { Menu, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutTenant } from "@/features/tenants/tenantSlice";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function Navbar({ onOpenSidebar }) {
   const navigate = useNavigate();
@@ -71,8 +72,10 @@ export default function Navbar({ onOpenSidebar }) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>My Account</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={"/profile"}>My Account</Link>
+                </DropdownMenuItem>
+                {/* <DropdownMenuItem>Settings</DropdownMenuItem> */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logoutHandler}>
                   Log out

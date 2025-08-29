@@ -34,6 +34,8 @@ router.post("/resend", UserController.resendVerificationCode);
 
 router.patch("/skip", AuthMiddleware, UserController.skip);
 
+router.patch("/update", AuthMiddleware, UserController.update);
+
 router.post("/forgot-password", UserController.forgetPassword);
 
 router.post(
