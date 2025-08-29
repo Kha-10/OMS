@@ -278,7 +278,7 @@ export default function AddToCart() {
 
   const { data: { data: customersfromDb = [] } = {} } = useCustomers({});
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =
-    useProducts({ categories: selectedCategory._id, searchQuery });
+    useProducts({ categories: selectedCategory._id, searchQuery, all: true });
   const { data: { data: categoriesfromDb = [] } = {} } = useCategories({});
 
   const containerRef = useRef(null);

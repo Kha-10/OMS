@@ -75,8 +75,13 @@ const findProducts = async (storeId, queryParams) => {
   // Build query & fetch from repo
   const query = buildQuery(queryParams);
   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
+  let page = Number(queryParams.page) || 1;
+  let limit = Number(queryParams.limit) || 10;
+
+  if (queryParams.all) {
+    page = 1;
+    limit = 0;
+  }
 
   const result = await ProductRepo.find(
     storeId,
@@ -268,6 +273,7 @@ const updateVisibility = async (storeId, ids, visibility) => {
 
   // Clear cache scoped to this store
   await clearCache(storeId, "products");
+  // await clearProductCache(storeId);
 
   return result;
 };
@@ -334,6 +340,7 @@ const duplicateProducts = async (ids, storeId) => {
 
     await session.commitTransaction();
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId);
     await clearCache(storeId, "categories");
 
     return {
@@ -363,7 +370,6 @@ const deleteProducts = async (storeId, ids) => {
     const products = await ProductRepo.findByIds(ids, storeId, session);
     if (products.length === 0) {
       await session.abortTransaction();
-      session.endSession();
       return { deletedCount: 0, invalidIds: [] };
     }
     console.log("products", products);
@@ -373,7 +379,6 @@ const deleteProducts = async (storeId, ids) => {
     await ProductRepo.deleteMany(storeId, ids, session);
 
     await session.commitTransaction();
-    session.endSession();
 
     if (photosToDelete.length > 0) {
       uploadAdapter.removeImages(photosToDelete);
@@ -381,6 +386,7 @@ const deleteProducts = async (storeId, ids) => {
 
     console.log("products.length", products.length);
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId);
     await clearCache(storeId, "categories");
 
     return { deletedCount: products.length, invalidIds: [] };
@@ -388,6 +394,8 @@ const deleteProducts = async (storeId, ids) => {
     await session.abortTransaction();
     session.endSession();
     throw error;
+  } finally {
+    session.endSession();
   }
 };
 

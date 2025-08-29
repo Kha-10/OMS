@@ -127,57 +127,6 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
-  // Bulk order update
-  // bulkUpdate: async (req, res) => {
-  //   const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
-  //     req.body;
-  //   console.log("orderIds", orderIds);
-  //   console.log("orderStatus", orderStatus);
-
-  //   if (!Array.isArray(orderIds) || orderIds.length === 0) {
-  //     return res.status(400).json({ msg: "empty orderIds" });
-  //   }
-
-  //   const invalidIds = orderIds.filter(
-  //     (id) => !mongoose.Types.ObjectId.isValid(id)
-  //   );
-  //   if (invalidIds.length > 0) {
-  //     return res
-  //       .status(400)
-  //       .json({ msg: `Invalid order IDs: ${invalidIds.join(", ")}` });
-  //   }
-
-  //   const session = await mongoose.startSession();
-
-  //   try {
-  //     await session.withTransaction(async () => {
-  //       const orders = await Order.find({ _id: { $in: orderIds } }).session(
-  //         session
-  //       );
-  //       console.log("orders", orders);
-  //       if (orders.length === 0) {
-  //         return res.status(404).json({ msg: `No orders found` });
-  //       }
-
-  //       await Order.updateMany(
-  //         { _id: { $in: orderIds } },
-  //         { $set: { orderStatus, paymentStatus, fulfillmentStatus } }
-  //       );
-  //     });
-
-  //     session.endSession();
-
-  //     return res.json({
-  //       message: `Order status has been Successfully updated.`,
-  //     });
-  //   } catch (error) {
-  //     console.log("error", error);
-  //     session.endSession();
-  //     return res
-  //       .status(500)
-  //       .json({ msg: error.message || "Internal server error" });
-  //   }
-  // },
   bulkUpdate: async (req, res) => {
     const { orderIds, orderStatus, paymentStatus, fulfillmentStatus } =
       req.body;
@@ -310,48 +259,6 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
-  // deduct: async (req, res) => {
-  //   console.log("req.body", req.body);
-  //   const orderId = req.body._id;
-  //   const session = await mongoose.startSession();
-  //   session.startTransaction();
-
-  //   try {
-  //     const originalOrder = await Order.findById(orderId).lean();
-
-  //     if (!originalOrder) {
-  //       await session.abortTransaction();
-  //       session.endSession();
-  //       return res.status(400).json({ msg: "Order not found" });
-  //     }
-
-  //     await Product.bulkWrite(
-  //       originalOrder.items.map((item) => ({
-  //         updateOne: {
-  //           filter: { _id: item.productId, trackQuantityEnabled: true },
-  //           update: { $inc: { "inventory.quantity": -item.quantity } },
-  //         },
-  //       })),
-  //       { session }
-  //     );
-
-  //     await clearProductCache();
-
-  //     await session.commitTransaction();
-  //     session.endSession();
-
-  //     return res.status(200).json({ msg: "Inventory deducted successfully" });
-  //   } catch (error) {
-  //     console.error("Order deduct failed:", error);
-
-  //     await session.abortTransaction();
-  //     session.endSession();
-
-  //     return res
-  //       .status(500)
-  //       .json({ msg: error.message || "Internal server error" });
-  //   }
-  // },
   deduct: async (req, res) => {
     const { _id: orderId } = req.body;
     const storeId = req.storeId;
@@ -401,96 +308,6 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
-  // refund: async (req, res) => {
-  //   console.log("req.body", req.body);
-  //   const customerId = req.body.customer._id;
-  //   const totalSpent = req.body.pricing.finalTotal;
-
-  //   const session = await mongoose.startSession();
-  //   session.startTransaction();
-
-  //   try {
-  //     const customer = await Customer.findById(customerId).lean();
-
-  //     if (!customer) {
-  //       await session.abortTransaction();
-  //       session.endSession();
-  //       return res.status(400).json({ msg: "customer not found" });
-  //     }
-
-  //     // ✅ Fix: Proper bulkWrite syntax as array of operations
-  //     await Customer.bulkWrite(
-  //       [
-  //         {
-  //           updateOne: {
-  //             filter: { _id: customerId },
-  //             update: { $inc: { totalSpent: -totalSpent } },
-  //           },
-  //         },
-  //       ],
-  //       { session }
-  //     );
-
-  //     await session.commitTransaction();
-  //     session.endSession();
-
-  //     return res.status(200).json({ msg: "Refund processed successfully" });
-  //   } catch (error) {
-  //     console.error("Refund failed:", error);
-
-  //     await session.abortTransaction();
-  //     session.endSession();
-
-  //     return res
-  //       .status(500)
-  //       .json({ msg: error.message || "Internal server error" });
-  //   }
-  // },
-  // pay: async (req, res) => {
-  //   console.log("req.body", req.body);
-  //   const customerId = req.body.customer._id;
-  //   const totalSpent = req.body.pricing.finalTotal;
-
-  //   const session = await mongoose.startSession();
-  //   session.startTransaction();
-
-  //   try {
-  //     const customer = await Customer.findById(customerId).lean();
-
-  //     if (!customer) {
-  //       await session.abortTransaction();
-  //       session.endSession();
-  //       return res.status(400).json({ msg: "customer not found" });
-  //     }
-
-  //     // ✅ Fix: Proper bulkWrite syntax as array of operations
-  //     await Customer.bulkWrite(
-  //       [
-  //         {
-  //           updateOne: {
-  //             filter: { _id: customerId },
-  //             update: { $inc: { totalSpent: totalSpent } },
-  //           },
-  //         },
-  //       ],
-  //       { session }
-  //     );
-
-  //     await session.commitTransaction();
-  //     session.endSession();
-
-  //     return res.status(200).json({ msg: "Pay processed successfully" });
-  //   } catch (error) {
-  //     console.error("Pay failed:", error);
-
-  //     await session.abortTransaction();
-  //     session.endSession();
-
-  //     return res
-  //       .status(500)
-  //       .json({ msg: error.message || "Internal server error" });
-  //   }
-  // },
 };
 
 module.exports = OrdersController;

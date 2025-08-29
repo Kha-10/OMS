@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const categoryService = require("../services/categoryService");
 const handler = require("../helpers/handler");
 const clearCache = require("../helpers/clearCache");
+const clearProductCache = require("../helpers/clearProductCache");
 
 const CategoriesController = {
   index: async (req, res) => {

@@ -23,7 +23,6 @@ const find = async (storeId, query, sort, page, limit, search) => {
     Product.countDocuments(tenantQuery),
     Product.countDocuments({ store: storeId }),
   ]);
-
   return { products, totalProducts, allProductsCount, page, limit };
 };
 

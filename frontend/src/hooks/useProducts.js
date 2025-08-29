@@ -15,6 +15,7 @@ const fetchProducts = async ({ queryKey }) => {
       sortBy,
       sortDirection,
       searchQuery,
+      all,
     },
   ] = queryKey;
 
@@ -26,7 +27,7 @@ const fetchProducts = async ({ queryKey }) => {
         visibility ? `&visibility=${visibility}` : ""
       }&sortBy=${sortBy}&sortDirection=${sortDirection}${
         searchQuery ? `&search=${searchQuery}` : ""
-      }`;
+      }${all === true ? "&all=true" : ""}`;
 
   const res = await axios.get(url);
 
@@ -42,6 +43,7 @@ const useProducts = ({
   sortBy,
   sortDirection,
   searchQuery,
+  all,
 }) => {
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
@@ -60,6 +62,7 @@ const useProducts = ({
             sortBy,
             sortDirection,
             searchQuery,
+            all,
           },
         ],
     queryFn: fetchProducts,

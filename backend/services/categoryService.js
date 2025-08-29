@@ -201,6 +201,7 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
   );
 
   await clearCache(storeId, "products");
+  // await clearProductCache(storeId)
   await clearCache(storeId, "categories");
 
   return updatedCategory;
@@ -232,6 +233,7 @@ const deleteCategories = async (storeId, ids) => {
     session.endSession();
 
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId)
     await clearCache(storeId, "categories");
 
     return { deletedCount: categories.length, invalidIds: [] };

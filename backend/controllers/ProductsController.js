@@ -11,14 +11,12 @@ const ProductsController = {
     try {
       const storeId = req.params.storeId;
       const queryParams = req.query;
-
       let { products, totalProducts, allProductsCount, page, limit } =
         await productService.findProducts(storeId, queryParams);
 
       if (!Array.isArray(products)) products = [];
 
       const enhancedProducts = productService.enhanceProductImages(products);
-      console.log("enhancedProducts", enhancedProducts);
       return res.json({
         data: enhancedProducts,
         pagination: {
@@ -47,6 +45,7 @@ const ProductsController = {
       );
 
       await clearCache(storeId, "products");
+      // await clearProductCache(storeId);
       await clearCache(storeId, "categories");
       return res.json(product);
     } catch (err) {
@@ -127,6 +126,7 @@ const ProductsController = {
 
       // clear caches
       await clearCache(storeId, "products");
+      // await clearProductCache(storeId)
       await clearCache(storeId, "categories");
       await clearCartCache("cart:*");
       await clearOrderCache();
@@ -200,7 +200,7 @@ const ProductsController = {
       if (!product) {
         return res.status(404).json({ msg: "Product not found" });
       }
-      await clearProductCache();
+      await clearProductCache(storeId);
       return res.json(product);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });

@@ -129,6 +129,7 @@ const createOrder = async ({
     session.endSession();
 
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId)
     await clearCartCache(`cart:storeId:${storeId}cartId:${cartId}`);
     await redisClient.del(cartLockKey);
 
@@ -346,6 +347,7 @@ const updateOrderService = async (
     );
 
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId)
     await session.commitTransaction();
     session.endSession();
 
@@ -398,6 +400,7 @@ const deleteOrder = async (orderId, storeId, shouldRestock, session) => {
   }
 
   await clearCache(storeId, "products");
+  // await clearProductCache(storeId)
   return order;
 };
 
@@ -408,6 +411,7 @@ const restockOrder = async (orderId, storeId, session) => {
 
   await OrderRepo.restockOrderItems(order, session);
   await clearCache(storeId, "products");
+  // await clearProductCache(storeId)
 
   return order;
 };
@@ -475,6 +479,7 @@ const deduct = async (orderId, storeId) => {
     );
 
     await clearCache(storeId, "products");
+    // await clearProductCache(storeId)
 
     await session.commitTransaction();
     session.endSession();
