@@ -8,13 +8,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, User } from "lucide-react";
+import { Menu, User, XIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutTenant } from "@/features/tenants/tenantSlice";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
-export default function Navbar({ onOpenSidebar }) {
+export default function Navbar({ sidebarOpen, onOpenSidebar, onCloseSidebar }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { tenant } = useSelector((state) => state.tenants);
@@ -35,15 +35,27 @@ export default function Navbar({ onOpenSidebar }) {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onOpenSidebar}
-              className="lg:hidden mr-2"
-              aria-label="Open sidebar"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
+            {sidebarOpen ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCloseSidebar}
+                className="lg:hidden mr-2"
+                aria-label="Open sidebar"
+              >
+                <XIcon className="h-6 w-6" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenSidebar}
+                className="lg:hidden mr-2"
+                aria-label="Open sidebar"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            )}
           </div>
           <div className="flex items-center">
             <DropdownMenu>

@@ -47,7 +47,7 @@ export default function RootLayout() {
         </div>
       )}
       <div className={`flex-1 ${showSidebar ? "lg:ml-64" : ""}`}>
-        {showSidebar && <Nav onOpenSidebar={() => setSidebarOpen(true)} />}
+        {showSidebar && <Nav sidebarOpen={sidebarOpen} onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)}  />}
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
