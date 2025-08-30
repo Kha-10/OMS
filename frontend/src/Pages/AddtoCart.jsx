@@ -1956,7 +1956,7 @@ export default function AddToCart() {
                                         size="sm"
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
                                       >
-                                        Configure
+                                        Select Options
                                       </Button>
                                     </div>
                                   </div>
@@ -3969,7 +3969,7 @@ export default function AddToCart() {
                                     size="sm"
                                     className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
                                   >
-                                    Configure
+                                    Select Options
                                   </Button>
                                 </div>
                               </div>
