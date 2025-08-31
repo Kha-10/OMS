@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   ChevronDown,
@@ -187,40 +187,41 @@ function NavItem({ item, onItemClick }) {
 
 export function Sidebar({ open, onClose }) {
   const { tenant } = useSelector((state) => state.tenants);
-  console.log(tenant);
+  const { storeId } = useParams();
+  console.log(storeId);
   const navigation = [
     {
       title: "Dashboard",
-      to: `/stores/${tenant?.store?.store._id}`,
+      to: `/stores/${storeId}`,
       icon: <Home className="h-5 w-5" />,
     },
     {
       title: "Orders",
-      to: `/stores/${tenant?.store?.store._id}/orders`,
+      to: `/stores/${storeId}/orders`,
       icon: <ShoppingCart className="h-5 w-5" />,
       submenu: [
-        { title: "All", to: `/stores/${tenant?.store?.store._id}/orders` },
+        { title: "All", to: `/stores/${storeId}/orders` },
         // { title: "Summary", to: "/orders/summary" },
       ],
     },
     {
       title: "Products",
-      to: `/stores/${tenant?.store?.store._id}/products`,
+      to: `/stores/${storeId}/products`,
       icon: <Package className="h-5 w-5" />,
       submenu: [
         {
           title: "All",
-          to: `/stores/${tenant?.store?.store._id}/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
+          to: `/stores/${storeId}/products?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
         },
         {
           title: "Category",
-          to: `/stores/${tenant?.store?.store._id}/categories`,
+          to: `/stores/${storeId}/categories`,
         },
       ],
     },
     {
       title: "Customers",
-      to: `/stores/${tenant?.store?.store._id}/customers?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
+      to: `/stores/${storeId}/customers?page=1&limit=10&sortBy=createdAt&sortDirection=desc`,
       icon: <Users className="h-5 w-5" />,
     },
     // {

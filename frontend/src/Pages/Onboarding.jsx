@@ -463,7 +463,8 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     if (res.status === 200) {
       nextStep();
       if (res.data?.user?.onboarding_step === 7) {
-        navigate(`/stores/${res.data?.store?.store._id}`);
+        // navigate(`/stores/${res.data?.store?.store._id}`);
+        window.location.href = `/stores/${res.data?.store?.store._id}`;
       }
     }
   };
