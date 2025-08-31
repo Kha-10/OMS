@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft,
   Package,
@@ -201,7 +202,6 @@ const createFormSchema = (product) => {
 
           // Handle Checkbox type (keeping your existing logic)
           if (type === "Checkbox") {
-            console.log("lee pl 3");
             const settings = optionMeta.settings;
             if (settings?.inputType === "not_applicable") return;
 
@@ -276,10 +276,14 @@ export default function AddToCart() {
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
 
-  const { data: { data: customersfromDb = [] } = {} } = useCustomers({});
+  const { data: { data: customersfromDb = [] } = {} } = useCustomers({
+    all: true,
+  });
   const { data: { data: productsfromDb = [], pagination = {} } = {} } =
     useProducts({ categories: selectedCategory._id, searchQuery, all: true });
-  const { data: { data: categoriesfromDb = [] } = {} } = useCategories({});
+  const { data: { data: categoriesfromDb = [] } = {} } = useCategories({
+    all: true,
+  });
 
   const containerRef = useRef(null);
 
@@ -1354,14 +1358,16 @@ export default function AddToCart() {
                             <SelectValue placeholder="Choose existing customer" />
                           </SelectTrigger>
                           <SelectContent>
-                            {customersfromDb.map((customer) => (
-                              <SelectItem
-                                key={customer._id}
-                                value={customer._id}
-                              >
-                                {customer.name} ({customer.phone})
-                              </SelectItem>
-                            ))}
+                            <ScrollArea className="h-60">
+                              {customersfromDb.map((customer) => (
+                                <SelectItem
+                                  key={customer._id}
+                                  value={customer._id}
+                                >
+                                  {customer.name} ({customer.phone})
+                                </SelectItem>
+                              ))}
+                            </ScrollArea>
                           </SelectContent>
                         </Select>
                       </div>

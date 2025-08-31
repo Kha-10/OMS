@@ -35,11 +35,14 @@ function index() {
   const dispatch = useDispatch();
   const { tenant, loading } = useSelector((state) => state.tenants);
   const { stores } = useSelector((state) => state.stores);
-  
   useEffect(() => {
     dispatch(fetchTenant());
     dispatch(fetchStore());
   }, [dispatch]);
+
+  if(loading){
+    return <p>Loading...</p>
+  }
 
   const router = createBrowserRouter([
     {

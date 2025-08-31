@@ -22,11 +22,16 @@ const fetchCustomersFromDB = async (queryParams) => {
   if (queryParams.storeId) {
     query.storeId = queryParams.storeId;
   }
-  const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
-  const skip = (page - 1) * limit;
+  let sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
+  let page = Number(queryParams.page) || 1;
+  let limit = Number(queryParams.limit) || 10;
+  let skip = (page - 1) * limit;
 
+  if (queryParams.all) {
+    page = 1;
+    limit = 0;
+  }
+  
   const [customers, totalCustomers] = await Promise.all([
     Customer.find(query).sort(sort).skip(skip).limit(limit),
     Customer.countDocuments(query),

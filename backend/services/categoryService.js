@@ -13,8 +13,13 @@ const findCategories = async (storeId, queryParams) => {
   let cached = await redisClient.get(cacheKey);
   if (cached) return cached;
 
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
+  let page = Number(queryParams.page) || 1;
+  let limit = Number(queryParams.limit) || 10;
+
+  if (queryParams.all) {
+    page = 1;
+    limit = 0;
+  }
 
   const sort = { orderIndex: 1 };
 
@@ -187,7 +192,11 @@ const updateCategoryProducts = async (storeId, categoryId, newProductIds) => {
         productsToRemove,
         storeId
       ),
-      CategoryRepo.removeCategoryFromProducts(categoryIds,productsToRemove, storeId)
+      CategoryRepo.removeCategoryFromProducts(
+        categoryIds,
+        productsToRemove,
+        storeId
+      )
     );
   }
 
