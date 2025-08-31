@@ -12,6 +12,7 @@ const generateCacheKey = (storeId, mainKey, queryParams) => {
     sortDirection: queryParams.sortDirection,
   };
 
+  console.log("filteredParams",filteredParams);
   const hash = crypto
     .createHash("md5")
     .update(JSON.stringify(filteredParams))

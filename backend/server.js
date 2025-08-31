@@ -20,6 +20,8 @@ const analyticsRoutes = require("./routes/analytics");
 
 const storeRoutes = require("./routes/store");
 
+const publicStore = require("./routes/publicStore");
+
 const mongoose = require("mongoose");
 
 const cors = require("cors");
@@ -102,6 +104,8 @@ app.use("/api/stores/:storeId/customers", authMiddleware, customerRoutes);
 app.use("/api/stores/:storeId/orders", authMiddleware, orderRoutes);
 
 app.use("/api/stores/:storeId/analytics", authMiddleware, analyticsRoutes);
+
+app.use("/api/stores/:storeSlug", publicStore);
 
 app.use("/api/stores", authMiddleware, storeRoutes);
 

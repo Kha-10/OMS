@@ -553,8 +553,8 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-28 relative">
-      <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-10 bg-white shadow rounded-xl">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-28 relative">
+      <div className="mx-auto w-full max-w-[95%] sm:max-w-4xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10 bg-white shadow rounded-xl">
         {step < 6 && (
           <div className="mb-8 text-center">
             <div className="mx-auto flex w-fit items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
@@ -587,7 +587,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
         )}
 
         {step === 6 ? (
-          <div className="flex min-h-[600px] items-center justify-center">
+          <div className="flex min-h-[400px] sm:min-h-[500px] md:min-h-[600px] items-center justify-center">
             <div className="text-center space-y-6 max-w-md mx-auto px-4">
               <div className="space-y-4">
                 <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
@@ -642,9 +642,10 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
           <div className="flex flex-col-reverse gap-6 lg:grid lg:grid-cols-2 lg:gap-8 xl:gap-10">
             {/* Left Column - Form (appears second on mobile) */}
             <div
-              className={`
-            ${step5Form.watch("bank") && step === 5 && "h-[600px] lg:h-[650px]"}
-            flex max-h-[600px] flex-col lg:max-h-[650px]`}
+              //   className={`
+              // ${step5Form.watch("bank") && step === 5 && "h-[600px] lg:h-[650px]"}
+              // flex max-h-[600px] flex-col lg:max-h-[650px]`}
+              className="flex flex-col gap-6 w-full"
             >
               {step === 1 && (
                 <Form {...step1Form}>
@@ -1500,19 +1501,38 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
             </div>
 
             {/* Right Column - Preview (appears first on mobile) */}
-            <div className="flex items-center justify-center rounded-2xl bg-blue-50 p-6 sm:p-8 lg:p-12">
-              <div className="w-full max-w-sm">
+            <div className="flex items-center justify-center rounded-2xl bg-blue-50 p-4 sm:p-6 lg:p-12 w-full">
+              <div className="w-full max-w-full sm:max-w-sm lg:max-w-md">
                 {step === 1 && (
-                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                  // <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                  //   <div className="flex items-center space-x-4">
+                  //     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                  //       <User className="h-6 w-6 text-gray-600" />
+                  //     </div>
+                  //     <div className="flex-1 min-w-0">
+                  //       <h3 className="font-medium text-gray-900">
+                  //         {step1Form.watch("email") || "your@email.com"}
+                  //       </h3>
+                  //       <p className="text-sm text-gray-500">
+                  //         {step1Form.watch("countryCode")}{" "}
+                  //         {step1Form.watch("phoneLocal") || "555-000-0000"}
+                  //       </p>
+                  //     </div>
+                  //   </div>
+                  // </div>
+                  <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm ring-1 ring-black/5 w-full max-w-sm">
                     <div className="flex items-center space-x-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                      {/* User Icon */}
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100">
                         <User className="h-6 w-6 text-gray-600" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 break-words">
                           {step1Form.watch("email") || "your@email.com"}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 truncate">
                           {step1Form.watch("countryCode")}{" "}
                           {step1Form.watch("phoneLocal") || "555-000-0000"}
                         </p>
@@ -1530,9 +1550,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                       <h3 className="font-medium text-gray-900">
                         Verification sent
                       </h3>
-                      <p className="text-sm text-gray-500">
-                        Check your email
-                      </p>
+                      <p className="text-sm text-gray-500">Check your email</p>
                     </div>
                   </div>
                 )}

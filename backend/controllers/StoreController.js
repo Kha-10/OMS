@@ -33,7 +33,7 @@ const StoreController = {
       }
 
       const store = await Store.create(storeData);
-      console.log("store",store);
+      console.log("store", store);
 
       await StoreMember.create({
         store: store._id,
@@ -114,6 +114,23 @@ const StoreController = {
       }
       console.error(err);
       res.status(500).json({ msg: "Internal server error" });
+    }
+  },
+  show: async (req, res) => {
+    console.log('iwork');
+    try {
+      const storeSlug = req.params.storeSlug;
+      const store = await Store.findOne({ slug: storeSlug });
+      if (!store)
+        return res.status(404).json({ message: "store doesn't exist" });
+      return res.json(store);
+    } catch (err) {
+      console.error("Error getting Product:", err);
+
+      const status = err.statusCode || 500;
+      const message = err.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
 };

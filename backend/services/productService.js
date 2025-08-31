@@ -71,7 +71,6 @@ const findProducts = async (storeId, queryParams) => {
   // Try cache first
   let cached = await redisClient.get(cacheKey);
   if (cached) return cached;
-
   // Build query & fetch from repo
   const query = buildQuery(queryParams);
   const sort = buildSort(queryParams.sortBy, queryParams.sortDirection);
