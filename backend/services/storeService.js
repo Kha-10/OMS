@@ -17,6 +17,8 @@ const getStoreByUserId = async (userId) => {
   const stores = memberships.map((m) => ({
     _id: m.store._id,
     name: m.store.name,
+    phone: m.store.phone,
+    slug : m.store.slug,
   }));
   return stores;
 };

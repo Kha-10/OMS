@@ -117,7 +117,6 @@ const StoreController = {
     }
   },
   show: async (req, res) => {
-    console.log('iwork');
     try {
       const storeSlug = req.params.storeSlug;
       const store = await Store.findOne({ slug: storeSlug });

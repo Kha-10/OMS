@@ -33,6 +33,7 @@ const multer = require("multer");
 const multerS3 = require("multer-s3");
 
 const authMiddleware = require("./middlewares/authMiddleware");
+const resolveSlugMiddleware = require("./middlewares/resolveSlugMiddleware");
 const sendEmail = require("./helpers/sendEmail");
 
 const app = express();
@@ -106,6 +107,12 @@ app.use("/api/stores/:storeId/orders", authMiddleware, orderRoutes);
 app.use("/api/stores/:storeId/analytics", authMiddleware, analyticsRoutes);
 
 app.use("/api/stores/:storeSlug", publicStore);
+
+app.use(
+  "/api/public/stores/:storeSlug/categories",
+  resolveSlugMiddleware,
+  categoryRoutes
+);
 
 app.use("/api/stores", authMiddleware, storeRoutes);
 

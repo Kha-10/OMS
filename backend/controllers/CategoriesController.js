@@ -8,7 +8,7 @@ const clearProductCache = require("../helpers/clearProductCache");
 const CategoriesController = {
   index: async (req, res) => {
     try {
-      const storeId = req.params.storeId;
+      const storeId = req.params.storeId || req.storeId;
       const queryParams = req.query;
 
       let { categories, totalCategories, page, limit } =

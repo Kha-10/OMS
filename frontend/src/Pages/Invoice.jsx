@@ -22,6 +22,7 @@ import jsPDF from "jspdf";
 import useOrders from "@/hooks/useOrders";
 import { format } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
+import { useSelector } from "react-redux";
 
 const currency = (n) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD" });
@@ -39,6 +40,9 @@ const Invoice = () => {
   const orders = data;
 
   const captureRef = useRef(null);
+
+  const { stores } = useSelector((state) => state.stores);
+  console.log("stores", stores);
 
   const handleDownloadPng = async () => {
     if (!captureRef.current) return;
@@ -105,27 +109,7 @@ const Invoice = () => {
       setIsDownloading(false); // Show icons again
     }
   };
-
-  // Mocked invoice data inspired by the screenshot
-  const invoice = {
-    id,
-    customer: {
-      name: "Abc",
-      url: "take.app/molly",
-      phone: "+66 62 947 4106",
-    },
-    status: [
-      { label: "CANCELLED", variant: "destructive" },
-      { label: "PAID", variant: "success" },
-      { label: "FULFILLED", variant: "success" },
-    ],
-    invoiceNo: `#${id}`,
-    orderDate: new Date("2025-08-06T10:04:00Z"),
-    items: [{ qty: 2, name: "Blueberry soda", amount: 60 }],
-    subtotal: 60,
-    total: 60,
-  };
-
+  console.log(orders.manualCustomer);
   return (
     <>
       <header className="container mx-auto py-6">
@@ -196,21 +180,19 @@ const Invoice = () => {
                 </div>
 
                 <div className="mt-6 grid gap-2">
-                  <h2 className="text-2xl font-semibold">
-                    {invoice.customer.name}
-                  </h2>
+                  <h2 className="text-2xl font-semibold">{stores[0]?.name}</h2>
                   <div className="text-sm">
-                    <a
+                    {/* <a
                       href={`https://${invoice.customer.url}`}
                       className="text-primary hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
                       {invoice.customer.url}
-                    </a>
+                    </a> */}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {invoice.customer.phone}
+                    {stores[0]?.phone}
                   </div>
                 </div>
 
@@ -263,10 +245,20 @@ const Invoice = () => {
                     Items total (
                     {orders.items.reduce((a, b) => a + b.quantity, 0)})
                   </div>
-                  <div className="text-right">{currency(invoice.subtotal)}</div>
+                  <div className="text-right">
+                    {currency(orders.pricing.subtotal)}
+                  </div>
                   <div className="text-muted-foreground">Subtotal</div>
                   <div className="text-right">
                     {currency(orders.pricing.subtotal)}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {orders.pricing?.adjustments?.map((adj) => adj.name)}
+                  </div>
+                  <div className="text-right">
+                    {currency(
+                      orders.pricing?.adjustments?.map((adj) => adj.value)
+                    )}
                   </div>
                   <div className="font-semibold">Total</div>
                   <div className="text-right font-semibold">
@@ -280,15 +272,19 @@ const Invoice = () => {
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                   <div className="text-muted-foreground">Customer</div>
                   <div className="text-right">
-                    {orders?.manualCustomer?.name &&
-                    orders?.manualCustomer?.phone ? (
+                    {orders?.manualCustomer?.name ? (
                       <>
-                        {orders.manualCustomer.name} /{" "}
-                        {orders.manualCustomer.phone}
+                        {orders.manualCustomer.name}
+                        {orders?.manualCustomer?.phone
+                          ? ` / ${orders.manualCustomer.phone}`
+                          : ""}
                       </>
-                    ) : orders?.customer?.name && orders?.customer?.phone ? (
+                    ) : orders?.customer?.name ? (
                       <>
-                        {orders.customer.name} / {orders.customer.phone}
+                        {orders.customer.name}
+                        {orders?.customer?.phone
+                          ? ` / ${orders.customer.phone}`
+                          : ""}
                       </>
                     ) : (
                       <>No customer info</>
