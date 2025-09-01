@@ -95,11 +95,11 @@ function index() {
         },
         {
           path: "/stores/:storeId/addToCart",
-          element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? <AddToCart currency={stores?.[0]?.settings?.currency} /> : <Navigate to={"/sign-in"} />,
         },
         {
           path: "/stores/:storeId/addToCart/:id",
-          element: tenant ? <AddToCart /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? <AddToCart currency={stores?.[0]?.settings?.currency} /> : <Navigate to={"/sign-in"} />,
         },
         {
           path: "/stores/:storeId/orders/:id",

@@ -430,7 +430,7 @@ export default function OrderDetailsPage({currency}) {
                             )}
 
                             <p className="text-gray-600">
-                              ${item.basePrice} × {item.quantity}
+                            {`${formatWithCurrency(item.basePrice, currency)} × ${item.quantity}`}
                             </p>
                             {item?.options?.length > 0 &&
                               item.options.map((opt) => {
@@ -449,7 +449,7 @@ export default function OrderDetailsPage({currency}) {
                                     </p>
                                     <p className="text-gray-400 text-sm font-light ml-4">
                                       {opt.prices.map((price, i) => (
-                                        <span key={i}>(${price})</span>
+                                        <span key={i}>{formatWithCurrency(price,currency)}</span>
                                       ))}
                                     </p>
                                     <p className="text-gray-400 text-sm font-light ml-4">
@@ -638,7 +638,7 @@ export default function OrderDetailsPage({currency}) {
                             <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
                               {adj.name}
                             </div>
-                            ${adj.value.toFixed(2)}
+                            {formatWithCurrency(adj.value.toFixed(2),currency)}
                           </div>
                         ))}
 

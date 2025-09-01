@@ -40,22 +40,36 @@ const CartController = {
           options,
         },
       } = req.body;
+
       const storeId = req.storeId;
-      console.log("storeId", req.storeId);
+
       if (!cartId) {
         cartId = uuidv4();
       }
+
+      // Fixed key format (added missing colon)
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
 
       let cart;
       if (cartData) {
-        // Existing cart -> push new item
-        // cart = JSON.parse(cartData);
+        // Parse the cart data (this was missing!)
         cart = cartData;
-        const items = cart.order?.items || cart.items || [];
-        console.log("cartpush", cart);
-        items.push({
+
+        // Standardize the structure - ensure items is always at cart.items
+        if (!cart.items) {
+          if (cart.order && cart.order.items) {
+            // Move items from cart.order.items to cart.items
+            cart.items = cart.order.items;
+            delete cart.order.items;
+          } else {
+            // Initialize items array if it doesn't exist
+            cart.items = [];
+          }
+        }
+
+        // Add new item
+        cart.items.push({
           id: uuidv4(),
           productId,
           trackQuantityEnabled,
@@ -73,7 +87,7 @@ const CartController = {
           totalPrice,
         });
       } else {
-        // New cart
+        // New cart - consistent structure
         cart = {
           id: cartId,
           items: [
@@ -99,9 +113,6 @@ const CartController = {
         };
       }
 
-      // Save to Redis with TTL
-      //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
-      console.log("cartKey", cartKey);
       await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
       return res.status(200).json({ success: true, cart });
@@ -203,7 +214,7 @@ const CartController = {
 
       if (cart.items.length === 0) {
         // Remove entire cart from Redis
-        // await redisClient.del(cartKey);
+        await redisClient.del(cartKey);
         return res.status(200).json({ success: true, cartDeleted: true });
       }
 

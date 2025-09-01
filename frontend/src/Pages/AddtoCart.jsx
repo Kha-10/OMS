@@ -55,6 +55,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
 import { toast } from "sonner";
 import NewToaster from "@/components/NewToaster";
+import { formatWithCurrency } from "@/helper/currencyCoverter";
 
 // Form schemas
 const customerFormSchema = z.object({
@@ -250,7 +251,7 @@ const createFormSchema = (product) => {
   });
 };
 
-export default function AddToCart() {
+export default function AddToCart({ currency }) {
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentView, setCurrentView] = useState("products");
@@ -566,8 +567,10 @@ export default function AddToCart() {
     try {
       const res = await axios.post(`/api/stores/${storeId}/cart`, cartItem);
       if (res.status === 200) {
-        const data = id ? res.data.cart.order?.items : res.data.cart.items;
+        // const data = id ? res.data.cart.order?.items : res.data.cart.items;
+        const data = res.data.cart.items;
         sessionStorage.setItem("adminCartId", res.data.cart.id);
+        console.log(res);
         setCart([...data]);
         setSelectedProduct(null);
         setCurrentView("cart");
@@ -584,7 +587,6 @@ export default function AddToCart() {
 
   const updateCartItemQuantity = async (productId, variantId, newQuantity) => {
     if (newQuantity < 1) return;
-
     setCart((prevCart) =>
       prevCart.map((item) => {
         if (item.productId !== productId && item.variantId === variantId)
@@ -978,7 +980,8 @@ export default function AddToCart() {
             <h4 className="font-medium text-lg">{item.productName}</h4>
             <div className="mt-1">
               <p className="text-base font-bold">
-                Total - ${item.totalPrice?.toFixed(2)}
+                Total -{" "}
+                {formatWithCurrency(item.totalPrice?.toFixed(2), currency)}
               </p>
               {/* <p className="text-sm text-gray-600">
                 ${item.basePrice?.toFixed(2)} each
@@ -1000,7 +1003,7 @@ export default function AddToCart() {
           <span className="font-medium">
             Base item Quantity:{" "}
             <p className="text-sm text-red-500">
-              ${item.basePrice?.toFixed(2)} each
+              {formatWithCurrency(item.basePrice?.toFixed(2), currency)} each
             </p>
           </span>
           <div className="flex items-center gap-2">
@@ -1057,7 +1060,8 @@ export default function AddToCart() {
                   <div className="w-full">
                     <p className="font-semibold">{option.name}</p>
                     <div className="flex-1">
-                      {option.answers.map((answer, i) => (
+                      {console.log(option.answers)}
+                      {option.answers?.map((answer, i) => (
                         <div
                           key={i}
                           className="w-full flex items-center justify-between pl-2"
@@ -1065,7 +1069,11 @@ export default function AddToCart() {
                           <div className="flex-1">
                             <span className="font-medium">{answer}</span>
                             <span className="ml-2 text-green-600">
-                              (+${option.prices?.[i]?.toFixed(2) || "0.00"}{" "}
+                              (+
+                              {formatWithCurrency(
+                                option.prices?.[i]?.toFixed(2) || "0.00",
+                                currency
+                              )}{" "}
                               each)
                             </span>
                           </div>
@@ -1760,7 +1768,12 @@ export default function AddToCart() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>${calculateCartSubtotal().toFixed(2)}</span>
+                        <span>
+                          {formatWithCurrency(
+                            calculateCartSubtotal().toFixed(2),
+                            currency
+                          )}
+                        </span>
                       </div>
                       {pricingAdjustments.map((adjustment) => (
                         <div
@@ -1775,13 +1788,14 @@ export default function AddToCart() {
                                 : "text-green-600"
                             }
                           >
-                            {adjustment.type === "discount" ? "-" : "+"}$
+                            {adjustment.type === "discount" ? "-" : "+"}
                             {adjustment.isPercentage
-                              ? (
+                              ? formatWithCurrency(
                                   (calculateCartSubtotal() * adjustment.value) /
-                                  100
-                                ).toFixed(2)
-                              : adjustment.value.toFixed(2)}
+                                    100,
+                                  currency
+                                )
+                              : formatWithCurrency(adjustment.value, currency)}
                           </span>
                         </div>
                       ))}
@@ -1789,7 +1803,10 @@ export default function AddToCart() {
                       <div className="flex justify-between text-lg font-bold">
                         <span>Final Total:</span>
                         <span className="text-blue-600">
-                          ${calculateFinalTotal().toFixed(2)}
+                          {formatWithCurrency(
+                            calculateFinalTotal().toFixed(2),
+                            currency
+                          )}
                         </span>
                       </div>
                     </div>
@@ -1802,7 +1819,7 @@ export default function AddToCart() {
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Complete Order - ${calculateFinalTotal().toFixed(2)}
+                    Complete Order - {formatWithCurrency(calculateFinalTotal().toFixed(2),currency)}
                   </Button>
                 </div>
               )}
@@ -2519,6 +2536,12 @@ export default function AddToCart() {
                                                           console.log(
                                                             "quantity",
                                                             quantity
+                                                          );
+                                                          console.log(
+                                                            "options",
+                                                            productForm.watch(
+                                                              "options"
+                                                            )
                                                           );
 
                                                           return (

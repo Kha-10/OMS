@@ -99,9 +99,12 @@ const NoteSchema = new mongoose.Schema({
 
 const OptionSchema = new mongoose.Schema({
   name: String,
-  answers: [String],
-  prices: [Number],
-  quantities: [Number],
+  // answers: [String],
+  // prices: [Number],
+  // quantities: [Number],
+  answers: { type: [String], required: true },
+  prices: { type: [Number], required: true },
+  quantities: { type: [Number], required: true }
 });
 
 const ItemSchema = new mongoose.Schema({

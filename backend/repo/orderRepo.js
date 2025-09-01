@@ -149,14 +149,51 @@ const saveCustomer = async (customer) => {
   return customer.save();
 };
 
+// const updateOrder = async (id, storeId, updateData, session = null) => {
+//   const query = Order.updateOne({ _id: id, storeId }, { $set: updateData });
+
+//   if (session) {
+//     query.session(session);
+//   }
+
+//   return query;
+// };
 const updateOrder = async (id, storeId, updateData, session = null) => {
-  const query = Order.updateOne({ _id: id, storeId }, { $set: updateData });
+  try {
+    const options = session ? { session } : {};
 
-  if (session) {
-    query.session(session);
+    const order = await Order.findOne({ _id: id, storeId }, null, options);
+    if (!order) throw new Error("Order not found");
+
+    // Update top-level fields
+    order.customer = updateData.customer;
+    order.manualCustomer = updateData.manualCustomer;
+    order.notes = updateData.notes;
+    order.orderStatus = updateData.orderStatus;
+    order.pricing = updateData.pricing;
+
+    // Process items and options
+    updateData.items.forEach((item) => {
+      item.options.forEach((opt) => {
+        // Flatten arrays if needed
+        if (Array.isArray(opt.answers)) opt.answers = opt.answers.flat(Infinity);
+        if (Array.isArray(opt.prices)) opt.prices = opt.prices.flat(Infinity);
+        if (Array.isArray(opt.quantities)) opt.quantities = opt.quantities.flat(Infinity);
+      });
+    });
+
+    order.items = updateData.items;
+    order.markModified('items'); // Force change detection
+
+    await order.save(options);
+
+    // Refetch within the same session
+    const updatedOrder = await Order.findById(id).session(session);
+    return updatedOrder;
+  } catch (error) {
+    console.error("Update error:", error);
+    throw error;
   }
-
-  return query;
 };
 
 const restoreProductQuantity = async (
