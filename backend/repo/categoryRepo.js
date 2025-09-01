@@ -9,12 +9,7 @@ const findById = async (storeId, id) => {
   return Category.findOne({ storeId, _id: id }).populate("products");
 };
 
-const find = async (
-  storeId,
-  sort = { orderIndex: 1 },
-  page = 1,
-  limit = 10
-) => {
+const find = async (storeId, sort = { orderIndex: 1 }, page, limit) => {
   const skip = (page - 1) * limit;
   const query = { storeId: storeId };
 

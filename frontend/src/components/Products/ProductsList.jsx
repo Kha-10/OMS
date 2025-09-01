@@ -90,7 +90,7 @@ export default function ProductsList({
   }
   console.log(products);
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden rounded-xl">
+    <div className="bg-white border border-gray-200 overflow-auto rounded-xl w-[295px] sm:max-w-2xl lg:max-w-7xl min-w-full">
       <table className="w-full">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>

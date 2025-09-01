@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SequenceDialog } from "./SequenceDialog";
 import { useNavigate, useParams } from "react-router-dom";
-import { Minus } from "lucide-react";
+import { Minus,ArrowDownUp } from "lucide-react";
 import useCategories from "@/hooks/useCategories";
 import useCategoriesActions from "@/hooks/useCategoriesActions";
 import { useSearchParams } from "react-router-dom";
@@ -117,7 +117,7 @@ export default function CategoryPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-[100px] sm:max-w-2xl lg:max-w-7xl min-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold">Category</h1>
@@ -125,11 +125,19 @@ export default function CategoryPage() {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="bg-gray-100"
+            className="bg-gray-100 hidden sm:flex"
             onClick={() => setIsSequenceDialogOpen(true)}
           >
             Change sequence
           </Button>
+          <Button
+            variant="outline"
+            className="bg-gray-100 sm:hidden p-2"
+            onClick={() => setIsSequenceDialogOpen(true)}
+          >
+            <ArrowDownUp className="w-4 h-4"/>
+          </Button>
+
           <Button
             onClick={createCategory}
             className="bg-blue-500 text-white hover:bg-blue-700"
@@ -222,7 +230,7 @@ export default function CategoryPage() {
           {filteredCategories.map((category) => (
             <div
               key={category._id}
-              className="px-6 py-3 flex items-center h-[52px]"
+              className="px-6 py-3 flex items-center h-full"
             >
               <div className="flex items-center flex-1 gap-2">
                 <Checkbox
