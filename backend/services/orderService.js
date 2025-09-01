@@ -164,13 +164,9 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
       );
       if (!latestProduct) return item;
 
-      // Preserve the original options from the order item
-      // Only enhance with product data that shouldn't change historical records
       return {
         ...item.toObject(),
         trackQuantityEnabled: latestProduct.trackQuantityEnabled,
-        // Don't overwrite price with current product price - keep order historical price
-        // price: latestProduct.price, // Remove this line
         productName: latestProduct.name,
         productinventory: item.quantity + latestProduct.inventory.quantity,
         cartMinimum: latestProduct.cartMinimumEnabled
@@ -181,18 +177,11 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
           : 0,
         imgUrls: latestProduct.imgUrls || [],
         photo: latestProduct.photo || [],
-        // DON'T overwrite options - keep the original order options
-        // options: latestProduct.options || [], // This is the problem line
         categories: latestProduct.categories || [],
       };
     })
   );
 
-  // Don't save the enhanced order back to the database!
-  // This overwrites the historical order data with current product data
-  // await OrderRepo.saveOrder(order); // Remove this line
-
-  // Instead, create a new object for response without saving
   const enhancedOrder = {
     ...order.toObject(),
     items: updatedItems,
@@ -201,56 +190,6 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
   // Use your existing helper for image formatting
   return enhanceProductImages(enhancedOrder);
 };
-
-// const loadOrderAsCart = async (orderId, storeId) => {
-//   const order = await OrderRepo.findById(orderId, storeId);
-//   if (!order) return null;
-
-//   // Refresh product data for items
-//   const updatedItems = await Promise.all(
-//     order.items.map(async (item) => {
-//       const latestProduct = await OrderRepo.findProductById(
-//         item.productId,
-//         storeId
-//       );
-//       if (!latestProduct) return item;
-
-//       return {
-//         ...item.toObject(),
-//         trackQuantityEnabled: latestProduct.trackQuantityEnabled,
-//         price: latestProduct.price,
-//         productName: latestProduct.name,
-//         productinventory: item.quantity + latestProduct.inventory.quantity,
-//         cartMinimum: latestProduct.cartMinimumEnabled
-//           ? latestProduct.cartMinimum
-//           : 0,
-//         cartMaximum: latestProduct.cartMaximumEnabled
-//           ? latestProduct.cartMaximum
-//           : 0,
-//         imgUrls: latestProduct.imgUrls || [],
-//         photo: latestProduct.photo || [],
-//         options: latestProduct.options || [],
-//         categories: latestProduct.categories || [],
-//       };
-//     })
-//   );
-
-//   order.items = updatedItems;
-//   await OrderRepo.saveOrder(order);
-
-//   const cartId = order._id;
-//   const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
-
-//   const cart = {
-//     id: cartId,
-//     order,
-//     createdAt: Date.now(),
-//   };
-//   console.log("cartKey", cartKey);
-//   await redisClient.set(cartKey, JSON.stringify(cart), { EX: 86400 });
-
-//   return cart;
-// };
 
 const loadOrderAsCart = async (orderId, storeId) => {
   const order = await OrderRepo.findById(orderId, storeId);
@@ -266,11 +205,8 @@ const loadOrderAsCart = async (orderId, storeId) => {
 
       if (!latestProduct) return item;
 
-      // Return enhanced item without overwriting historical data
       return {
         ...item.toObject(),
-        // Preserve historical pricing and options
-        // Only add current product info for display/validation purposes
         currentProductInfo: {
           trackQuantityEnabled: latestProduct.trackQuantityEnabled,
           inventory: latestProduct.inventory.quantity,
@@ -288,9 +224,8 @@ const loadOrderAsCart = async (orderId, storeId) => {
     })
   );
 
-  // Create a cart object without modifying the original order
   const cartId = order._id;
-  // Fixed key format (added missing colon)
+
   const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
 
   const cart = {
