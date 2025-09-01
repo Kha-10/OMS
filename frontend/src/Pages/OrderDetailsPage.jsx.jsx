@@ -29,8 +29,9 @@ import axios from "@/helper/axios";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
 import { showToast } from "@/components/NewToaster";
+import { formatWithCurrency } from "@/helper/currencyCoverter";
 
-export default function OrderDetailsPage() {
+export default function OrderDetailsPage({currency}) {
   const { tenant } = useSelector((state) => state.tenants);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -461,7 +462,7 @@ export default function OrderDetailsPage() {
                               })}
                           </div>
                           <p className="font-medium">
-                            ${item.totalPrice.toFixed(2)}
+                            {formatWithCurrency(item.totalPrice.toFixed(2),currency)}
                           </p>
                         </div>
                       </div>
@@ -470,7 +471,7 @@ export default function OrderDetailsPage() {
                   <div className="border-t border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
                       <p>Items total ({totalQuantity})</p>
-                      <p>${total?.toFixed(2)}</p>
+                      <p>{formatWithCurrency(total?.toFixed(2),currency)}</p>
                     </div>
                     {orders?.pricing?.adjustments.map((adj, index) => {
                       const subtotal = orders?.pricing?.subtotal || 0;
@@ -484,7 +485,7 @@ export default function OrderDetailsPage() {
                           className="flex items-center justify-between text-sm font-normal"
                         >
                           <p>{adj.name}</p>
-                          <p>${amount.toFixed(2)}</p>
+                          <p>{formatWithCurrency(amount.toFixed(2),currency)}</p>
                         </div>
                       );
                     })}
@@ -493,7 +494,7 @@ export default function OrderDetailsPage() {
                   <div className="border-t border-dashed  border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
                       <p>Subtotal</p>
-                      <p>${orders?.pricing?.subtotal?.toFixed(2)}</p>
+                      <p>{formatWithCurrency(orders?.pricing?.subtotal?.toFixed(2),currency)}</p>
                     </div>
                   </div>
 
@@ -501,7 +502,7 @@ export default function OrderDetailsPage() {
                     <div className="flex justify-between mb-2">
                       <p className="font-bold">Total</p>
                       <p className="font-bold">
-                        {orders?.pricing?.finalTotal?.toFixed(2)}
+                        {formatWithCurrency(orders?.pricing?.finalTotal?.toFixed(2),currency)}
                       </p>
                     </div>
                   </div>

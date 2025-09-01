@@ -20,6 +20,7 @@ import { Minus } from "lucide-react";
 import useProductActions from "@/hooks/useProductActions";
 // import InitialLoading from "../InitialLoading";
 import { Link, useParams } from "react-router-dom";
+import { formatWithCurrency } from "@/helper/currencyCoverter";
 
 export default function ProductsList({
   products,
@@ -33,6 +34,7 @@ export default function ProductsList({
   hasNextPage,
   onPageChange,
   onPageSizeChange,
+  currency,
 }) {
   const {
     duplicateMutation,
@@ -184,15 +186,13 @@ export default function ProductsList({
                           <p>{product.name}</p>
                           <div className="flex items-center gap-5 text-sm text-gray-500">
                             <span>
-                              ฿
-                              {(
+                              {formatWithCurrency(
                                 product?.variants?.[0]?.price ??
-                                product?.variants?.[0]?.originalPrice ??
-                                product?.price ??
-                                0
-                              ).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                              })}
+                                  product?.variants?.[0]?.originalPrice ??
+                                  product?.price ??
+                                  0,
+                                currency
+                              )}
                             </span>
                             {product.categories.map((category) => (
                               <div key={category._id}>

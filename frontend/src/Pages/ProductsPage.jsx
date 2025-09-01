@@ -11,7 +11,7 @@ import debounce from "lodash.debounce";
 import ErrorMessage from "@/components/ErrorMessages";
 import useProducts from "@/hooks/useProducts";
 
-export default function ProductsPage() {
+export default function ProductsPage({currency}) {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -135,6 +135,7 @@ export default function ProductsPage() {
         hasNextPage={pagination?.hasNextPage}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        currency={currency}
       />
 
       <FilterPanel

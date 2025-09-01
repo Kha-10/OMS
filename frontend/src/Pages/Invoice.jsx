@@ -23,6 +23,7 @@ import useOrders from "@/hooks/useOrders";
 import { format } from "date-fns";
 import StatusBadge from "@/components/StatusBadge";
 import { useSelector } from "react-redux";
+import { formatWithCurrency } from "@/helper/currencyCoverter";
 
 const currency = (n) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD" });
@@ -231,7 +232,7 @@ const Invoice = () => {
                           </Link>
                         </TableCell>
                         <TableCell className="text-right">
-                          {currency(it.totalPrice)}
+                          {formatWithCurrency(it.totalPrice,stores[0]?.settings?.currency)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -246,23 +247,23 @@ const Invoice = () => {
                     {orders.items.reduce((a, b) => a + b.quantity, 0)})
                   </div>
                   <div className="text-right">
-                    {currency(orders.pricing.subtotal)}
+                    {formatWithCurrency(orders.pricing.subtotal,stores[0]?.settings?.currency)}
                   </div>
                   <div className="text-muted-foreground">Subtotal</div>
                   <div className="text-right">
-                    {currency(orders.pricing.subtotal)}
+                    {formatWithCurrency(orders.pricing.subtotal,stores[0]?.settings?.currency)}
                   </div>
                   <div className="text-muted-foreground">
                     {orders.pricing?.adjustments?.map((adj) => adj.name)}
                   </div>
                   <div className="text-right">
-                    {currency(
-                      orders.pricing?.adjustments?.map((adj) => adj.value)
-                    )}
+                    {
+                      orders.pricing?.adjustments?.map((adj) => formatWithCurrency(adj.value,stores[0]?.settings?.currency))
+                    }
                   </div>
                   <div className="font-semibold">Total</div>
                   <div className="text-right font-semibold">
-                    {currency(orders.pricing.finalTotal)}
+                    {formatWithCurrency(orders.pricing.finalTotal,stores[0]?.settings?.currency)}
                   </div>
                 </div>
 

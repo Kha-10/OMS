@@ -23,6 +23,7 @@ import useOrderActions from "@/hooks/useOrderActions";
 import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
 import { showToast } from "@/components/NewToaster";
+import { formatWithCurrency } from "@/helper/currencyCoverter";
 
 export default function OrderList({
   orders,
@@ -36,6 +37,7 @@ export default function OrderList({
   hasNextPage,
   onPageChange,
   onPageSizeChange,
+  currency
 }) {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -285,9 +287,7 @@ export default function OrderList({
                       : order?.manualCustomer?.name}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    {order.pricing?.finalTotal.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                    })}
+                    {formatWithCurrency(order.pricing?.finalTotal,currency)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                     {format(order?.createdAt, "dd MMMM yyyy, h:mm a")}

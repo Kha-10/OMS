@@ -40,8 +40,8 @@ function index() {
     dispatch(fetchStore());
   }, [dispatch]);
 
-  if(loading){
-    return <p>Loading...</p>
+  if (loading) {
+    return <p>Loading...</p>;
   }
 
   const router = createBrowserRouter([
@@ -87,7 +87,11 @@ function index() {
         // },
         {
           path: "/stores/:storeId/orders",
-          element: tenant ? <Orders /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? (
+            <Orders currency={stores?.[0]?.settings?.currency} />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         {
           path: "/stores/:storeId/addToCart",
@@ -99,7 +103,11 @@ function index() {
         },
         {
           path: "/stores/:storeId/orders/:id",
-          element: tenant ? <OrderDetailsPage /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? (
+            <OrderDetailsPage currency={stores?.[0]?.settings?.currency} />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         {
           path: "/stores/:storeId/invoice/:id",
@@ -120,7 +128,7 @@ function index() {
         // },
         {
           path: "/stores/:storeId/products",
-          element: tenant ? <ProductsPage /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? <ProductsPage currency={stores?.[0]?.settings?.currency}  /> : <Navigate to={"/sign-in"} />,
         },
         {
           path: "/stores/:storeId/products/new",

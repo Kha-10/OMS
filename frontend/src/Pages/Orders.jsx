@@ -20,7 +20,7 @@ import { useNavigationType } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
 
-export default function OrdersPage() {
+export default function OrdersPage({currency}) {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
@@ -304,6 +304,7 @@ export default function OrdersPage() {
         hasNextPage={pagination?.hasNextPage}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        currency={currency}
       />
 
       <FilterPanel

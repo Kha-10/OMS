@@ -19,6 +19,7 @@ const getStoreByUserId = async (userId) => {
     name: m.store.name,
     phone: m.store.phone,
     slug : m.store.slug,
+    settings : m.store.settings,
   }));
   return stores;
 };
