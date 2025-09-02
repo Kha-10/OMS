@@ -114,6 +114,12 @@ app.use(
   categoryRoutes
 );
 
+app.use(
+  "/api/public/stores/:storeSlug/products",
+  resolveSlugMiddleware,
+  productRoutes
+);
+
 app.use("/api/stores", authMiddleware, storeRoutes);
 
 app.use("/api/users", userRoutes);
