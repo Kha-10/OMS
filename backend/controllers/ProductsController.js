@@ -59,7 +59,7 @@ const ProductsController = {
   },
   show: async (req, res) => {
     try {
-      const storeId = req.params.storeId;
+      const storeId = req.params.storeId || req.storeId;
       let id = req.params.id;
       let product = await productService.findProductById(storeId, id);
 
