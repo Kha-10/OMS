@@ -362,7 +362,7 @@ export default function CreateProduct() {
   };
 
   return (
-    <div ref={containerRef} className="container max-w-3xl py-6 h-full">
+    <div ref={containerRef} className="container max-w-3xl py-6 h-full w-[295px] sm:max-w-2xl lg:max-w-7xl min-w-full">
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link

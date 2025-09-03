@@ -1197,7 +1197,7 @@ export default function AddToCart({ currency }) {
       ref={containerRef}
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
     >
-      <div className="container mx-auto p-4 max-w-7xl">
+      <div className="container mx-auto p-4 w-[295px] sm:max-w-2xl lg:max-w-7xl min-w-full">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -1582,12 +1582,12 @@ export default function AddToCart({ currency }) {
 
                   {/* Pricing Adjustments */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <Percent className="h-5 w-5 text-blue-600" />
                         Pricing Adjustments
                       </h3>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -1621,7 +1621,7 @@ export default function AddToCart({ currency }) {
                     {pricingAdjustments.map((adjustment) => (
                       <div
                         key={adjustment.id}
-                        className="flex items-center gap-2 p-3 border rounded-lg"
+                        className="flex flex-col gap-2 p-3 border rounded-lg sm:flex-row sm:items-center"
                       >
                         <Input
                           placeholder="Name"
@@ -1646,7 +1646,7 @@ export default function AddToCart({ currency }) {
                               Number.parseFloat(e.target.value) || 0
                             )
                           }
-                          className="w-24 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                          className="w-full sm:w-24 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                         />
                         <Select
                           value={
@@ -1660,7 +1660,7 @@ export default function AddToCart({ currency }) {
                             )
                           }
                         >
-                          <SelectTrigger className="w-20 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 ring-offset-blue-500 focus:ring-transparent">
+                          <SelectTrigger className="w-full sm:w-20 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1676,6 +1676,7 @@ export default function AddToCart({ currency }) {
                               ? "secondary"
                               : "default"
                           }
+                          className="w-fit"
                         >
                           {adjustment.type}
                         </Badge>
@@ -1819,7 +1820,11 @@ export default function AddToCart({ currency }) {
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Complete Order - {formatWithCurrency(calculateFinalTotal().toFixed(2),currency)}
+                    Complete Order -{" "}
+                    {formatWithCurrency(
+                      calculateFinalTotal().toFixed(2),
+                      currency
+                    )}
                   </Button>
                 </div>
               )}
