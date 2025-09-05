@@ -393,7 +393,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.msg || error?.email?.msg,
+        title: error?.response?.data?.message || error?.email?.message,
         type: "error",
       });
       setLoading(false);
@@ -413,7 +413,7 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     } catch (error) {
       console.log(error);
       showToast({
-        title: error?.response?.data?.msg || error?.email?.msg,
+        title: error?.response?.data?.message || error?.email?.message,
         type: "error",
       });
     }
