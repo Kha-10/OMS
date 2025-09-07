@@ -189,6 +189,7 @@ const CartController = {
     try {
       const { cartId, productId, variantId, id } = req.params;
       const storeId = req.storeId || req.params.storeId;
+      const isPublic = req.user;
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
@@ -213,7 +214,9 @@ const CartController = {
 
       if (cart.items.length === 0) {
         // Remove entire cart from Redis
-        // await redisClient.del(cartKey);
+        if (!isPublic) {
+          await redisClient.del(cartKey);
+        }
         return res.status(200).json({ success: true, cartDeleted: true });
       }
 
