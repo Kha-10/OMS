@@ -41,8 +41,7 @@ const CartController = {
         },
       } = req.body;
 
-      const storeId = req.storeId;
-
+      const storeId = req.storeId || req.params.storeId;
       if (!cartId) {
         cartId = uuidv4();
       }
@@ -188,8 +187,8 @@ const CartController = {
   },
   removeItem: async (req, res) => {
     try {
-      const { cartId, productId, variantId } = req.params;
-      const storeId = req.storeId;
+      const { cartId, productId, variantId, id } = req.params;
+      const storeId = req.storeId || req.params.storeId;
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
@@ -205,16 +204,16 @@ const CartController = {
         const variantMatch = variantId
           ? item.variantId === variantId
           : !item.variantId;
-        return !(productMatch && variantMatch);
+        const idMatch = item.id === id;
+        return !(productMatch && variantMatch && idMatch);
       });
-
       if (cart.items.length === initialLength) {
         return res.status(404).json({ msg: "Item not found in cart" });
       }
 
       if (cart.items.length === 0) {
         // Remove entire cart from Redis
-        await redisClient.del(cartKey);
+        // await redisClient.del(cartKey);
         return res.status(200).json({ success: true, cartDeleted: true });
       }
 

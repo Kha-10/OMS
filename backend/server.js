@@ -120,6 +120,12 @@ app.use(
   productRoutes
 );
 
+app.use(
+  "/api/public/stores/:storeSlug/cart",
+  resolveSlugMiddleware,
+  cartRoutes
+);
+
 app.use("/api/stores", authMiddleware, storeRoutes);
 
 app.use("/api/users", userRoutes);

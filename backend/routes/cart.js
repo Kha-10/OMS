@@ -10,8 +10,8 @@ router.get("/:cartId", CartController.show);
 
 router.post(
   "",
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager", "staff"]),
+  // checkMemberMiddleware,
+  // RoleMiddleware(["owner", "manager", "staff"]),
   CartController.store
 );
 
@@ -23,9 +23,9 @@ router.patch(
 );
 
 router.delete(
-  "/:cartId/item/:productId/:variantId?",
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager", "staff"]),
+  "/:cartId/item/:id/:productId/:variantId?",
+  // checkMemberMiddleware,
+  // RoleMiddleware(["owner", "manager", "staff"]),
   CartController.removeItem
 );
 

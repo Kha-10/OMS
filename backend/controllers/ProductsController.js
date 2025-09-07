@@ -2,7 +2,7 @@ const Product = require("../models/Product");
 const mongoose = require("mongoose");
 const productService = require("../services/productService");
 const clearProductCache = require("../helpers/clearProductCache");
-const clearCartCache = require("../helpers/clearCartCache");
+const clearCartCache = require("../helpers/clearCache");
 const clearCache = require("../helpers/clearCache");
 const clearOrderCache = require("../helpers/clearOrderCache");
 

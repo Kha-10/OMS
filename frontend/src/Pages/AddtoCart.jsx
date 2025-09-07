@@ -513,7 +513,7 @@ export default function AddToCart({ currency }) {
     sessionStorage.removeItem("idempotencyKey");
   }
 
-  const cartId = sessionStorage.getItem("adminCartId");
+  // const cartId = sessionStorage.getItem("adminCartId");
 
   const addToCart = async (formData) => {
     if (!selectedProduct || isSoldOut) return;
@@ -690,12 +690,12 @@ export default function AddToCart({ currency }) {
     }
   };
 
-  const removeFromCart = async (productId, variantId) => {
+  const removeFromCart = async (productId, variantId, id) => {
     const cartId = sessionStorage.getItem("adminCartId");
     if (!cartId) throw new Error("Missing adminCartId");
 
     try {
-      const endpoint = `/api/stores/${storeId}/cart/${cartId}/item/${productId}/${
+      const endpoint = `/api/stores/${storeId}/cart/${cartId}/item/${id}/${productId}/${
         variantId ?? ""
       }`;
       const res = await axios.delete(endpoint);
@@ -707,16 +707,7 @@ export default function AddToCart({ currency }) {
           // sessionStorage.removeItem("adminCartId");
           setCart([]); // Reset cart state
         } else {
-          // Just one item removed
-          setCart((prev) =>
-            prev.filter((item) =>
-              variantId
-                ? !(
-                    item.productId === productId && item.variantId === variantId
-                  )
-                : item.productId !== productId
-            )
-          );
+          setCart([...res.data?.cart?.items]);
         }
       }
     } catch (error) {
@@ -839,7 +830,7 @@ export default function AddToCart({ currency }) {
         duration: Infinity, // Keep visible until we manually dismiss
       }
     );
-
+    const cartId = sessionStorage.getItem("adminCartId");
     const orderData = {
       customer: customerData,
       cartId,
@@ -989,9 +980,12 @@ export default function AddToCart({ currency }) {
             </div>
           </div>
           <Button
+            type="button"
             variant="ghost"
             size="sm"
-            onClick={() => removeFromCart(item.productId, item.variantId)}
+            onClick={() =>
+              removeFromCart(item.productId, item.variantId, item.id)
+            }
             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
           >
             <Trash2 className="h-4 w-4" />
@@ -1008,6 +1002,7 @@ export default function AddToCart({ currency }) {
           </span>
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() =>
@@ -1026,6 +1021,7 @@ export default function AddToCart({ currency }) {
               {item.quantity}
             </span>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() =>
@@ -1080,6 +1076,7 @@ export default function AddToCart({ currency }) {
 
                           <div className="flex items-center gap-1">
                             <Button
+                              type="button"
                               variant="outline"
                               size="sm"
                               onClick={() =>
@@ -1100,6 +1097,7 @@ export default function AddToCart({ currency }) {
                               {option.quantities[i]}
                             </span>
                             <Button
+                              type="button"
                               variant="outline"
                               size="sm"
                               onClick={() =>
