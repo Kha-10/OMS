@@ -271,6 +271,72 @@ const UserController = {
       res.status(500).json({ message: e.message || "Internal server error" });
     }
   },
+  updateRegistration: async (req, res) => {
+    const userId = req.user._id;
+    const { username, email, password, countryCode, phoneLocal } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res.status(400).json({ msg: "Email already in use" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (user.isVerified)
+      return res.status(400).json({ msg: "Cannot change verified email" });
+
+    user.email = email;
+    if (password) {
+      const salt = await bcrypt.genSalt();
+      user.password = await bcrypt.hash(password, salt);
+    }
+    user.username = username;
+    user.onboarding_step = 2;
+    user.countryCode = countryCode;
+    user.phoneLocal = phoneLocal;
+
+    await user.save();
+
+    await Verification.deleteMany({ userId: userId });
+
+    // Generate new verification code
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    await Verification.create({
+      userId: userId,
+      code: verificationCode,
+      type: "email",
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    });
+
+    const variables = {
+      name: user.username,
+      code: verificationCode,
+    };
+    await sendTemplateEmail(user.email, user.username, 7254278, variables);
+
+    const updatedUser = await User.findById(userId).select("-password");
+
+    return res.json({ user: updatedUser });
+  },
+  prevStep: async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const { onboarding_step } = req.body;
+      console.log("onboarding_step", req.body);
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      // Update step
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { onboarding_step },
+        { new: true }
+      ).select("-password");
+
+      return res.json({ user: updatedUser });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  },
 };
 
 module.exports = UserController;

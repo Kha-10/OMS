@@ -188,6 +188,7 @@ function index() {
                 dbEmail={tenant?.user?.email || ""}
                 dbStoreId={stores?.[0]?._id}
                 storeName={stores?.[0]?.name}
+                user = {tenant?.user}
               />
             ) : (
               <Navigate to={`/stores/${tenant?.store?.store._id}`} />

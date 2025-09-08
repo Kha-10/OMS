@@ -20,6 +20,7 @@ import {
   MapPin,
   Store,
   Check,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerTenant } from "@/features/tenants/tenantSlice";
 import axios from "@/helper/axios";
@@ -184,7 +184,13 @@ const step5Schema = z
     }
   });
 
-export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
+export default function Onboarding({
+  stepper,
+  dbEmail,
+  dbStoreId,
+  storeName,
+  user,
+}) {
   const [step, setStep] = useState(stepper);
   const [showPassword, setShowPassword] = useState(false);
   const [storeLogo, setStoreLogo] = useState(null);
@@ -199,7 +205,6 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
   const productImageInputRef = useRef(null);
   const otpInputRefs = useRef([]);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const defaultCategories = [
     "Electronics",
@@ -275,12 +280,37 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
   const isStep4Valid = step4Form.formState.isValid;
   const isStep5Valid = step5Form.formState.isValid;
 
+  useEffect(() => {
+    if (user && user.onboarding_step <= 1) {
+      step1Form.reset(user);
+    }
+  }, [user]);
+
   const nextStep = () => {
     setStep((prevStep) => (prevStep < 6 ? prevStep + 1 : prevStep));
   };
 
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1);
+  const prevStep = async () => {
+    try {
+      const response = await axios.patch(
+        "/api/users/prev-step",
+        { onboarding_step: 1 },
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("prevStep", response.data);
+      if (response.status === 200) {
+        step1Form.reset(response.data.user);
+        if (step > 1) setStep(step - 1);
+      }
+    } catch (error) {
+      console.log("Error updating the onboarding_step", error);
+      showToast({
+        title: error?.response?.data?.msg,
+        type: "error",
+      });
+    }
   };
 
   const handleUploadLogo = (file) => {
@@ -359,21 +389,71 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
     }
   };
 
+  // const handleAccountCreation = async (data) => {
+  //   try {
+  //     setLoading(true);
+  //     let res;
+  //     if (user) {
+  //       res = await axios.patch("/api/users/update-registration", data);
+  //       if (res.status === 200) {
+  //         setEmail(res.data?.user?.email);
+  //         nextStep();
+  //       }
+  //     }
+  //     const createdUser = await dispatch(registerTenant(data)).unwrap();
+  //     if (createdUser?.user) {
+  //       setEmail(createdUser?.user?.email);
+  //       nextStep();
+  //     }
+  //   } catch (error) {
+  //     console.log("Error submitting the form", error);
+  //     showToast({
+  //       title: error?.response?.data?.msg || error?.email?.msg,
+  //       type: "error",
+  //     });
+  //     setLoading(false);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleAccountCreation = async (data) => {
     try {
       setLoading(true);
-      const createdUser = await dispatch(registerTenant(data)).unwrap();
-      if (createdUser?.user) {
-        setEmail(createdUser?.user?.email);
+
+      let emailToSet;
+
+      if (user) {
+        // Update existing user
+        const res = await axios.patch("/api/users/update-registration", data);
+        if (res.status === 200) {
+          emailToSet = res.data?.user?.email;
+        } else {
+          throw new Error("Failed to update user");
+        }
+      } else {
+        // Create new user
+        const createdUser = await dispatch(registerTenant(data)).unwrap();
+        if (createdUser?.user) {
+          emailToSet = createdUser.user.email;
+        } else {
+          throw new Error("Failed to create user");
+        }
+      }
+
+      if (emailToSet) {
+        setEmail(emailToSet);
         nextStep();
       }
     } catch (error) {
       console.log("Error submitting the form", error);
       showToast({
-        title: error?.response?.data?.msg || error?.email?.msg,
+        title:
+          error?.response?.data?.msg ||
+          error?.message ||
+          "Something went wrong",
         type: "error",
       });
-      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -875,8 +955,16 @@ export default function Onboarding({ stepper, dbEmail, dbStoreId, storeName }) {
                         </p>
                       </div>
                     </div>
-
-                    <footer className="mt-auto flex flex-col gap-3 pt-1 sm:items-end sm:justify-between">
+                    <footer className="mt-auto flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={prevStep}
+                        className="order-2 rounded-xl bg-white sm:order-1"
+                      >
+                        <ChevronLeft className="mr-2 h-4 w-4" />
+                        Back
+                      </Button>
                       <LoadingButton
                         loading={loading}
                         disabled={!isStep2Valid}

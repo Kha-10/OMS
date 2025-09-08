@@ -44,4 +44,11 @@ router.post(
   UserController.resetPassword
 );
 
+router.patch(
+  "/update-registration",
+  AuthMiddleware,
+  UserController.updateRegistration
+);
+router.patch("/prev-step", AuthMiddleware, UserController.prevStep);
+
 module.exports = router;

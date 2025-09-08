@@ -9,10 +9,12 @@ const AuthMiddleware = (req, res, next) => {
         return res.status(401).json({ message: "unauthenticated" });
       } else {
         //logged in user
-        User.findById(decodedValue._id).then((user) => {
-          req.user = user;
-          next();
-        });
+        User.findById(decodedValue._id)
+          .select("-password")
+          .then((user) => {
+            req.user = user;
+            next();
+          });
       }
     });
   } else {
