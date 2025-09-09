@@ -389,34 +389,6 @@ export default function Onboarding({
     }
   };
 
-  // const handleAccountCreation = async (data) => {
-  //   try {
-  //     setLoading(true);
-  //     let res;
-  //     if (user) {
-  //       res = await axios.patch("/api/users/update-registration", data);
-  //       if (res.status === 200) {
-  //         setEmail(res.data?.user?.email);
-  //         nextStep();
-  //       }
-  //     }
-  //     const createdUser = await dispatch(registerTenant(data)).unwrap();
-  //     if (createdUser?.user) {
-  //       setEmail(createdUser?.user?.email);
-  //       nextStep();
-  //     }
-  //   } catch (error) {
-  //     console.log("Error submitting the form", error);
-  //     showToast({
-  //       title: error?.response?.data?.msg || error?.email?.msg,
-  //       type: "error",
-  //     });
-  //     setLoading(false);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleAccountCreation = async (data) => {
     try {
       setLoading(true);
@@ -451,6 +423,7 @@ export default function Onboarding({
         title:
           error?.response?.data?.msg ||
           error?.message ||
+          error?.email.msg ||
           "Something went wrong",
         type: "error",
       });
@@ -506,11 +479,13 @@ export default function Onboarding({
       if (res.status === 200) {
         setStoreId(res.data._id);
         console.log("storeId", storeId);
-        const file = productImageInputRef.current?.files?.[0];
+        console.log("storeId2", res.data._id);
+        const file = storeLogoInputRef.current?.files?.[0];
+        console.log("file", file);
         if (file) {
           const formData = new FormData();
           formData.append("photo", file);
-
+          console.log("worked");
           await axios.post(
             `/api/stores/${res.data._id}/upload?type=stores`,
             formData,

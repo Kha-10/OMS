@@ -54,10 +54,9 @@ const StoreController = {
   upload: async (req, res) => {
     try {
       console.log("REQ", req.randomImageNames);
-      let id = req.params.id;
-      console.log("req.params.id", req.params.id);
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ msg: "Invalid id" });
+      let storeId = req.params.storeId;
+      if (!mongoose.Types.ObjectId.isValid(storeId)) {
+        return res.status(400).json({ msg: "Invalid storeId" });
       }
       const isCloudinary = process.env.UPLOAD_PROVIDER === "cloudinary";
 
@@ -65,30 +64,30 @@ const StoreController = {
       let update = {};
       if (isCloudinary) {
         update = {
-          $push: {
-            photo: req.randomImageNames.map((img) => img.public_id),
-            // imgUrls: req.randomImageNames.map((img) => img.url),
+          $set: {
+            logo: req.randomImageNames[0]?.public_id,
           },
         };
       } else {
         update = {
-          $push: {
-            photo: req.randomImageNames,
+          $set: {
+            logo: req.randomImageNames[0],
           },
         };
       }
 
-      const store = await Store.findByIdAndUpdate(id, update, {
+      const store = await Store.findByIdAndUpdate(storeId, update, {
         new: true,
+        runValidators: true,
       });
 
-      console.log("store", store);
       if (!store) {
         return res.status(404).json({ msg: "Store not found" });
       }
 
       return res.json(store);
     } catch (error) {
+      console.error(error); 
       return res.status(500).json({ msg: "internet server error" });
     }
   },

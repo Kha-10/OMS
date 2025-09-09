@@ -7,9 +7,11 @@ const uploadImages = async (req, res, next) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ msg: "Photo is required" });
   }
-
+  const storeId = req.params.storeId || req.storeId;
+  console.log("storeId",storeId);
   try {
-    const folder = req.query.type || "products"; // dynamic folder
+    // const storeId = req.params.storeId || req.storeId;
+    const folder = `${storeId}-${req.query.type || "products"}`;
 
     // Upload all in parallel instead of sequentially
     const uploadPromises = req.files.map((file) => {

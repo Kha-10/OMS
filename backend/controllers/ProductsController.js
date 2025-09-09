@@ -168,7 +168,7 @@ const ProductsController = {
   upload: async (req, res) => {
     try {
       console.log("REQ", req.randomImageNames);
-      let id = req.params.id;
+      const id = req.params.id;
       console.log("req.params.id", req.params.id);
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
@@ -200,7 +200,6 @@ const ProductsController = {
       if (!product) {
         return res.status(404).json({ msg: "Product not found" });
       }
-      await clearProductCache(storeId);
       return res.json(product);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });

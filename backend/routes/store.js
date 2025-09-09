@@ -23,7 +23,7 @@ router.post(
 );
 
 router.post(
-  "/:id/upload",
+  "/:storeId/upload",
   // [upload.array("photo"), validatePhotoUpload],
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager"]),
