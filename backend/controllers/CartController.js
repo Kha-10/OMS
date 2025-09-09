@@ -4,16 +4,17 @@ const { v4: uuidv4 } = require("uuid");
 const CartController = {
   show: async (req, res) => {
     const { cartId } = req.params;
+    const storeId = req.storeId || req.params.storeId;
     try {
-      const cartKey = `cart:cartId:${cartId}`;
+      const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
 
       if (!cartData) {
         return res.status(404).json({ msg: "Cart not found or expired" });
       }
       console.log("cartData", cartData);
-      const cart = JSON.parse(cartData);
-      return res.json(cart);
+      // const cart = JSON.parse(cartData);
+      return res.json(cartData);
     } catch (error) {
       console.error("Error retrieving cart:", error);
       return res.status(500).json({ msg: "Internal server error" });
@@ -123,7 +124,7 @@ const CartController = {
   update: async (req, res) => {
     try {
       const { cartId } = req.params;
-      const storeId = req.storeId;
+      const storeId = req.storeId || req.params.storeId;
       const {
         productId,
         variantId,
@@ -132,7 +133,7 @@ const CartController = {
         optionValue,
         optionQuantity,
       } = req.body;
-
+      console.log("req.body", req.body);
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
@@ -179,6 +180,7 @@ const CartController = {
       //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
       await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
+      console.log("cart", cart);
       return res.status(200).json({ success: true, cart });
     } catch (error) {
       console.error("Error patching cart item:", error);

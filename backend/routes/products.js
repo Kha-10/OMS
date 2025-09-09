@@ -56,9 +56,9 @@ router.post(
 router.post(
   "/:id/upload",
   // [upload.array("photo"), validatePhotoUpload],
-  [upload.array("photo"), uploadAdapter.uploadImages],
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager"]),
+  [upload.array("photo"), uploadAdapter.uploadImages],
   ProductsController.upload
 );
 

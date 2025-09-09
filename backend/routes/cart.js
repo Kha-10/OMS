@@ -17,8 +17,8 @@ router.post(
 
 router.patch(
   "/:cartId",
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager", "staff"]),
+  // checkMemberMiddleware,
+  // RoleMiddleware(["owner", "manager", "staff"]),
   CartController.update
 );
 
