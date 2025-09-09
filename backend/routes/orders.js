@@ -7,8 +7,13 @@ const idempotencyCheck = require("../middlewares/idempotencyCheck");
 const lockOrderMiddleware = require("../middlewares/lockOrder");
 const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const Customercontroller = require("../controllers/CustomerController");
+const uploadAdapter = require("../services/adapters/index");
+const multer = require("multer");
 
 const router = express.Router({ mergeParams: true });
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 router.get(
   "/",
@@ -99,6 +104,12 @@ router.delete(
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.destroy
+);
+
+router.post(
+  "/:id/upload",
+  [upload.array("photo"), uploadAdapter.uploadImages],
+  OrdersController.upload
 );
 
 module.exports = router;

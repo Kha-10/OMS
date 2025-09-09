@@ -308,6 +308,47 @@ const OrdersController = {
       return res.status(status).json({ msg: message });
     }
   },
+  upload: async (req, res) => {
+    try {
+      console.log("REQ", req.randomImageNames);
+      let id = req.params.id;
+      console.log("req.params.id", req.params.id);
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ msg: "Invalid id" });
+      }
+      const isCloudinary = process.env.UPLOAD_PROVIDER === "cloudinary";
+
+      // Build update object depending on provider
+      let update = {};
+      if (isCloudinary) {
+        update = {
+          $push: {
+            photo: req.randomImageNames.map((img) => img.public_id),
+            // imgUrls: req.randomImageNames.map((img) => img.url),
+          },
+        };
+      } else {
+        update = {
+          $push: {
+            photo: req.randomImageNames,
+          },
+        };
+      }
+
+      const product = await Product.findByIdAndUpdate(id, update, {
+        new: true,
+      });
+
+      console.log("product", product);
+      if (!product) {
+        return res.status(404).json({ msg: "Product not found" });
+      }
+      await clearProductCache(storeId);
+      return res.json(product);
+    } catch (error) {
+      return res.status(500).json({ msg: "internet server error" });
+    }
+  },
 };
 
 module.exports = OrdersController;
