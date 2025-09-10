@@ -72,6 +72,7 @@ const step2Schema = z.object({
 
 const step3Schema = z.object({
   name: z.string().min(1, "Store name is required"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().optional(),
 });
@@ -244,6 +245,7 @@ export default function Onboarding({
     resolver: zodResolver(step3Schema),
     defaultValues: {
       name: "",
+      email: "",
       phone: "",
       address: "",
     },
@@ -478,14 +480,10 @@ export default function Onboarding({
       let res = await axios.post(`/api/stores`, data);
       if (res.status === 200) {
         setStoreId(res.data._id);
-        console.log("storeId", storeId);
-        console.log("storeId2", res.data._id);
         const file = storeLogoInputRef.current?.files?.[0];
-        console.log("file", file);
         if (file) {
           const formData = new FormData();
           formData.append("photo", file);
-          console.log("worked");
           await axios.post(
             `/api/stores/${res.data._id}/upload?type=stores`,
             formData,
@@ -980,6 +978,28 @@ export default function Onboarding({
                               <Input
                                 type="text"
                                 placeholder="My Awesome Store"
+                                className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={step3Form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">
+                              Store email{" "}
+                              <span className="text-red-400">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="store@gmail.com"
                                 className="h-11 rounded-xl border-gray-200 text-sm sm:h-12 sm:text-base w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
                                 {...field}
                               />

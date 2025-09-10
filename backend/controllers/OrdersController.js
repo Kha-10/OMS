@@ -86,7 +86,7 @@ const OrdersController = {
   show: async (req, res) => {
     try {
       const id = req.params.id;
-      const storeId = req.storeId;
+      const storeId = req.params.storeId || req.storeId;
 
       const order = await orderService.getOrderWithEnhancedItems(id, storeId);
       if (!order) {

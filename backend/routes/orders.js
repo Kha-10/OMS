@@ -87,8 +87,8 @@ router.get(
 );
 router.get(
   "/:id",
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager", "staff"]),
+  // checkMemberMiddleware,
+  // RoleMiddleware(["owner", "manager", "staff"]),
   OrdersController.show
 );
 

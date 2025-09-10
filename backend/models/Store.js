@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const slugUpdater = require("mongoose-slug-updater")
+const slugUpdater = require("mongoose-slug-updater");
 
 mongoose.plugin(slugUpdater);
 
@@ -11,7 +11,11 @@ const StoreSchema = new schema(
       type: String,
       required: true,
     },
-    slug: { type: String, slug: "name", unique: true }, 
+    email: {
+      type: String,
+      required: true,
+    },
+    slug: { type: String, slug: "name", unique: true },
     phone: {
       type: String,
       required: true,
