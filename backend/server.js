@@ -108,6 +108,10 @@ app.use("/api/stores/:storeId/analytics", authMiddleware, analyticsRoutes);
 
 app.use("/api/stores/:storeSlug", publicStore);
 
+app.use("/api/stores", authMiddleware, storeRoutes);
+
+app.use("/api/users", userRoutes);
+
 app.use(
   "/api/public/stores/:storeSlug/categories",
   resolveSlugMiddleware,
@@ -126,9 +130,11 @@ app.use(
   cartRoutes
 );
 
-app.use("/api/stores", authMiddleware, storeRoutes);
-
-app.use("/api/users", userRoutes);
+app.use(
+  "/api/public/stores/:storeSlug/orders",
+  resolveSlugMiddleware,
+  orderRoutes
+);
 
 app.get("/cookie", (req, res) => {
   res.cookie("gg", "wp", { httpOnly: true });

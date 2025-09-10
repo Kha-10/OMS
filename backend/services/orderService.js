@@ -27,13 +27,14 @@ const findOrders = async (queryParams) => {
 const enhanceProductImages = (input) => {
   if (!input) return input;
   if (Array.isArray(input)) {
-    return input.map((product) => uploadAdapter.getImageUrls(product));
+    return input.map((order) => uploadAdapter.getImageUrls(order));
   }
-  return uploadAdapter.getImageUrls(input);
+  return uploadAdapter.getImageUrls(input, "orders");
 };
 
 const createOrder = async ({
   customer,
+  customerType,
   cartId,
   items,
   notes,
@@ -105,6 +106,7 @@ const createOrder = async ({
       {
         customer: customerId,
         manualCustomer,
+        customerType,
         items,
         notes,
         orderStatus,

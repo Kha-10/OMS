@@ -73,8 +73,8 @@ router.post(
 );
 router.post(
   "/",
-  checkMemberMiddleware,
-  RoleMiddleware(["owner", "manager", "staff"]),
+  // checkMemberMiddleware,
+  // RoleMiddleware(["owner", "manager", "staff"]),
   idempotencyCheck,
   OrdersController.store
 );

@@ -7,10 +7,8 @@ const uploadImages = async (req, res, next) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ msg: "Photo is required" });
   }
-  const storeId = req.params.storeId || req.storeId;
-  console.log("storeId",storeId);
   try {
-    // const storeId = req.params.storeId || req.storeId;
+    const storeId = req.params.storeId || req.storeId;
     const folder = `${storeId}-${req.query.type || "products"}`;
 
     // Upload all in parallel instead of sequentially
@@ -101,14 +99,15 @@ const updateImages = async (id, deletedImages, images) => {
   return updatedProduct;
 };
 
-const getImageUrls = (product) => {
+const getImageUrls = (product, folderName) => {
   const plainProduct = product.toObject ? product.toObject() : product;
 
-  const images = plainProduct.photos || plainProduct.photo;
+  const images =
+    plainProduct.photos || plainProduct.photo || plainProduct.recieptSlip;
   if (!images || !images.length) return plainProduct;
   return {
     ...plainProduct,
-    imgUrls: generateImageUrls(images),
+    imgUrls: generateImageUrls(images, folderName),
   };
 };
 

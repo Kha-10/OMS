@@ -93,21 +93,6 @@ const createOrder = async (orderData, session) => {
   return order;
 };
 
-// const findById = async (orderId, storeId, session = null) => {
-//   console.log("orderId",orderId);
-//   console.log("storeId",storeId);
-//   if (!mongoose.Types.ObjectId.isValid(orderId)) {
-//     return null;
-//   }
-
-//   const query = Order.findOne({ _id: orderId, storeId }).populate("customer");
-//   console.log("query",query);
-//   if (session) {
-//     query.session(session);
-//   }
-//   console.log("queryAns",query);
-//   return query;
-// };
 const findById = async (orderId, storeId, session = null) => {
   if (
     !mongoose.Types.ObjectId.isValid(orderId) ||
@@ -149,15 +134,6 @@ const saveCustomer = async (customer) => {
   return customer.save();
 };
 
-// const updateOrder = async (id, storeId, updateData, session = null) => {
-//   const query = Order.updateOne({ _id: id, storeId }, { $set: updateData });
-
-//   if (session) {
-//     query.session(session);
-//   }
-
-//   return query;
-// };
 const updateOrder = async (id, storeId, updateData, session = null) => {
   try {
     const options = session ? { session } : {};
@@ -244,10 +220,6 @@ const restockOrderItems = async (order, session) => {
     { session }
   );
 };
-
-// const bulkDeleteOrders = async (orderIds, storeId, session) => {
-//   return Order.deleteMany({ _id: { $in: orderIds }, storeId }).session(session);
-// };
 
 const bulkDeleteOrders = async (orderIds, storeId, session) => {
   return Order.updateMany(

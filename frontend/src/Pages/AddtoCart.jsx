@@ -833,6 +833,7 @@ export default function AddToCart({ currency }) {
     const cartId = sessionStorage.getItem("adminCartId");
     const orderData = {
       customer: customerData,
+      customerType: "manual",
       cartId,
       orderStatus: "Pending",
       items: cart,
@@ -855,8 +856,8 @@ export default function AddToCart({ currency }) {
       }
 
       const res = await axios.post(endpoint, orderData, { headers });
-
       if (res.status === 200) {
+        console.log("res",res);
         const { needRestockAndDeduct } = res.data;
 
         if (!needRestockAndDeduct) {

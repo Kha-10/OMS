@@ -31,7 +31,7 @@ import { discardCart } from "@/features/cart/cartSlice";
 import { showToast } from "@/components/NewToaster";
 import { formatWithCurrency } from "@/helper/currencyCoverter";
 
-export default function OrderDetailsPage({currency}) {
+export default function OrderDetailsPage({ currency }) {
   const { tenant } = useSelector((state) => state.tenants);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -430,7 +430,10 @@ export default function OrderDetailsPage({currency}) {
                             )}
 
                             <p className="text-gray-600">
-                            {`${formatWithCurrency(item.basePrice, currency)} × ${item.quantity}`}
+                              {`${formatWithCurrency(
+                                item.basePrice,
+                                currency
+                              )} × ${item.quantity}`}
                             </p>
                             {item?.options?.length > 0 &&
                               item.options.map((opt) => {
@@ -449,7 +452,9 @@ export default function OrderDetailsPage({currency}) {
                                     </p>
                                     <p className="text-gray-400 text-sm font-light ml-4">
                                       {opt.prices.map((price, i) => (
-                                        <span key={i}>{formatWithCurrency(price,currency)}</span>
+                                        <span key={i}>
+                                          {formatWithCurrency(price, currency)}
+                                        </span>
                                       ))}
                                     </p>
                                     <p className="text-gray-400 text-sm font-light ml-4">
@@ -462,7 +467,10 @@ export default function OrderDetailsPage({currency}) {
                               })}
                           </div>
                           <p className="font-medium">
-                            {formatWithCurrency(item.totalPrice.toFixed(2),currency)}
+                            {formatWithCurrency(
+                              item.totalPrice.toFixed(2),
+                              currency
+                            )}
                           </p>
                         </div>
                       </div>
@@ -471,7 +479,7 @@ export default function OrderDetailsPage({currency}) {
                   <div className="border-t border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
                       <p>Items total ({totalQuantity})</p>
-                      <p>{formatWithCurrency(total?.toFixed(2),currency)}</p>
+                      <p>{formatWithCurrency(total?.toFixed(2), currency)}</p>
                     </div>
                     {orders?.pricing?.adjustments.map((adj, index) => {
                       const subtotal = orders?.pricing?.subtotal || 0;
@@ -485,7 +493,9 @@ export default function OrderDetailsPage({currency}) {
                           className="flex items-center justify-between text-sm font-normal"
                         >
                           <p>{adj.name}</p>
-                          <p>{formatWithCurrency(amount.toFixed(2),currency)}</p>
+                          <p>
+                            {formatWithCurrency(amount.toFixed(2), currency)}
+                          </p>
                         </div>
                       );
                     })}
@@ -494,7 +504,14 @@ export default function OrderDetailsPage({currency}) {
                   <div className="border-t border-dashed  border-gray-200 p-3 sm:p-4">
                     <div className="flex justify-between mb-2">
                       <p>Subtotal</p>
-                      <p>{formatWithCurrency(orders?.pricing?.subtotal?.toFixed(2),currency)}</p>
+                      <p>
+                        {orders?.pricing?.subtotal
+                          ? formatWithCurrency(
+                              orders?.pricing?.subtotal?.toFixed(2),
+                              currency
+                            )
+                          : ""}
+                      </p>
                     </div>
                   </div>
 
@@ -502,7 +519,10 @@ export default function OrderDetailsPage({currency}) {
                     <div className="flex justify-between mb-2">
                       <p className="font-bold">Total</p>
                       <p className="font-bold">
-                        {formatWithCurrency(orders?.pricing?.finalTotal?.toFixed(2),currency)}
+                        {formatWithCurrency(
+                          orders?.pricing?.finalTotal?.toFixed(2),
+                          currency
+                        )}
                       </p>
                     </div>
                   </div>
@@ -594,6 +614,21 @@ export default function OrderDetailsPage({currency}) {
                       </div>
                     </div>
                   </div>
+                  <div className="flex md:justify-start md:items-start items-center justify-center mt-3">
+                    {orders?.imgUrls.length > 0 && (
+                      <a
+                        href={orders.imgUrls[0]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={orders.imgUrls[0]}
+                          alt="receiptSlip"
+                          className="h-80 w-auto rounded-2xl cursor-pointer hover:opacity-90 transition"
+                        />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 {/* Fulfillment info */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 md:mb-6">
@@ -638,7 +673,7 @@ export default function OrderDetailsPage({currency}) {
                             <div className="w-24 min-w-[6rem] text-gray-500 mb-1 sm:mb-0">
                               {adj.name}
                             </div>
-                            {formatWithCurrency(adj.value.toFixed(2),currency)}
+                            {formatWithCurrency(adj.value.toFixed(2), currency)}
                           </div>
                         ))}
 

@@ -34,11 +34,6 @@ router.post(
 
 router.get("/:id", CategoriesController.show);
 
-// router.delete(
-//   "/bulk",
-//   // RoleMiddleware(["admin", "superadmin"]),
-//   CategoriesController.bulkDestroy
-// );
 router.post(
   "/bulk",
   [

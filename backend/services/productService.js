@@ -95,12 +95,13 @@ const findProducts = async (storeId, queryParams) => {
   await redisClient.set(cacheKey, result, { EX: 3600 });
   return result;
 };
+
 const enhanceProductImages = (input) => {
   if (!input) return input;
   if (Array.isArray(input)) {
     return input.map((product) => uploadAdapter.getImageUrls(product));
   }
-  return uploadAdapter.getImageUrls(input);
+  return uploadAdapter.getImageUrls(input,"products");
 };
 
 // POST

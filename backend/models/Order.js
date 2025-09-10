@@ -104,7 +104,7 @@ const OptionSchema = new mongoose.Schema({
   // quantities: [Number],
   answers: { type: [String], required: true },
   prices: { type: [Number], required: true },
-  quantities: { type: [Number], required: true }
+  quantities: { type: [Number], required: true },
 });
 
 const ItemSchema = new mongoose.Schema({
@@ -148,6 +148,7 @@ const OrderSchema = new mongoose.Schema(
           apartment: { type: String },
           city: { type: String },
           zipCode: { type: String },
+          fullAddress: { type: String },
         },
       },
       email: { type: String },
@@ -182,9 +183,16 @@ const OrderSchema = new mongoose.Schema(
     },
     orderNumber: { type: String, required: true },
     invoiceNumber: { type: String, required: true },
-    deleted : {
-      type : Boolean,
-      default : false
+    customerType: {
+      type: String,
+      enum: ["registered", "guest", "manual"],
+      default: "manual",
+      required: true,
+    },
+    recieptSlip: String,
+    deleted: {
+      type: Boolean,
+      default: false,
     },
     storeId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const Counter = require("../models/Counter");
 const Customer = require("../models/Customer");
+const Store = require("../models/Store");
 const mongoose = require("mongoose");
 const clearProductCache = require("../helpers/clearProductCache");
 const clearCartCache = require("../helpers/clearCart");
@@ -23,8 +24,10 @@ const OrdersController = {
       const { orders, totalOrders, page, limit } =
         await orderService.findOrders(queryParams);
 
+      const enhancedOrders = orderService.enhanceProductImages(orders);
+
       const response = {
-        data: orders,
+        data: enhancedOrders,
         pagination: {
           totalOrders,
           totalPages: Math.ceil(totalOrders / limit),
@@ -42,19 +45,33 @@ const OrdersController = {
     }
   },
   store: async (req, res) => {
-    const { customer, cartId, items, notes, orderStatus, pricing } = req.body;
+    const {
+      customer,
+      customerType,
+      cartId,
+      items,
+      notes,
+      orderStatus,
+      pricing,
+    } = req.body;
     const idempotencyKey = req.idempotencyKey;
+    const storeId = req.params.storeId || req.storeId;
+    const store = await Store.findById(storeId);
+    if (!store) {
+      return res.status(404).json({ msg: "Store doesn't exist" });
+    }
 
     try {
       const order = await orderService.createOrder({
         customer,
+        customerType,
         cartId,
         items,
         notes,
         orderStatus,
         pricing,
         idempotencyKey,
-        storeId: req.storeId,
+        storeId: storeId,
         createdBy: req.user?._id,
       });
 
@@ -322,29 +339,27 @@ const OrdersController = {
       let update = {};
       if (isCloudinary) {
         update = {
-          $push: {
-            photo: req.randomImageNames.map((img) => img.public_id),
-            // imgUrls: req.randomImageNames.map((img) => img.url),
+          $set: {
+            recieptSlip: req.randomImageNames[0]?.public_id,
           },
         };
       } else {
         update = {
-          $push: {
-            photo: req.randomImageNames,
+          $set: {
+            recieptSlip: req.randomImageNames[0],
           },
         };
       }
 
-      const product = await Product.findByIdAndUpdate(id, update, {
+      const order = await Order.findByIdAndUpdate(id, update, {
         new: true,
       });
 
-      console.log("product", product);
-      if (!product) {
-        return res.status(404).json({ msg: "Product not found" });
+      console.log("order", order);
+      if (!order) {
+        return res.status(404).json({ msg: "Order not found" });
       }
-      await clearProductCache(storeId);
-      return res.json(product);
+      return res.json(order);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
     }
