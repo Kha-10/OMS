@@ -165,12 +165,17 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
         storeId
       );
       if (!latestProduct) return item;
-
+      console.log("item", item);
+      console.log("latestProduct", latestProduct);
       return {
         ...item.toObject(),
         trackQuantityEnabled: latestProduct.trackQuantityEnabled,
         productName: latestProduct.name,
-        productinventory: item.quantity + latestProduct.inventory.quantity,
+        // productinventory: item.quantity + latestProduct.inventory.quantity,
+        ...(latestProduct.trackQuantityEnabled && {
+          productinventory:
+            item.quantity + (latestProduct.inventory?.quantity ?? 0),
+        }),
         cartMinimum: latestProduct.cartMinimumEnabled
           ? latestProduct.cartMinimum
           : 0,
