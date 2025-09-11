@@ -16,16 +16,16 @@ const idempotencyCheck = async (req, res, next) => {
     );
     console.log("redisData", redisData);
     if (redisData) {
-      const parsed = JSON.parse(redisData);
-      if (parsed.status === "completed") {
+      // const parsed = JSON.parse(redisData);
+      if (redisData.status === "completed") {
         const order = await Order.findById(_id);
         return res.status(200).json(order);
       }
 
-      if (parsed.status === "failed") {
+      if (redisData.status === "failed") {
         return res
           .status(409)
-          .json({ msg: parsed.error || "Previous request failed" });
+          .json({ msg: redisData.error || "Previous request failed" });
       }
 
       return res.status(409).json({

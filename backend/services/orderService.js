@@ -101,6 +101,17 @@ const createOrder = async ({
     if (customerId) {
       await CustomerRepo.updateCustomer(customerId, customer, storeId, session);
     }
+    console.log("items", items);
+    const soldOutItems = items.filter(
+      (item) => item.quantity > item.productinventory
+    );
+
+    if (soldOutItems.length > 0) {
+      const productNames = soldOutItems
+        .map((item) => item.productName)
+        .join(", ");
+      throw handler.insufficient(`Sold out for products: ${productNames}`);
+    }
 
     const order = await OrderRepo.createOrder(
       {

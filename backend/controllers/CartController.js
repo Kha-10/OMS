@@ -1,5 +1,6 @@
 const redisClient = require("../config/redisClient");
 const { v4: uuidv4 } = require("uuid");
+const handler = require("../helpers/handler");
 
 const CartController = {
   show: async (req, res) => {
@@ -41,29 +42,32 @@ const CartController = {
           options,
         },
       } = req.body;
-
       const storeId = req.storeId || req.params.storeId;
       if (!cartId) {
         cartId = uuidv4();
       }
 
-      // Fixed key format (added missing colon)
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
 
+      const soldOutItems =
+        req.body.items.quantity > req.body.items.productinventory;
+
+      if (soldOutItems) {
+        throw handler.insufficient(
+          `Sold out for product: ${req.body.items.productName}`
+        );
+      }
+
       let cart;
       if (cartData) {
-        // Parse the cart data (this was missing!)
         cart = cartData;
 
-        // Standardize the structure - ensure items is always at cart.items
         if (!cart.items) {
           if (cart.order && cart.order.items) {
-            // Move items from cart.order.items to cart.items
             cart.items = cart.order.items;
             delete cart.order.items;
           } else {
-            // Initialize items array if it doesn't exist
             cart.items = [];
           }
         }
@@ -87,7 +91,6 @@ const CartController = {
           totalPrice,
         });
       } else {
-        // New cart - consistent structure
         cart = {
           id: cartId,
           items: [
@@ -118,7 +121,11 @@ const CartController = {
       return res.status(200).json({ success: true, cart });
     } catch (error) {
       console.error("Error storing cart:", error);
-      return res.status(500).json({ msg: "Internal server error" });
+
+      const status = error.statusCode || 500;
+      const message = error.message || "Internal server error";
+
+      return res.status(status).json({ msg: message });
     }
   },
   update: async (req, res) => {
