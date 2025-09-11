@@ -44,6 +44,7 @@ import useProducts from "@/hooks/useProducts";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import NewToaster from "@/components/NewToaster";
+import { showToast } from "@/components/NewToaster";
 
 export default function CreateProduct() {
   const [channel, setChannel] = useState("whatsapp");
@@ -274,6 +275,10 @@ export default function CreateProduct() {
       } catch (error) {
         console.log(error);
         console.error("Upload error:", error.response?.data || error.message);
+        showToast({
+          title: "Failed to upload images",
+          type: "error",
+        });
       }
     }
   };
@@ -307,16 +312,7 @@ export default function CreateProduct() {
       } else {
         res = await axios.post(`/api/stores/${storeId}/products`, data);
       }
-      // if (res.status === 200) {
-      //   showToast(
-      //     toastId,
-      //     id ? "Product updated successfully" : "Product added successfully"
-      //   );
-      //   onError("error");
-      // }
-
-      // Step 2: Upload Photos (only if there are images)
-      console.log("res", res);
+      //  Upload Photos (only if there are images)
       if (res.status === 200 && newImages.length > 0) {
         await uploadPhotos(res.data._id, newImages);
       }
@@ -362,7 +358,10 @@ export default function CreateProduct() {
   };
 
   return (
-    <div ref={containerRef} className="container max-w-3xl py-6 h-full w-[295px] sm:max-w-2xl lg:max-w-7xl min-w-full">
+    <div
+      ref={containerRef}
+      className="container max-w-3xl py-6 h-full w-[295px] sm:max-w-2xl lg:max-w-7xl min-w-full"
+    >
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link
