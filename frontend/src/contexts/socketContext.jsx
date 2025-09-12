@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import { useSelector } from "react-redux";
 import socket from "@/helper/io";
-import useOrders from "@/hooks/useOrders";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { showToast } from "@/components/NewToaster";
 
@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
   const { stores } = useSelector((state) => state.stores);
   const storeId = stores?.[0]?._id;
 
-  const { refetch } = useOrders({});
+  const queryClient = useQueryClient();
   useEffect(() => {
     if (!storeId) return;
 
@@ -24,7 +24,7 @@ export const SocketProvider = ({ children }) => {
         type: "success",
         description: `Order # ${order.orderNumber} (${order.customerName})`,
       });
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     });
 
     return () => {
