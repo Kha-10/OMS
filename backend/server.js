@@ -1,5 +1,7 @@
 const express = require("express");
 
+const http = require("http");
+
 require("dotenv").config();
 
 const morgan = require("morgan");
@@ -63,17 +65,42 @@ app.use(express.static("public"));
 
 app.use(
   cors({
-    // origin: "http://localhost:5173",
-    origin: process.env.ORIGIN,
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      process.env.ORIGIN,
+    ].filter(Boolean),
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "Idempotency-Key",
+      "idempotency-key",
+    ],
   })
 );
+
+// app.use(
+//   cors({
+//     // origin: "http://localhost:5173",
+//     origin: process.env.ORIGIN,
+//     credentials: true,
+//   })
+// );
+
+const httpServer = http.createServer(app);
 
 const mongoURL = process.env.MONGO_URL;
 
 mongoose.connect(mongoURL).then(() => {
   console.log("connected to db");
-  app.listen(process.env.PORT, () => {
+  const { initSocket } = require("./services/socketService");
+  initSocket(httpServer);
+  httpServer.listen(process.env.PORT, () => {
     console.log("server is running on port " + process.env.PORT);
   });
 });

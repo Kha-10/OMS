@@ -62,6 +62,17 @@ export default function NewToaster({
   );
 }
 
-export function showToast({ title, type = "loading", description = "" }) {
-  return toast.custom((id) => <NewToaster id={id} title={title} type={type} description={description} />);
+export function showToast({
+  title,
+  type = "loading",
+  description = "",
+}) {
+  return toast.custom((id) => (
+    <NewToaster
+      id={id}
+      title={title}
+      type={type}
+      description={description}
+    />
+  ));
 }

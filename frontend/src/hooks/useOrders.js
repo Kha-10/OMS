@@ -67,7 +67,7 @@ const useOrders = (
           },
         ],
     queryFn: fetchOrders,
-    enabled: isSingle ? !!id : true,
+    enabled: !!storeId && (isSingle ? !!id : true),
     keepPreviousData: true,
     onError: (error) => {
       console.error("Error fetching orders:", error);

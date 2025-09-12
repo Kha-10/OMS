@@ -11,6 +11,7 @@ const orderService = require("../services/orderService");
 const cartService = require("../services/cartService");
 const handler = require("../helpers/handler");
 const redisClient = require("../config/redisClient");
+const { getIO } = require("../services/socketService");
 
 const OrdersController = {
   index: async (req, res) => {
@@ -74,6 +75,17 @@ const OrdersController = {
         storeId: storeId,
         createdBy: req.user?._id,
       });
+
+      if (customerType === "guest") {
+        const io = getIO();
+        // Emit socket event
+        io.emit("new-order", {
+          message: "New order created",
+          orderNumber: order.orderNumber,
+          storeId,
+          customerName: order.manualCustomer.name,
+        });
+      }
 
       return res.json(order);
     } catch (error) {

@@ -615,7 +615,7 @@ export default function OrderDetailsPage({ currency }) {
                     </div>
                   </div>
                   <div className="flex md:justify-start md:items-start items-center justify-center mt-3">
-                    {orders?.imgUrls.length > 0 && (
+                    {orders?.imgUrls && orders?.imgUrls.length > 0 && (
                       <a
                         href={orders.imgUrls[0]}
                         target="_blank"
