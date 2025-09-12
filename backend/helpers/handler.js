@@ -6,10 +6,8 @@ const handler = {
   },
 
   conflictError: (message) => {
-    console.log("conflictError");
     const err = new Error(message);
     err.statusCode = 409;
-    console.log("err", err);
     return err;
   },
 

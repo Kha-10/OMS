@@ -8,7 +8,6 @@ const redis = require("../config/redisClient");
 // };
 
 const clearProductCache = async (storeId, mainKey = "products") => {
-  console.log("clearProductCache");
   const pattern = `${mainKey}:store${storeId}:*`;
   let cursor = "0";
   do {

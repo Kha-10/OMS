@@ -31,7 +31,7 @@ const validatePhotoUpload = async (req, res, next) => {
         Body: buffer,
         ContentType: file.mimetype,
       };
-      console.log("params",params);
+
       const command = new PutObjectCommand(params);
       await s3.send(command);
     }

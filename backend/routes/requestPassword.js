@@ -18,7 +18,6 @@ const emailQueue = new Queue("emailQueue", {
 
 emailQueue.process(async function (job, done) {
   try {
-    console.log("Processing email job:", job.id);
     await sendEmail(job.data);
     done();
   } catch (error) {
@@ -63,9 +62,8 @@ router.post("", AuthMiddleware, async (req, res) => {
       { $set: { lastResetRequest: now } }
     );
 
-    console.log("run");
     await Token.deleteOne({ tennatID: existingUser._id });
-    console.log("run 2");
+
     const token = createToken(existingUser._id, existingUser.role);
     await Token.create({
       tennatID: existingUser._id,

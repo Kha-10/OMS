@@ -29,7 +29,7 @@ const Customercontroller = {
           hasPreviousPage: page > 1,
         },
       };
-      console.log("response", response);
+
       return res.json(response);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
@@ -160,7 +160,7 @@ const Customercontroller = {
         },
       ]);
 
-      console.log("result", result);
+
       return res.json({ ...customer, ...result[0] });
     } catch (error) {
       console.log("err", error);
@@ -191,7 +191,6 @@ const Customercontroller = {
     try {
       const { ids } = req.body;
       const storeId = req.storeId;
-      console.log("req.body", req.body);
       if (!storeId) {
         throw handler.invalidError("storeId is required");
       }

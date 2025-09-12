@@ -33,7 +33,6 @@ const StoreController = {
       }
 
       const store = await Store.create(storeData);
-      console.log("store", store);
 
       await StoreMember.create({
         store: store._id,
@@ -53,7 +52,7 @@ const StoreController = {
   },
   upload: async (req, res) => {
     try {
-      console.log("REQ", req.randomImageNames);
+      // console.log("REQ", req.randomImageNames);
       let storeId = req.params.storeId;
       if (!mongoose.Types.ObjectId.isValid(storeId)) {
         return res.status(400).json({ msg: "Invalid storeId" });

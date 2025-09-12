@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 
 const generateCacheKey = (storeId, mainKey, queryParams) => {
-  console.log("queryParams",queryParams);
   const filteredParams = {
     page: queryParams.page || 1,
     limit: queryParams.limit || 10,
@@ -12,7 +11,6 @@ const generateCacheKey = (storeId, mainKey, queryParams) => {
     sortDirection: queryParams.sortDirection,
   };
 
-  console.log("filteredParams",filteredParams);
   const hash = crypto
     .createHash("md5")
     .update(JSON.stringify(filteredParams))

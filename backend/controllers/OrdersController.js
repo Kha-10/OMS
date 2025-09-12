@@ -339,9 +339,9 @@ const OrdersController = {
   },
   upload: async (req, res) => {
     try {
-      console.log("REQ", req.randomImageNames);
+      // console.log("REQ", req.randomImageNames);
       let id = req.params.id;
-      console.log("req.params.id", req.params.id);
+      // console.log("req.params.id", req.params.id);
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
       }
@@ -367,7 +367,6 @@ const OrdersController = {
         new: true,
       });
 
-      console.log("order", order);
       if (!order) {
         return res.status(404).json({ msg: "Order not found" });
       }

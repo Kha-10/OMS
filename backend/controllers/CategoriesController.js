@@ -102,7 +102,6 @@ const CategoriesController = {
     try {
       const { ids } = req.body;
       const storeId = req.params.storeId;
-      console.log("bulkDestroy", ids);
       const result = await categoryService.deleteCategories(storeId, ids);
 
       if (result.invalidIds.length > 0) {

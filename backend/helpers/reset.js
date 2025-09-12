@@ -16,7 +16,6 @@ const resetCounters = async () => {
       { new: true, upsert: true } // Create if it doesn't exist
     );
 
-    console.log("Counters have been reset to 1.");
   } catch (error) {
     console.error("Error resetting counters:", error);
   }

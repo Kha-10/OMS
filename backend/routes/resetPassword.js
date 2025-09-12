@@ -17,7 +17,6 @@ const emailQueue = new Queue("emailQueue", {
 
 emailQueue.process(async function (job, done) {
   try {
-    console.log("Processing email job:", job.id);
     await sendEmail(job.data);
     done();
   } catch (error) {
@@ -28,8 +27,6 @@ emailQueue.process(async function (job, done) {
 
 router.post("", AuthMiddleware, async (req, res) => {
   const { password, token } = req.body;
-  console.log("PASS", password);
-  console.log("REQ", token);
   try {
     const storedToken = await Token.findOne({ token }).populate('tennatID');
     const expiresAtDate = new Date(storedToken.expiresAt);

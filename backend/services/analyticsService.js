@@ -10,12 +10,7 @@ const getAnalytics = async (storeId, startDate, endDate, threshold = 5) => {
   const end = endDate ? new Date(endDate) : new Date();
   end.setHours(23, 59, 59, 999);
 
-  console.log("=== AGGREGATION DEBUG ===");
-  console.log("storeId:", storeId, "type:", typeof storeId);
-  console.log("start:", start);
-  console.log("end:", end);
   const rawData = await AnalyticsRepo.getOrdersAggregation(storeId, start, end);
-  console.log("rawData", rawData);
   const dataMap = {};
   rawData.forEach((item) => {
     dataMap[item._id] = item;

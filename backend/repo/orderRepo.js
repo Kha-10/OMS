@@ -47,7 +47,6 @@ const fetchOrders = async (queryParams) => {
   ]);
 
   const totalOrders = totalOrdersData[0]?.count || 0;
-  console.log("orders", orders);
   return { orders, totalOrders, page, limit };
 };
 
@@ -205,7 +204,6 @@ const removeOrder = async (orderId, storeId, session = null) => {
 
 const restockOrderItems = async (order, session) => {
   if (!order || !order.items) return;
-  console.log("order", order);
   await Product.bulkWrite(
     order.items.map((item) => ({
       updateOne: {

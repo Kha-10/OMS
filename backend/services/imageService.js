@@ -8,14 +8,12 @@ const {
 } = require("@aws-sdk/client-s3");
 
 const awsRemove = async (photosToDelete) => {
-  console.log("photosToDelete",photosToDelete);
   try {
     for (const photo of photosToDelete) {
       const params = {
         Bucket: process.env.BUCKET_NAME,
         Key: photo,
       };
-      console.log("Delete Parameters:", params);
 
       const command = new DeleteObjectCommand(params);
       await s3.send(command);
@@ -52,7 +50,6 @@ const invalidateCloudFrontCache = async (photoPaths) => {
       invalidationParams
     );
     const response = await cloudFront.send(invalidationCommand);
-    console.log("CloudFront Invalidation Response:", response);
   } catch (error) {
     console.error("CloudFront Invalidation Error:", error);
   }

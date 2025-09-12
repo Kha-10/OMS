@@ -190,6 +190,5 @@ app.get("/send-email", async (req, res) => {
 });
 
 app.post("/upload", upload.single("photo"), function (req, res, next) {
-  console.log(req.file);
   return res.status(200).send(req.file);
 });

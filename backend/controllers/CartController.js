@@ -13,7 +13,6 @@ const CartController = {
       if (!cartData) {
         return res.status(404).json({ msg: "Cart not found or expired" });
       }
-      console.log("cartData", cartData);
       // const cart = JSON.parse(cartData);
       return res.json(cartData);
     } catch (error) {
@@ -140,14 +139,12 @@ const CartController = {
         optionValue,
         optionQuantity,
       } = req.body;
-      console.log("req.body", req.body);
       const cartKey = `cart:storeId:${storeId}cartId:${cartId}`;
       const cartData = await redisClient.get(cartKey);
       if (!cartData) return res.status(404).json({ msg: "Cart not found" });
 
       //   const cart = JSON.parse(cartData);
       const cart = cartData;
-      console.log("cart", cart);
       const items = cart.order?.items || cart.items || [];
       const foundItem = items.find(
         (i) => i.productId === productId && i.variantId === variantId
@@ -187,7 +184,6 @@ const CartController = {
       //   await redisClient.setEx(cartKey, 86400, JSON.stringify(cart));
       await redisClient.set(cartKey, JSON.stringify(cart), { ex: 86400 });
 
-      console.log("cart", cart);
       return res.status(200).json({ success: true, cart });
     } catch (error) {
       console.error("Error patching cart item:", error);
@@ -205,7 +201,6 @@ const CartController = {
 
       // const cart = JSON.parse(cartData);
       const cart = cartData;
-      console.log("UPDATE", cart);
       const items = cart.order?.items || cart.items || [];
       const initialLength = items.length;
       // Filter out the matching item

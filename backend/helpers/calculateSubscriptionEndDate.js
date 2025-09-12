@@ -40,9 +40,7 @@ const calculateSubscriptionEndDate = (subscriptionType) => {
       status = "active";
     }
   }
-  console.log("subscriptionEndDate", subscriptionEndDate);
   let gracePeriodEndDate = new Date(subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 7));
-  console.log("gracePeriodEndDate", gracePeriodEndDate);
 
   return { endDate, status, gracePeriodEndDate };
 };

@@ -79,8 +79,6 @@ const ProductsController = {
     try {
       const { ids } = req.body;
       const storeId = req.params.storeId;
-      console.log("ids", ids);
-      console.log("storeId", storeId);
       const result = await productService.deleteProducts(storeId, ids);
 
       if (result.invalidIds.length > 0) {
@@ -167,9 +165,8 @@ const ProductsController = {
   },
   upload: async (req, res) => {
     try {
-      console.log("REQ", req.randomImageNames);
+      // console.log("REQ", req.randomImageNames);
       const id = req.params.id;
-      console.log("req.params.id", req.params.id);
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid id" });
       }
@@ -196,7 +193,6 @@ const ProductsController = {
         new: true,
       });
 
-      console.log("product", product);
       if (!product) {
         return res.status(404).json({ msg: "Product not found" });
       }
@@ -208,7 +204,6 @@ const ProductsController = {
   duplicate: async (req, res) => {
     const { ids } = req.body;
     const storeId = req.params.storeId;
-    console.log("duplicate", ids);
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ msg: "ids must be an array" });
     }

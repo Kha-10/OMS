@@ -6,7 +6,6 @@ const updateInventoryQuantities = async (
   newItems = [],
   session = null
 ) => {
-  console.log("oldItems", oldItems);
   const oldMap = new Map(
     oldItems.map((item) => [item.productId.toString(), item.quantity])
   );

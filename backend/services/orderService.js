@@ -101,7 +101,6 @@ const createOrder = async ({
     if (customerId) {
       await CustomerRepo.updateCustomer(customerId, customer, storeId, session);
     }
-    console.log("items", items);
     const soldOutItems = items.filter(
       (item) => item.quantity > item.productinventory
     );
@@ -176,8 +175,6 @@ const getOrderWithEnhancedItems = async (orderId, storeId) => {
         storeId
       );
       if (!latestProduct) return item;
-      console.log("item", item);
-      console.log("latestProduct", latestProduct);
       return {
         ...item.toObject(),
         trackQuantityEnabled: latestProduct.trackQuantityEnabled,
@@ -255,7 +252,6 @@ const loadOrderAsCart = async (orderId, storeId) => {
     createdAt: Date.now(),
   };
 
-  console.log("cartKey", cartKey);
   await redisClient.set(cartKey, JSON.stringify(cart), { EX: 86400 });
 
   return cart;
