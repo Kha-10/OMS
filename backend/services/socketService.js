@@ -4,9 +4,10 @@ const initSocket = (httpServer) => {
   const { Server } = require("socket.io");
 
   const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
+    // "http://localhost:5173",
+    // "http://localhost:3000",
     process.env.ORIGIN,
+    process.env.SEC_ORIGIN
   ];
 
   io = new Server(httpServer, {
