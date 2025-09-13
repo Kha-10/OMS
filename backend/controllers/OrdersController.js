@@ -12,6 +12,11 @@ const cartService = require("../services/cartService");
 const handler = require("../helpers/handler");
 const redisClient = require("../config/redisClient");
 const { getIO } = require("../services/socketService");
+const {
+  formatWithCurrency,
+  buildItemsHtml,
+  sendOrderTemplateEmail,
+} = require("../helpers/sendOrderEmail");
 
 const OrdersController = {
   index: async (req, res) => {
@@ -85,6 +90,31 @@ const OrdersController = {
           storeId,
           customerName: order.manualCustomer.name,
         });
+
+        const storeData = await Store.findById(storeId);
+
+        const variables = {
+          username: order.manualCustomer.name || "Customer",
+          orderNumber: order.orderNumber,
+          itemsHtml: buildItemsHtml(order, storeData),
+          subtotal: formatWithCurrency(
+            order.pricing.subtotal || 0,
+            storeData.settings.currency
+          ),
+          total: formatWithCurrency(
+            order.pricing.finalTotal || 0,
+            storeData.settings.currency
+          ),
+        };
+
+        await sendOrderTemplateEmail(
+          // storeData.email,
+          // storeData.name,
+          6205921,
+          variables,
+          order.manualCustomer.email,
+          order.manualCustomer.name
+        );
       }
 
       return res.json(order);
