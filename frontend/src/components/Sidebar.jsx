@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSelector } from "react-redux";
+import useOrders from "@/hooks/useOrders";
 
 // const apps = [
 //   {
@@ -65,7 +66,7 @@ import { useSelector } from "react-redux";
 //   },
 // ];
 
-function NavItem({ item, onItemClick }) {
+function NavItem({ item, onItemClick, pendingOrders }) {
   const location = useLocation();
   const pathname = location.pathname;
   const navigate = useNavigate();
@@ -133,16 +134,20 @@ function NavItem({ item, onItemClick }) {
                   key={subitem.to}
                   onClick={() => {
                     handleClick(subitem.to);
-                    console.log("subitem.to", subitem.to);
                   }}
                   className={cn(
-                    "block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors",
+                    "w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center justify-between transition-colors",
                     pathname.startsWith(basePath)
                       ? "bg-gray-100 text-blue-600 font-medium"
                       : ""
                   )}
                 >
-                  {subitem.title}
+                  {subitem.title}{" "}
+                  {subitem.title === "All" ? (
+                    <Badge variant="destructive">{pendingOrders.length}</Badge>
+                  ) : (
+                    ""
+                  )}
                 </button>
               );
             })}
@@ -188,7 +193,13 @@ function NavItem({ item, onItemClick }) {
 export function Sidebar({ open, onClose }) {
   const { tenant } = useSelector((state) => state.tenants);
   const { storeId } = useParams();
-  console.log(storeId);
+  const { data } = useOrders({});
+  const ordersData = data?.data;
+
+  const pendingOrders = ordersData?.filter(
+    (order) => order.orderStatus === "Pending"
+  );
+
   const navigation = [
     {
       title: "Dashboard",
@@ -282,7 +293,12 @@ export function Sidebar({ open, onClose }) {
           </div>
           <nav className="flex-1 overflow-y-auto p-2">
             {navigation.map((item) => (
-              <NavItem key={item.to} item={item} onItemClick={onClose} />
+              <NavItem
+                key={item.to}
+                item={item}
+                onItemClick={onClose}
+                pendingOrders={pendingOrders}
+              />
             ))}
           </nav>
           {/* <div className="p-4 border-t border-gray-200">
