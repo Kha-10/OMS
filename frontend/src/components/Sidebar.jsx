@@ -143,7 +143,7 @@ function NavItem({ item, onItemClick, pendingOrders }) {
                   )}
                 >
                   {subitem.title}{" "}
-                  {subitem.title === "All" ? (
+                  {item.title === "Orders" && subitem.title === "All" ? (
                     <Badge variant="destructive">{pendingOrders?.length}</Badge>
                   ) : (
                     ""
