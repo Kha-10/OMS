@@ -149,12 +149,17 @@ const UserController = {
       });
 
       // Send email
-      await sendEmail({
-        viewFilename: "email",
-        data: { verificationCode },
-        from: "nexoraDigital@gmail.com",
-        to: user.email,
-      });
+      // await sendEmail({
+      //   viewFilename: "email",
+      //   data: { verificationCode },
+      //   from: "nexoraDigital@gmail.com",
+      //   to: user.email,
+      // });
+      const variables = {
+        name: user.username,
+        code: verificationCode,
+      };
+      await sendTemplateEmail(user.email, user.username, 7309395, variables);
 
       return res.json({ message: "Verification code resent" });
     } catch (e) {
@@ -203,7 +208,7 @@ const UserController = {
         username: user.username,
         resetUrl,
       };
-      await sendTemplateEmail(user.email, user.username, 7262244, variables);
+      await sendTemplateEmail(user.email, user.username, 7309376, variables);
       // await sendEmail({
       //   viewFilename: "passwordReset",
       //   data: {
@@ -310,7 +315,7 @@ const UserController = {
       name: user.username,
       code: verificationCode,
     };
-    await sendTemplateEmail(user.email, user.username, 7254278, variables);
+    await sendTemplateEmail(user.email, user.username, 7309395, variables);
 
     const updatedUser = await User.findById(userId).select("-password");
 
