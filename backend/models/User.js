@@ -79,7 +79,7 @@ UserSchema.statics.register = async function (
     name: user.username,
     code: verificationCode,
   };
-  await sendTemplateEmail(user.email, user.username, 7309395, variables);
+  await sendTemplateEmail(user.email, user.username, 7309359, variables);
 
   return user;
 };

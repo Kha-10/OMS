@@ -38,6 +38,9 @@ const mailjet = Mailjet.apiConnect(
 );
 
 const sendTemplateEmail = async (toEmail, toName, templateId, variables) => {
+  console.log("variables",variables);
+  console.log("templateId",templateId);
+  console.log("toEmail",toEmail);
   try {
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
