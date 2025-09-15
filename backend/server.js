@@ -66,10 +66,8 @@ app.use(express.static("public"));
 app.use(
   cors({
     origin: [
-      // "http://localhost:5173",
-      // "http://localhost:3000",
       process.env.ORIGIN,
-      process.env.SEC_ORIGIN,
+      process.env.SEC_ORIGIN
     ].filter(Boolean),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
