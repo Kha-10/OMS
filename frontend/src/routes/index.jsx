@@ -95,11 +95,19 @@ function index() {
         },
         {
           path: "/stores/:storeId/addToCart",
-          element: tenant ? <AddToCart currency={stores?.[0]?.settings?.currency} /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? (
+            <AddToCart currency={stores?.[0]?.settings?.currency} />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         {
           path: "/stores/:storeId/addToCart/:id",
-          element: tenant ? <AddToCart currency={stores?.[0]?.settings?.currency} /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? (
+            <AddToCart currency={stores?.[0]?.settings?.currency} />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         {
           path: "/stores/:storeId/orders/:id",
@@ -128,7 +136,11 @@ function index() {
         // },
         {
           path: "/stores/:storeId/products",
-          element: tenant ? <ProductsPage currency={stores?.[0]?.settings?.currency}  /> : <Navigate to={"/sign-in"} />,
+          element: tenant ? (
+            <ProductsPage currency={stores?.[0]?.settings?.currency} />
+          ) : (
+            <Navigate to={"/sign-in"} />
+          ),
         },
         {
           path: "/stores/:storeId/products/new",
@@ -187,8 +199,8 @@ function index() {
                 stepper={tenant?.user?.onboarding_step || 1}
                 dbEmail={tenant?.user?.email || ""}
                 dbStoreId={stores?.[0]?._id}
-                storeName={stores?.[0]?.name}
-                user = {tenant?.user}
+                storeSlug={stores?.[0]?.slug}
+                user={tenant?.user}
               />
             ) : (
               <Navigate to={`/stores/${tenant?.store?.store._id}`} />

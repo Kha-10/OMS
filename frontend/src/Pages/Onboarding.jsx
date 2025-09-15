@@ -189,7 +189,7 @@ export default function Onboarding({
   stepper,
   dbEmail,
   dbStoreId,
-  storeName,
+  storeSlug,
   user,
 }) {
   const [step, setStep] = useState(stepper);
@@ -598,9 +598,7 @@ export default function Onboarding({
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(
-      `${import.meta.env.VITE_CUSTOMER_URL}/${storeName
-        ?.toLowerCase()
-        .replace(/\s+/g, "")}`
+      `${import.meta.env.VITE_CUSTOMER_URL}/${storeSlug}`
     );
     setShowCopySuccess(true);
     setTimeout(() => setShowCopySuccess(false), 3000);
@@ -986,7 +984,7 @@ export default function Onboarding({
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={step3Form.control}
                         name="email"

@@ -271,7 +271,9 @@ export function Sidebar({ open, onClose }) {
               </div>
               <div>
                 <a
-                  href={`https://sellpoint.nexoradigital.site/${tenant?.store?.store?.slug}`}
+                  href={`${import.meta.env.VITE_CUSTOMER_URL}/${
+                    tenant?.store?.store?.slug
+                  }`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 font-medium text-blue-500"
