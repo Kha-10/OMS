@@ -20,17 +20,18 @@ const {
   formatWithCurrency,
 } = require("../helpers/sendOrderEmail");
 
-const orderDeliveryQueue = new Queue("orderDeliveryQueue", {
-  redis: {
-    url: process.env.UPSTASH_REDIS_REST_URL,
-  },
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: "exponential",
-    removeOnComplete: 50,
-    removeOnFail: 10,
-  },
-});
+const orderDeliveryQueue = new Queue(
+  "orderDeliveryQueue",
+  process.env.UPSTASH_REDIS_URL,
+  {
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: "exponential",
+      removeOnComplete: 50,
+      removeOnFail: 10,
+    },
+  }
+);
 
 orderDeliveryQueue.process(async function (job, done) {
   try {
