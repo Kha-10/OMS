@@ -14,24 +14,59 @@ const CartRepo = require("../repo/cartRepo");
 const redisClient = require("../config/redisClient");
 const handler = require("../helpers/handler");
 const Queue = require("bull");
+const IORedis = require("ioredis");
 const {
   buildItemsHtml,
   sendOrderTemplateEmail,
   formatWithCurrency,
 } = require("../helpers/sendOrderEmail");
 
-const orderDeliveryQueue = new Queue(
-  "orderDeliveryQueue",
-  process.env.UPSTASH_REDIS_URL,
-  {
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: "exponential",
-      removeOnComplete: 50,
-      removeOnFail: 10,
-    },
-  }
-);
+// const orderDeliveryQueue = new Queue(
+//   "orderDeliveryQueue",
+//   process.env.UPSTASH_REDIS_URL,
+//   {
+//     defaultJobOptions: {
+//       attempts: 3,
+//       backoff: "exponential",
+//       removeOnComplete: 50,
+//       removeOnFail: 10,
+//     },
+//   }
+// );
+const connection = new IORedis(process.env.UPSTASH_REDIS_URL, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+});
+const orderDeliveryQueue = new Queue("orderDeliveryQueue", {
+  createClient: function (type) {
+    console.log("type", type);
+    switch (type) {
+      case "client":
+        return connection;
+      case "subscriber":
+        return connection.duplicate();
+      default:
+        return connection.duplicate();
+    }
+  },
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 2000 },
+    removeOnComplete: 50,
+    removeOnFail: 10,
+  },
+});
+orderDeliveryQueue.on("failed", (job, err) => {
+  console.error(`❌ Job ${job.id} failed:`, err);
+});
+
+orderDeliveryQueue.on("completed", (job) => {
+  console.log(`✅ Job ${job.id} completed`);
+});
+
+orderDeliveryQueue.on("stalled", (job) => {
+  console.warn(`⚠️ Job ${job.id} stalled`);
+});
 
 orderDeliveryQueue.process(async function (job, done) {
   try {
