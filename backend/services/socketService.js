@@ -7,7 +7,7 @@ const initSocket = (httpServer) => {
     // "http://localhost:5173",
     // "http://localhost:3000",
     process.env.ORIGIN,
-    process.env.SEC_ORIGIN
+    process.env.SEC_ORIGIN,
   ];
 
   io = new Server(httpServer, {
@@ -19,6 +19,14 @@ const initSocket = (httpServer) => {
 
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
+
+    socket.on("join_store", (storeId) => {
+      console.log(
+        `Socket ${socket.id} requested join_store with storeId: ${storeId}`
+      );
+      socket.join(storeId);
+      console.log(`Socket ${socket.id} joined tenant room: ${storeId}`);
+    });
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
