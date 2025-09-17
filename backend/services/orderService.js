@@ -42,7 +42,15 @@ orderDeliveryQueue.process(async function (job, done) {
     if (!name) throw new Error("Name is required but missing");
     if (!templateId) throw new Error("TemplateId is required but missing");
 
-    await sendOrderTemplateEmail(templateId, variables, email, name, subject);
+    await sendOrderTemplateEmail(
+      fromEmail,
+      fromName,
+      templateId,
+      variables,
+      email,
+      name,
+      subject
+    );
 
     done();
   } catch (error) {
