@@ -21,18 +21,6 @@ const {
   formatWithCurrency,
 } = require("../helpers/sendOrderEmail");
 
-// const orderDeliveryQueue = new Queue(
-//   "orderDeliveryQueue",
-//   process.env.UPSTASH_REDIS_URL,
-//   {
-//     defaultJobOptions: {
-//       attempts: 3,
-//       backoff: "exponential",
-//       removeOnComplete: 50,
-//       removeOnFail: 10,
-//     },
-//   }
-// );
 const connection = new IORedis(process.env.UPSTASH_REDIS_URL, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
@@ -55,17 +43,6 @@ const orderDeliveryQueue = new Queue("orderDeliveryQueue", {
     removeOnComplete: 50,
     removeOnFail: 10,
   },
-});
-orderDeliveryQueue.on("failed", (job, err) => {
-  console.error(`❌ Job ${job.id} failed:`, err);
-});
-
-orderDeliveryQueue.on("completed", (job) => {
-  console.log(`✅ Job ${job.id} completed`);
-});
-
-orderDeliveryQueue.on("stalled", (job) => {
-  console.warn(`⚠️ Job ${job.id} stalled`);
 });
 
 orderDeliveryQueue.process(async function (job, done) {
@@ -605,7 +582,7 @@ const bulkUpdate = async (orderIds, updateData, storeId, session) => {
 
       const variables = {
         username: name,
-        orderNumber: order.orderNumber,
+        orderNumber: order._id,
         itemsHtml: buildItemsHtml(order, storeData),
         subtotal: formatWithCurrency(
           order.pricing.subtotal || 0,

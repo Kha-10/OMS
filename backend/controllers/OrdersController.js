@@ -88,7 +88,7 @@ const OrdersController = {
         console.log("Emitting to store room:", room);
         io.to(room).emit("new-order", {
           message: "New order created",
-          orderNumber: order.orderNumber,
+          orderNumber: order._id,
           storeId,
           customerName: order.manualCustomer.name,
         });
