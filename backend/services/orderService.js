@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
-const Product = require("../models/Product");
+const Store = require("../models/Store");
 const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
 const clearProductCache = require("../helpers/clearProductCache");
 const clearCartCache = require("../helpers/clearCart");
@@ -13,6 +13,41 @@ const CustomerRepo = require("../repo/customerRepo");
 const CartRepo = require("../repo/cartRepo");
 const redisClient = require("../config/redisClient");
 const handler = require("../helpers/handler");
+const Queue = require("bull");
+const {
+  buildItemsHtml,
+  sendOrderTemplateEmail,
+  formatWithCurrency,
+} = require("../helpers/sendOrderEmail");
+
+const orderDeliveryQueue = new Queue("orderDeliveryQueue", {
+  redis: {
+    url: process.env.UPSTASH_REDIS_REST_URL,
+  },
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: "exponential",
+    removeOnComplete: 50,
+    removeOnFail: 10,
+  },
+});
+
+orderDeliveryQueue.process(async function (job, done) {
+  try {
+    const { templateId, variables, email, name, subject } = job.data;
+
+    if (!email) throw new Error("Email is required but missing");
+    if (!name) throw new Error("Name is required but missing");
+    if (!templateId) throw new Error("TemplateId is required but missing");
+
+    await sendOrderTemplateEmail(templateId, variables, email, name, subject);
+
+    done();
+  } catch (error) {
+    console.error("Error processing email job:", job.id, error);
+    done(error);
+  }
+});
 
 // GET
 
@@ -301,23 +336,6 @@ const editSingleOrder = async (id, storeId, payload) => {
   const originalItems = order.items;
   let needRestockAndDeduct = originalItems.some((i) => i.trackQuantityEnabled);
 
-  // console.log("All answers:", items);
-  // const allAnswers = items.flatMap((item) =>
-  //   item.options.flatMap((opt) => opt.answers)
-  // );
-
-  // const allPrices = items.flatMap((item) =>
-  //   item.options.flatMap((opt) => opt.prices)
-  // );
-
-  // const allQuantities = items.flatMap((item) =>
-  //   item.options.flatMap((opt) => opt.quantities)
-  // );
-
-  // console.log("All answers:", allAnswers);
-  // console.log("allPrices:", allPrices);
-  // console.log("allQuantities:", allQuantities);
-
   // 4. Update Order
   if (!needRestockAndDeduct) {
     await OrderRepo.updateOrder(id, storeId, {
@@ -530,6 +548,57 @@ const bulkUpdate = async (orderIds, updateData, storeId, session) => {
 
   if (!orders || orders.length === 0) {
     throw new Error("No orders found");
+  }
+
+  const storeData = await Store.findById(storeId);
+  if (updateData.orderStatus) {
+    for (const order of orders) {
+      const email = order.customer?.email || order.manualCustomer?.email;
+      const name = order.customer?.name || order.manualCustomer?.name;
+      if (!email || !name) continue; // skip invalid orders
+
+      const variables = {
+        username: name,
+        orderNumber: order.orderNumber,
+        itemsHtml: buildItemsHtml(order, storeData),
+        subtotal: formatWithCurrency(
+          order.pricing.subtotal || 0,
+          storeData.settings.currency
+        ),
+        total: formatWithCurrency(
+          order.pricing.finalTotal || 0,
+          storeData.settings.currency
+        ),
+      };
+
+      let templateId;
+      let subject;
+
+      if (updateData.orderStatus === "Confirmed") {
+        templateId = 7318118;
+        subject = "Order Confirmation";
+      } else if (updateData.orderStatus === "Delivered") {
+        templateId = 7314492;
+        subject = "Order Delivered";
+      } else {
+        continue; // ignore other statuses
+      }
+
+      await orderDeliveryQueue.add(
+        {
+          templateId,
+          variables,
+          email,
+          name,
+          subject,
+        },
+        {
+          delay: 0,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 2000 },
+        }
+      );
+    }
   }
 
   await OrderRepo.bulkUpdate(orderIds, updateData, session, storeId);

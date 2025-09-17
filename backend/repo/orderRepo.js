@@ -151,14 +151,16 @@ const updateOrder = async (id, storeId, updateData, session = null) => {
     updateData.items.forEach((item) => {
       item.options.forEach((opt) => {
         // Flatten arrays if needed
-        if (Array.isArray(opt.answers)) opt.answers = opt.answers.flat(Infinity);
+        if (Array.isArray(opt.answers))
+          opt.answers = opt.answers.flat(Infinity);
         if (Array.isArray(opt.prices)) opt.prices = opt.prices.flat(Infinity);
-        if (Array.isArray(opt.quantities)) opt.quantities = opt.quantities.flat(Infinity);
+        if (Array.isArray(opt.quantities))
+          opt.quantities = opt.quantities.flat(Infinity);
       });
     });
 
     order.items = updateData.items;
-    order.markModified('items'); // Force change detection
+    order.markModified("items"); // Force change detection
 
     await order.save(options);
 
@@ -228,7 +230,9 @@ const bulkDeleteOrders = async (orderIds, storeId, session) => {
 };
 
 const findOrdersByIds = async (orderIds, storeId, session) => {
-  return Order.find({ _id: { $in: orderIds }, storeId }).session(session);
+  return Order.find({ _id: { $in: orderIds }, storeId })
+    .populate("customer")
+    .session(session);
 };
 
 const bulkUpdate = async (orderIds, updateData, session, storeId) => {

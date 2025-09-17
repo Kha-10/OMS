@@ -84,8 +84,10 @@ const sendOrderTemplateEmail = async (
   templateId,
   variables,
   toEmail,
-  toName
+  toName,
+  subject = "Order Received"
 ) => {
+  console.log("subject", subject);
   try {
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
@@ -95,7 +97,7 @@ const sendOrderTemplateEmail = async (
           To: [{ Email: toEmail, Name: toName }],
           TemplateID: templateId,
           TemplateLanguage: true,
-          Subject: "Order Confirmation",
+          Subject: subject,
           Variables: variables,
         },
       ],
