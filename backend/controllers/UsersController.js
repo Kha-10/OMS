@@ -31,9 +31,9 @@ const UserController = {
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
-        secure: true,
-        sameSite: "lax",
-        domain: ".nexoradigital.site",
+        // secure: true,
+        // sameSite: "lax",
+        // domain: ".nexoradigital.site",
       });
       let store = await StoreMember.findOne({ user: user._id })
         .populate("store")
@@ -58,9 +58,9 @@ const UserController = {
       res.cookie("jwt", token, {
         httpOnly: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,
-        secure: true,
-        sameSite: "lax",
-        domain: ".nexoradigital.site",
+        // secure: true,
+        // sameSite: "lax",
+        // domain: ".nexoradigital.site",
       });
       return res.json({ user, token });
     } catch (e) {
@@ -71,9 +71,9 @@ const UserController = {
     res.cookie("jwt", "", {
       httpOnly: true,
       maxAge: 1,
-      secure: true,
-      sameSite: "lax",
-      domain: ".nexoradigital.site",
+      // secure: true,
+      // sameSite: "lax",
+      // domain: ".nexoradigital.site",
     });
     return res.json({ message: "user logged out" });
   },
