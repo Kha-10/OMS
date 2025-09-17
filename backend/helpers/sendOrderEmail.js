@@ -79,8 +79,8 @@ const mailjet = Mailjet.apiConnect(
 );
 
 const sendOrderTemplateEmail = async (
-  //   fromEmail,
-  //   fromName,
+  fromEmail,
+  fromName,
   templateId,
   variables,
   toEmail,
@@ -92,8 +92,8 @@ const sendOrderTemplateEmail = async (
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
-          //   From: { Email: "august810.a@gmail.com", Name: fromName },
-          From: { Email: "august810.a@gmail.com", Name: "Nexora" },
+          From: { Email: fromEmail, Name: fromName },
+          //   From: { Email: "august810.a@gmail.com", Name: "Nexora" },
           To: [{ Email: toEmail, Name: toName }],
           TemplateID: templateId,
           TemplateLanguage: true,

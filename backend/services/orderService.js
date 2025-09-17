@@ -34,8 +34,10 @@ const orderDeliveryQueue = new Queue("orderDeliveryQueue", {
 
 orderDeliveryQueue.process(async function (job, done) {
   try {
-    const { templateId, variables, email, name, subject } = job.data;
-    console.log("job.data", job.data);
+    const { fromEmail, fromName, templateId, variables, email, name, subject } =
+      job.data;
+    if (!fromEmail) throw new Error("fromEmail is required but missing");
+    if (!fromName) throw new Error("fromName is required but missing");
     if (!email) throw new Error("Email is required but missing");
     if (!name) throw new Error("Name is required but missing");
     if (!templateId) throw new Error("TemplateId is required but missing");
@@ -549,7 +551,6 @@ const bulkUpdate = async (orderIds, updateData, storeId, session) => {
   if (!orders || orders.length === 0) {
     throw new Error("No orders found");
   }
-  console.log("updateData", updateData);
 
   const storeData = await Store.findById(storeId);
   if (updateData.orderStatus || updateData.fulfillmentStatus) {
@@ -587,6 +588,8 @@ const bulkUpdate = async (orderIds, updateData, storeId, session) => {
 
       await orderDeliveryQueue.add(
         {
+          fromEmail: storeData.email,
+          fromName: storeData.name,
           templateId,
           variables,
           email,

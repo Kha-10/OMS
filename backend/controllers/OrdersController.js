@@ -108,8 +108,8 @@ const OrdersController = {
         };
 
         await sendOrderTemplateEmail(
-          // storeData.email,
-          // storeData.name,
+          storeData.email,
+          storeData.name,
           6205921,
           variables,
           order.manualCustomer.email,
