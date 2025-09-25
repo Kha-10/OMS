@@ -42,7 +42,7 @@ const sendTemplateEmail = async (toEmail, toName, templateId, variables) => {
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
-          From: { Email: "august810.a@gmail.com", Name: "Nexora" },
+          From: { Email: "nexoradigital@nexoradigital.site", Name: "Nexora" },
           To: [{ Email: toEmail, Name: toName }],
           TemplateID: templateId,
           TemplateLanguage: true,
