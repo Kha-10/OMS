@@ -92,7 +92,7 @@ const sendOrderTemplateEmail = async (
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
-          From: { Email: fromEmail, Name: fromName },
+          From: { Email: "noreply@nexoradigital.site", Name: fromName },
           //   From: { Email: "august810.a@gmail.com", Name: "Nexora" },
           To: [{ Email: toEmail, Name: toName }],
           TemplateID: templateId,
