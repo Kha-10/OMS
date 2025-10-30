@@ -56,7 +56,7 @@ function buildItemsHtml(order, storeData) {
                 ? `<img src="${itemImage}" width="60" style="display:inline-block; margin-right:10px; vertical-align:top;" alt="Product" />`
                 : ""
             }
-            <div style="display:inline-block; vertical-align:top; font-size:14px; color:#333;">
+            <div style="display:inline-block; vertical-align:top; font-size:14px; color:#333; margin-bottom:10px;">
               <strong>${itemName}</strong><br/>
               Qty: ${itemQuantity}<br/>
               Add-ons: ${addonsHtml}
