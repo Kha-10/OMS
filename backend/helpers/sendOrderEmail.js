@@ -53,16 +53,16 @@ function buildItemsHtml(order, storeData) {
           <td style="padding:10px; width:80%; border-bottom:1px solid #e0e0e0;">
             ${
               itemImage
-                ? `<img src="${itemImage}" width="60" style="display:inline-block; margin-right:10px; vertical-align:top;" alt="Product" />`
+                ? `<img src="${itemImage}" width="60" style="display:inline-block; margin-right:10px; margin-bottom:12px; vertical-align:top;" alt="Product" />`
                 : ""
             }
-            <div style="display:inline-block; vertical-align:top; font-size:14px; color:#333; margin-bottom:10px;">
-              <strong>${itemName}</strong><br/>
-              Qty: ${itemQuantity}<br/>
-              Add-ons: ${addonsHtml}
+            <div style="display:inline-block; vertical-align:top; font-size:14px; color:#333;">
+              <strong style="display:block; margin-bottom:12px;">${itemName}</strong>
+             <div style="margin-bottom:12px;">Qty: ${itemQuantity}</div>
+              <div>Add-ons: ${addonsHtml}</div>
             </div>
           </td>
-          <td align="right" style="padding:10px; width:20%; border-bottom:1px solid #e0e0e0; font-size:14px; color:#333;">
+          <td align="right" style="padding:10px; width:20%; border-bottom:1px solid #e0e0e0; font-size:14px; color:#333; white-space:nowrap;">
             ${formatWithCurrency(itemPrice, storeData.settings.currency)}
           </td>
         </tr>
