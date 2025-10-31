@@ -630,6 +630,12 @@ const bulkUpdate = async (orderIds, updateData, storeId, session) => {
   return true;
 };
 
+const exportOrders = async (count) => {
+  const orderData = await OrderRepo.exportOrders(count);
+
+  return orderData;
+};
+
 module.exports = {
   findOrders,
   enhanceProductImages,
@@ -645,4 +651,5 @@ module.exports = {
   bulkDestroyOrders,
   deduct,
   bulkUpdate,
+  exportOrders,
 };

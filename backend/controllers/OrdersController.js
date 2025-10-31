@@ -17,6 +17,8 @@ const {
   buildItemsHtml,
   sendOrderTemplateEmail,
 } = require("../helpers/sendOrderEmail");
+const converter = require("json-2-csv");
+const formatItems = require('../helpers/formatItems')
 
 const OrdersController = {
   index: async (req, res) => {
@@ -405,6 +407,81 @@ const OrdersController = {
       return res.json(order);
     } catch (error) {
       return res.status(500).json({ msg: "internet server error" });
+    }
+  },
+  export: async (req, res) => {
+    try {
+      const { count } = req.query;
+
+      let orders = await orderService.exportOrders(count);
+
+      // Convert to plain objects and transform ObjectIds to strings
+      orders = orders.map((o) => {
+        const obj = o.toObject ? o.toObject() : o;
+        return JSON.parse(JSON.stringify(obj));
+      });
+
+      // Flatten nested objects for better CSV structure
+      const flattenedOrders = orders.map((order) => ({
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        invoiceNumber: order.invoiceNumber,
+        orderStatus: order.orderStatus,
+        paymentStatus: order.paymentStatus,
+        fulfillmentStatus: order.fulfillmentStatus,
+        customerType: order.customerType,
+
+        // Customer info
+        customerName: order.manualCustomer?.name || order.customer?.name || "",
+        customerPhone:
+          order.manualCustomer?.phone || order.customer?.phone || "",
+        customerEmail:
+          order.manualCustomer?.email || order.customer?.email || "",
+        deliveryAddress:
+          order.manualCustomer?.deliveryAddress?.fullAddress || "",
+        deliveryStreet: order.manualCustomer?.deliveryAddress?.street || "",
+        deliveryApartment:
+          order.manualCustomer?.deliveryAddress?.apartment || "",
+        deliveryCity: order.manualCustomer?.deliveryAddress?.city || "",
+        deliveryZipCode: order.manualCustomer?.deliveryAddress?.zipCode || "",
+
+        // Pricing
+        subtotal: order.pricing?.subtotal || 0,
+        finalTotal: order.pricing?.finalTotal || 0,
+        adjustments:
+          order.pricing?.adjustments
+            ?.map(
+              (adj) =>
+                `${adj.name}: ${adj.value}${adj.isPercentage ? "%" : " THB"}`
+            )
+            .join("; ") || "",
+
+        items: formatItems(order.items),
+
+        itemCount: order.items?.length || 0,
+
+        // Other fields
+        notes: order.notes || "",
+        storeId: order.storeId,
+        customerId: order.customer,
+        createdById: order.createdBy,
+        deleted: order.deleted || false,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      }));
+
+      const csv = await converter.json2csv(flattenedOrders);
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="orders-${count}.csv"`
+      );
+
+      res.send(csv);
+    } catch (error) {
+      console.error("Order export error:", error);
+      return res.status(500).json({ msg: "Internal server error" });
     }
   },
 };

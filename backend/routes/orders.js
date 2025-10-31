@@ -16,6 +16,13 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 router.get(
+  "/export",
+  checkMemberMiddleware,
+  RoleMiddleware(["owner", "manager", "staff"]),
+  OrdersController.export
+);
+
+router.get(
   "/",
   checkMemberMiddleware,
   RoleMiddleware(["owner", "manager", "staff"]),

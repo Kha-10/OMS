@@ -243,6 +243,11 @@ const bulkUpdate = async (orderIds, updateData, session, storeId) => {
   );
 };
 
+const exportOrders = async (count) => {
+  const orders = await Order.find().sort({ createdAt: -1 }).limit(count);
+  return orders;
+};
+
 module.exports = {
   fetchOrders,
   createOrder,
@@ -259,4 +264,5 @@ module.exports = {
   bulkDeleteOrders,
   findOrdersByIds,
   bulkUpdate,
+  exportOrders,
 };
