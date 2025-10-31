@@ -3,13 +3,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "../ui/label";
 
 export default function SortControls({ sortBy, sortDirection, onSortChange }) {
-  const handleFieldChange = (field) => {
-    onSortChange(field, sortDirection); // Keep the current direction
-  };
-
-  const handleDirectionChange = (direction) => {
-    onSortChange(sortBy, direction); // Keep the current field
-  };
 
   return (
     <div className="p-4 space-y-4">

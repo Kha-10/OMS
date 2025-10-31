@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/helper/axios";
 import { useSelector } from "react-redux";
+import { showToast } from "@/components/NewToaster";
 
 const updateBulkOrdersStatus = async (orderIds, status, storeId) => {
   const res = await axios.post(`/api/stores/${storeId}/orders/bulk-update`, {
@@ -15,6 +16,22 @@ const bulkDeleteOrders = async (orderIds, storeId) => {
     orderIds,
   });
   return res.data;
+};
+
+const exportOrders = async (count, storeId) => {
+  const res = await axios.get(
+    `/api/stores/${storeId}/orders/export?count=${count}`,
+    {
+      responseType: "blob",
+    }
+  );
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `orders-${count}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 };
 
 const useOrderActions = (onSelectOrders) => {
@@ -68,7 +85,22 @@ const useOrderActions = (onSelectOrders) => {
       console.error("Deleting orders failed:", error);
     },
   });
-  return { updateStatusMutation, deleteMutation };
+
+  const exportMutation = useMutation({
+    mutationFn: async ({ exportSortBy }) => {
+      return await exportOrders(exportSortBy, storeId);
+    },
+    onSuccess: () => {
+      showToast({
+        title: "Successfully exported orders",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      console.error("Exporting orders failed:", error);
+    },
+  });
+  return { updateStatusMutation, deleteMutation, exportMutation };
 };
 
 export default useOrderActions;

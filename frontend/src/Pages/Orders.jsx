@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Search, ArrowUpDown, Filter, Upload } from "lucide-react";
 import OrderList from "@/components/Orders/OrderList";
 import OrdersHeader from "@/components/Orders/OrderHeader";
@@ -19,12 +19,26 @@ import StatusDialog from "@/components/Orders/StatusDialog";
 import { useNavigationType } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { discardCart } from "@/features/cart/cartSlice";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import useOrderActions from "@/hooks/useOrderActions";
 
-export default function OrdersPage({currency}) {
+export default function OrdersPage({ currency }) {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
+  const [exportSortBy, setExportSortBy] = useState(100);
   const [searchParams, setSearchParams] = useSearchParams();
   const params = new URLSearchParams(searchParams);
   const page = parseInt(params.get("page") || "1", 10);
@@ -53,6 +67,8 @@ export default function OrdersPage({currency}) {
   const storeId = stores?.[0]?._id;
   const dispatch = useDispatch();
   const navigationType = useNavigationType();
+
+  const { exportMutation } = useOrderActions(null);
 
   const orders = data?.data;
   const pagination = data?.pagination || {};
@@ -207,6 +223,14 @@ export default function OrdersPage({currency}) {
     }
   }, [navigationType]);
 
+  const ExportSortChange = (field) => {
+    setExportSortBy(field);
+  };
+
+  const exportOrders = async () => {
+    await exportMutation.mutateAsync({ exportSortBy });
+  };
+
   return (
     <div className="space-y-6 p-6">
       <OrdersHeader storeId={storeId} />
@@ -257,13 +281,61 @@ export default function OrdersPage({currency}) {
               </PopoverContent>
             </Popover>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-            <Upload size={20} />
-            <span className="font-medium">Export</span>
-          </button>
-          {/* <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">
-            Summary
-          </button> */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="space-x-2">
+                <p>Export</p>
+                <Upload className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Export Orders</DialogTitle>
+                <DialogDescription>Export orders as csv file</DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center gap-2">
+                <RadioGroup
+                  value={exportSortBy}
+                  onValueChange={(value) => ExportSortChange(value)}
+                  className="flex flex-col gap-2"
+                >
+                  <Label className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value={100}
+                      id="hundred"
+                      className="border-[1.5px] text-white border-gray-300 
+              before:h-2 before:w-2 before:bg-white
+              data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
+              data-[state=checked]:before:bg-white"
+                    />
+                    <span>Last 100 orders</span>
+                  </Label>
+                  <Label className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value={1000}
+                      id="1k"
+                      className="border-[1.5px] text-white border-gray-300 
+              before:h-2 before:w-2 before:bg-white
+              data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500
+              data-[state=checked]:before:bg-white"
+                    />
+                    <span>Last 1000 orders</span>
+                  </Label>
+                </RadioGroup>
+              </div>
+              <DialogFooter className="sm:justify-start">
+                <DialogClose asChild>
+                  <Button
+                    type="button"
+                    onClick={exportOrders}
+                    className="bg-blue-500 hover:bg-blue-700"
+                  >
+                    Export
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
