@@ -30,36 +30,11 @@ const cors = require("cors");
 
 const cookieParser = require("cookie-parser");
 
-const { S3Client } = require("@aws-sdk/client-s3");
-const multer = require("multer");
-const multerS3 = require("multer-s3");
-
 const authMiddleware = require("./middlewares/authMiddleware");
 const resolveSlugMiddleware = require("./middlewares/resolveSlugMiddleware");
-const sendEmail = require("./helpers/sendEmail");
 
 const app = express();
 
-const s3 = new S3Client({
-  region: process.env.BUCKET_REGION,
-  credentials: {
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-  },
-});
-
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.BUCKET_NAME,
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(null, Date.now().toString() + "-" + file.originalname);
-    },
-  }),
-});
 
 app.use(express.static("public"));
 
@@ -105,8 +80,6 @@ mongoose.connect(mongoURL).then(() => {
 });
 
 app.use(express.json());
-
-app.use(morgan("dev"));
 
 app.use(morgan("dev"));
 
@@ -161,33 +134,3 @@ app.use(
   resolveSlugMiddleware,
   orderRoutes
 );
-
-app.get("/cookie", (req, res) => {
-  res.cookie("gg", "wp", { httpOnly: true });
-  return res.send("ggwp");
-});
-
-app.get("/get-cookie", (req, res) => {
-  let cookies = req.cookies;
-  return res.send(cookies);
-});
-
-app.get("/send-email", async (req, res) => {
-  try {
-    await sendEmail({
-      viewFilename: "email",
-      data: {
-        name: "KHA",
-      },
-      from: "Emerald@gmail.com",
-      to: "kha@gmail.com",
-    });
-    return res.status(200).send("email sent");
-  } catch (error) {
-    return res.status(500).json({ msg: error.message });
-  }
-});
-
-app.post("/upload", upload.single("photo"), function (req, res, next) {
-  return res.status(200).send(req.file);
-});
