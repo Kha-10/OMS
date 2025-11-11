@@ -5,6 +5,8 @@
     "@aws-sdk/cloudfront-signer": "^3.649.0",
     "@aws-sdk/lib-storage": "^3.620.0",
     "@aws-sdk/s3-request-presigner": "^3.620.0",
+    "@logtail/node": "^0.5.6",
+    "@logtail/winston": "^0.5.6",
     "@upstash/redis": "^1.35.3",
     "aws-sdk": "^2.1664.0",
     "bcrypt": "^5.1.1",
@@ -32,7 +34,9 @@
     "sharp": "^0.33.5",
     "socket.io": "^4.8.1",
     "sonner": "^2.0.7",
-    "streamifier": "^0.1.1"
+    "streamifier": "^0.1.1",
+    "uuid": "^11.1.0",
+    "winston": "^3.18.3"
   },
   "scripts": {
     "dev": "nodemon server.js"

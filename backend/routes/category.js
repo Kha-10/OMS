@@ -4,8 +4,11 @@ const { body } = require("express-validator");
 const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const checkMemberMiddleware = require("../middlewares/checkMemberMiddleware");
 const RoleMiddleware = require("../middlewares/roleMiddleware");
+const loggerMiddleware = require("../middlewares/loggerMiddleware");
 
 const router = express.Router({ mergeParams: true });
+
+router.use(loggerMiddleware("categories"));
 
 router.get("/", CategoriesController.index);
 

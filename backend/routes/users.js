@@ -4,8 +4,11 @@ const handleErrorMessage = require("../middlewares/handleErrorMessage");
 const { body } = require("express-validator");
 const User = require("../models/User");
 const AuthMiddleware = require("../middlewares/authMiddleware");
+const loggerMiddleware = require("../middlewares/loggerMiddleware");
 
 const router = express.Router();
+
+router.use(loggerMiddleware("users"));
 
 router.get("/me", AuthMiddleware, UserController.me);
 router.post("/login", UserController.login);

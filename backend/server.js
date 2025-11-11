@@ -33,17 +33,30 @@ const cookieParser = require("cookie-parser");
 const authMiddleware = require("./middlewares/authMiddleware");
 const resolveSlugMiddleware = require("./middlewares/resolveSlugMiddleware");
 
-const app = express();
+const logger = require("./helpers/logger");
 
+process.on("uncaughtException", (err) => {
+  logger.error("UNCAUGHT EXCEPTION 💥", {
+    message: err.message,
+    stack: err.stack,
+  });
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (err) => {
+  logger.error("UNHANDLED REJECTION 💥", {
+    message: err.message,
+    stack: err.stack,
+  });
+  process.exit(1);
+});
+const app = express();
 
 app.use(express.static("public"));
 
 app.use(
   cors({
-    origin: [
-      process.env.ORIGIN,
-      process.env.SEC_ORIGIN
-    ].filter(Boolean),
+    origin: [process.env.ORIGIN, process.env.SEC_ORIGIN].filter(Boolean),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -81,7 +94,18 @@ mongoose.connect(mongoURL).then(() => {
 
 app.use(express.json());
 
-app.use(morgan("dev"));
+const morganMiddleware = morgan(
+  ":method :url :status :res[content-length] - :response-time ms",
+  {
+    stream: {
+      write: (message) => logger.http(message.trim()),
+    },
+  }
+);
+
+app.use(morganMiddleware);
+
+// app.use(morgan("dev"));
 
 app.use(cookieParser());
 
